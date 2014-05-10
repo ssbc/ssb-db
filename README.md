@@ -1,0 +1,6 @@
+# secure-scuttlebutt
+
+
+## License
+
+MIT

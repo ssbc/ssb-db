@@ -1,0 +1,22 @@
+{
+  "name": "secure-scuttlebutt",
+  "description": "",
+  "version": "0.0.0",
+  "homepage": "https://github.com/dominictarr/secure-scuttlebutt",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/secure-scuttlebutt.git"
+  },
+  "dependencies": {
+    "eccjs": "~0.3.1",
+    "varstruct": "~1.1.0",
+    "blake2s": "~1.0.0",
+    "pull-stream": "~2.22.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "set -e; for t in test/*.js; do node $t; done"
+  },
+  "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
+  "license": "MIT"
+}
