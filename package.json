@@ -13,7 +13,9 @@
     "blake2s": "~1.0.0",
     "pull-stream": "~2.22.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "tape": "~2.12.3"
+  },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
   },
