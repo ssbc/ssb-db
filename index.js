@@ -11,7 +11,7 @@ var signature = varstruct.buffer(64)
 
 var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
 
-var unsigned_message = varstruct({
+var UnsignedMessage = varstruct({
   previous  : b2s,
   author    : b2s,
   sequence  : varstruct.varint,
@@ -19,7 +19,7 @@ var unsigned_message = varstruct({
   message   : varstruct.varbuf(varstruct.byte)
 })
 
-var message = varstruct({
+var Message = varstruct({
   previous  : b2s,
   author    : b2s,
   sequence  : varstruct.varint,
@@ -29,13 +29,8 @@ var message = varstruct({
 })
 
 
-var keys = ecc.generate(ecc.curves.k256)
-
 var zeros = new Buffer(32)
 zeros.fill(0)
-
-var ones = new Buffer(32)
-ones.fill(255)
 
 function bsum (value) {
   return new Blake2s().update(value).digest()
@@ -47,64 +42,79 @@ function validate(msg, keys) {
   return ecc.verify(k256, keys, msg.signature, bsum(unsigned_message.encode(msg)))
 }
 
-function feed (keys) {
-  var feed = [], id = bsum(keys.public)
+function signMessage(msg, keys) {
+  msg.signature = ecc.sign(k256, keys, bsum(UnsignedMessage.encode(msg)))
+  return msg
+}
+
+function Feed (keys) {
+  var feed = [], id = keys ? bsum(keys.public) : null
 
   function append (type, buffer, cb) {
     var last = feed[feed.length - 1]
     var msg = signMessage({
-      previous: last ? bsum(message.encode(last)) : zeros,
+      previous: last ? bsum(Message.encode(last)) : zeros,
       author  : bsum(keys.public),
       type    : type,
       sequence: feed.length,
       message : buffer
     }, keys)
     feed.push(msg)
-    cb()
+    cb(null, msg.sequence, bsum(Message.encode(msg)))
   }
 
-  append(new Buffer('INIT'), keys.public, function () {})
+  //if we have the private key, write an initial message.
+  if(keys)
+    append(new Buffer('INIT'), keys.public, function () {})
 
-  return {
+  var prev = zeros, seq = 0
+  var f
+  return f = {
     id: id,
     feed: feed,
     append: append,
-    validate: function (cb) {
-      var prev = zeros, seq = 0
-      pull(
-        pull.values(feed),
-        pull.map(function (msg) {
-          assert.deepEqual(msg.previous, prev)
-          assert.deepEqual(msg.author, id)
-          assert.equal(msg.sequence, seq)
-          var hash = bsum(unsigned_message.encode(msg))
+    createReadStream: function (opts) {
+      if(opts && !isNaN(opts.gt))
+        return pull.values(feed.slice(opts.gt + 1))
+      return pull.values(feed)
+    },
+    createWriteStream: function (cb) {
+      return pull(pull.map(function (msg) {
+          if(!keys) {
+            keys = {public: msg.message}
+            f.id = id = bsum(keys.public)
+          } else
+            seq ++
+
+          assert.deepEqual(msg.author, id, 'unexpected author')
+          assert.deepEqual(msg.previous, prev, 'messages out of order')
+          assert.equal(msg.sequence, seq, 'sequence number is incorrect')
+
+          var hash = bsum(UnsignedMessage.encode(msg))
+
           if(!ecc.verify(k256, keys, msg.signature, hash))
             throw new Error('message was not validated by:' + id)
-          prev = bsum(message.encode(msg))
-          seq ++
+
+          feed.push(msg)
+          prev = bsum(Message.encode(msg))
+
           return true
         }),
         pull.drain(null, function (err) {
-          //TODO: set the state to validate, and allow appending a message etc.
-          cb(err, {previous: prev, sequence: seq})
+          cb(err, seq, prev)
         })
       )
     }
   }
 }
 
-function signMessage(msg, keys) {
-  console.log(msg)
-  msg.signature = ecc.sign(k256, keys, bsum(unsigned_message.encode(msg)))
-  return msg
+//verify the signature, but not the sequence number or prev
+Feed.verify = function (msg, keys) {
+  var public = keys.public || keys
+  var hash = bsum(UnsignedMessage.encode(msg))
+  if(!ecc.verify(k256, keys, msg.signature, hash))
+    throw new Error('message was not validated by:' + bsum(public))
+  return true
 }
 
-
-var f = feed(keys)
-
-f.append(new Buffer('MESSAGE'), new Buffer('hello world!'), function () {})
-
-f.validate(function (err, meta) {
-  if(err) throw err
-  console.log(meta)
-})
+module.exports = Feed
