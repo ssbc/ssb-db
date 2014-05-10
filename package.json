@@ -11,7 +11,7 @@
     "eccjs": "~0.3.1",
     "varstruct": "~1.1.0",
     "blake2s": "~1.0.0",
-    "pull-stream": "~2.22.2"
+    "pull-stream": "~2.23.0"
   },
   "devDependencies": {
     "tape": "~2.12.3"
