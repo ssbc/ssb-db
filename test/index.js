@@ -1,6 +1,6 @@
 var tape = require('tape')
 var pull = require('pull-stream')
-var level = require('level-test')()
+var level = require('level-test')({valueEncoding: 'binary', keyEncoding: 'binary'})
 var Feed = require('../')
 var Blake2s = require('blake2s')
 var ecc = require('eccjs')
@@ -81,7 +81,6 @@ tape('can createReadStream(after) a given message', function (t) {
         t.end()
       })
     )
-
 
   })
 
