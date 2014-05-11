@@ -1,6 +1,6 @@
 var tape = require('tape')
 var pull = require('pull-stream')
-
+var level = require('level-test')()
 var Feed = require('../')
 var Blake2s = require('blake2s')
 var ecc = require('eccjs')
@@ -21,31 +21,37 @@ function bsum(s) {
 var MESSAGE = new Buffer('message')
 
 tape('simple', function (t) {
-
+  var db = level('sscuttlebutt-simple')
   //create when you know the public keys
   var keys = ecc.generate(ecc.curves.k256)
-  var feed = Feed(keys)
+  var feed = Feed(db, keys)
 
   //creates a feed with one message in it,
   //containing the public key.
-  pull(
-    feed.createReadStream(),
-    pull.collect(function (err, ary) {
-      t.equal(ary.length, 1)
-      var msg = ary[0]
-      t.deepEqual(msg.author, bsum(keys.public))
-      t.deepEqual(msg.message, keys.public)
-      t.ok(Feed.verify(msg, keys))
-      t.end()
-    })
-  )
+
+  feed.verify(function (err, seq, hash) {
+    if(err) throw err
+    pull(
+      feed.createReadStream(),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 1)
+        var msg = ary[0]
+        t.deepEqual(msg.author, bsum(keys.public))
+        t.deepEqual(msg.message, keys.public)
+        t.ok(Feed.verify(msg, keys))
+        t.end()
+      })
+    )
+  })
 })
 
 tape('writing to a follower sets the public key in the first message', function (t) {
+  var db1 = level('sscuttlebutt-follower1')
+  var db2 = level('sscuttlebutt-follower2')
 
   var keys = ecc.generate(ecc.curves.k256)
-  var author = Feed(keys)
-  var follower = Feed()
+  var author = Feed(db1, keys)
+  var follower = Feed(db2)
 
   t.notOk(follower.id)
 
@@ -60,8 +66,10 @@ tape('writing to a follower sets the public key in the first message', function 
 })
 
 tape('can createReadStream(after) a given message', function (t) {
+  var db = level('sscuttlebutt-after')
+
   var keys = ecc.generate(ecc.curves.k256)
-  var author = Feed(keys)
+  var author = Feed(db, keys)
   var hello = new Buffer('hello world')
   author.append(MESSAGE, hello, function (err, seq, hash) {
 
@@ -81,9 +89,12 @@ tape('can createReadStream(after) a given message', function (t) {
 
 tape('writing can append multiple messages', function (t) {
 
+  var db1 = level('sscuttlebutt-append1')
+  var db2 = level('sscuttlebutt-append2')
+
   var keys = ecc.generate(ecc.curves.k256)
-  var author = Feed(keys)
-  var follower = Feed()
+  var author = Feed(db1, keys)
+  var follower = Feed(db2)
 
   t.notOk(follower.id)
 
@@ -107,11 +118,15 @@ tape('writing can append multiple messages', function (t) {
 
 tape('once a follower is initilized, '
     +'writing messages from the wrong author is an error', function (t) {
-  var keys = ecc.generate(ecc.curves.k256)
-  var author = Feed(keys)
-  var author2 = Feed(keys)
-  var follower = Feed()
+  var db1 = level('sscuttlebutt-error1')
+  var db2 = level('sscuttlebutt-error2')
+  var db3 = level('sscuttlebutt-error3')
 
+
+  var keys = ecc.generate(ecc.curves.k256)
+  var author = Feed(db1, keys)
+  var author2 = Feed(db2, keys)
+  var follower = Feed(db3)
 
   pull(
     author.createReadStream(),
@@ -126,15 +141,16 @@ tape('once a follower is initilized, '
       )
     })
   )
-
 })
 
 tape('can write a message from one author'
     +'and then write more messages from another stream', function (t) {
+  var db1 = level('sscuttlebutt-resume1')
+  var db2 = level('sscuttlebutt-resume2')
 
   var keys = ecc.generate(ecc.curves.k256)
-  var author = Feed(keys)
-  var follower = Feed()
+  var author = Feed(db1, keys)
+  var follower = Feed(db2)
 
   t.notOk(follower.id)
 
@@ -154,7 +170,6 @@ tape('can write a message from one author'
               if(err) throw err
               t.equal(seq, _seq)
               t.deepEqual(hash, _hash)
-//              console.log(author, follower)
               t.end()
             })
           )
