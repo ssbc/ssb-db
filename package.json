@@ -9,10 +9,11 @@
   },
   "dependencies": {
     "eccjs": "~0.3.1",
-    "varstruct": "~1.1.0",
+    "varstruct": "~1.2.0",
     "blake2s": "~1.0.0",
     "pull-stream": "~2.23.0",
-    "pull-delayed-sink": "~1.0.0"
+    "pull-delayed-sink": "~1.0.0",
+    "pull-level": "~1.1.10"
   },
   "devDependencies": {
     "tape": "~2.12.3",
