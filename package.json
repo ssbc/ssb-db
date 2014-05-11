@@ -11,10 +11,14 @@
     "eccjs": "~0.3.1",
     "varstruct": "~1.1.0",
     "blake2s": "~1.0.0",
-    "pull-stream": "~2.23.0"
+    "pull-stream": "~2.23.0",
+    "pull-delayed-sink": "~1.0.0"
   },
   "devDependencies": {
-    "tape": "~2.12.3"
+    "tape": "~2.12.3",
+    "level-mem": "~0.18.0",
+    "level": "~0.18.0",
+    "level-test": "~1.6.2"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
