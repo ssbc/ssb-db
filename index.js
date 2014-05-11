@@ -7,7 +7,7 @@ var assert = require('assert')
 var delayed = require('pull-delayed-sink')
 var b2s = varstruct.buffer(32)
 var signature = varstruct.buffer(64)
-
+var pl = require('pull-level')
 
 var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
 
@@ -26,6 +26,11 @@ var Message = varstruct({
   type      : type,
   message   : varstruct.varbuf(varstruct.byte),
   signature : signature
+})
+
+var Key = varstruct({
+  id: b2s,
+  sequence: varstruct.UInt64
 })
 
 var INIT = new Buffer('INIT')
@@ -54,43 +59,58 @@ function Feed (db, keys) {
 
   var feed = [], id = keys ? bsum(keys.public) : null, onVerify = [], state = 'created'
   var ready = false, verifying = false
-
-  function append (type, buffer, cb) {
-    var last = feed[feed.length - 1]
-    var msg = signMessage({
-      previous: last ? bsum(Message.encode(last)) : zeros,
-      author  : bsum(keys.public),
-      type    : type,
-      sequence: feed.length,
-      message : buffer
-    }, keys)
-    feed.push(msg)
-    cb(null, msg.sequence, bsum(Message.encode(msg)))
-  }
-
+  var ones = new Buffer(8); ones.fill(0xFF)
+  var first, last
   var prev = zeros, seq = 0
   var f
+
+  function append (type, buffer, cb) {
+    var msg = signMessage({
+      previous: prev || zeros,
+      author  : bsum(keys.public),
+      type    : type,
+      sequence: seq,
+      message : buffer
+    }, keys)
+
+    var key = Key.encode({id: id, sequence: seq})
+    var value = Message.encode(msg)
+
+    //TODO: THINK HARD ABOUT RACE CONDTION!
+    //PROBABLY, UPDATE VIA A WRITE STREAM THAT USES BATCHES.
+    prev = bsum(value)
+    seq++
+    db.put(key, value, function (err) {
+      cb(null, msg.sequence, prev)
+    })
+  }
+
   return f = {
     id: id,
     feed: feed,
     append: function _append (type, message, cb) {
-      if(!ready)
-        f.verify(function (err) {
+      if(!ready) {
+        f.verify(function (err, s, h) {
           if(err) return cb(err)
           append(type, message, cb)
         })
-      else
+      } else
         append(type, message, cb)
     },
     createReadStream: function (opts) {
       //defer until verified!
       var deferred = pull.defer()
       function createSource () {
-        return  opts && !isNaN(opts.gt)
-          ? pull.values(feed.slice(opts.gt + 1))
-          : pull.values(feed)
+        return  pull(
+            (opts && !isNaN(opts.gt))
+          ? pl.read(db, {gt: Key.encode({id: id, sequence: opts.gt, lte: last})})
+          : pl.read(db, {gte: Key.encode({id: id, sequence: 0}), lte: last}),
+          pull.through(console.log),
+          Feed.decodeStream()
+        )
+
       }
-      if(state !== 'ready') {
+      if(!ready) {
         f.verify(function () { deferred.resolve(createSource()) })
         return deferred
       }
@@ -103,10 +123,13 @@ function Feed (db, keys) {
     createWriteStream: function (cb) {
       //don't read until verified.
       function createSink() {
-        return pull(pull.map(function (msg) {
+        return pull(
+          pull.map(function (msg) {
             if(!keys) {
               keys = {public: msg.message}
               f.id = id = bsum(keys.public)
+              first = Key.encode({id: id, sequence: 0})
+              last = Buffer.concat([id, ones])
             } else
               seq ++
 
@@ -119,7 +142,7 @@ function Feed (db, keys) {
             if(!ecc.verify(k256, keys, msg.signature, hash))
               throw new Error('message was not validated by:' + id)
 
-            feed.push(msg)
+            //TODO: THINK HARD ABOUT RACE CONDTION!
             prev = bsum(Message.encode(msg))
 
             return true
@@ -156,12 +179,15 @@ function Feed (db, keys) {
       }
 
       pull(
-        pull.values(feed),
+        pl.read(db, {gte: first, lte: last}),
+        Feed.decodeStream(),
         pull.map(function (msg) {
           //just copied this from above, tidy up later.
           if(!keys) {
             keys = {public: msg.message}
             f.id = id = bsum(keys.public)
+            first = Keys.write({id: id, sequence: 0})
+            last = Buffer.concat([id, ones])
           } else
             seq ++
 
@@ -184,7 +210,6 @@ function Feed (db, keys) {
           if(err) return cb(err)
           else if(seq === 0 && keys && keys.private)
             return append(INIT, keys.public, function (err, _seq, _hash) {
-              seq = _seq; hash = _hash
               cb(err, _seq, _hash)
             })
           else
@@ -205,4 +230,15 @@ Feed.verify = function (msg, keys) {
   return true
 }
 
+Feed.decodeStream = function () {
+  return pull.map(function (op) {
+    return Message.decode(op.value)
+  })
+}
+
 module.exports = Feed
+
+if(!module.parent) {
+  var d = Key.encode({id: bsum('hello'), sequence: 0})
+  console.error(d)
+}
