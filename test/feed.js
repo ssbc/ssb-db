@@ -1,7 +1,7 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 var level = require('level-test')({valueEncoding: 'binary', keyEncoding: 'binary'})
-var Feed = require('../')
+var Feed = require('../feed')
 var Blake2s = require('blake2s')
 var ecc = require('eccjs')
 
@@ -51,14 +51,16 @@ tape('writing to a follower sets the public key in the first message', function 
 
   var keys = ecc.generate(ecc.curves.k256)
   var author = Feed(db1, keys)
-  var follower = Feed(db2)
+  var follower = Feed(db2, bsum(keys.public))
 
-  t.notOk(follower.id)
+  //we already know the id.
+  t.ok(follower.id)
 
   pull(
     author.createReadStream(),
     follower.createWriteStream(function (err) {
       t.deepEqual(follower.id, author.id)
+      t.deepEqual(follower.public, keys.public)
       t.end()
     })
   )
@@ -93,9 +95,9 @@ tape('writing can append multiple messages', function (t) {
 
   var keys = ecc.generate(ecc.curves.k256)
   var author = Feed(db1, keys)
-  var follower = Feed(db2)
+  var follower = Feed(db2, {public: keys.public})
 
-  t.notOk(follower.id)
+  t.ok(follower.id)
 
   author.append(MESSAGE, new Buffer('hello world'), function (err, seq, hash) {
     if(err) throw err
@@ -125,7 +127,7 @@ tape('once a follower is initilized, '
   var keys = ecc.generate(ecc.curves.k256)
   var author = Feed(db1, keys)
   var author2 = Feed(db2, keys)
-  var follower = Feed(db3)
+  var follower = Feed(db3, {public: keys.public})
 
   pull(
     author.createReadStream(),
@@ -149,9 +151,9 @@ tape('can write a message from one author'
 
   var keys = ecc.generate(ecc.curves.k256)
   var author = Feed(db1, keys)
-  var follower = Feed(db2)
+  var follower = Feed(db2, {public: keys.public})
 
-  t.notOk(follower.id)
+  t.ok(follower.id)
 
   pull(
     author.createReadStream(),
