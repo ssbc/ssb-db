@@ -14,7 +14,9 @@
     "pull-stream": "~2.23.0",
     "pull-delayed-sink": "~1.0.0",
     "pull-level": "~1.1.10",
-    "signed-varint": "~1.0.0"
+    "signed-varint": "~1.0.0",
+    "proquint-": "~1.0.2",
+    "pull-paramap": "~1.0.5"
   },
   "devDependencies": {
     "tape": "~2.12.3",
