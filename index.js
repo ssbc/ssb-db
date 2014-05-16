@@ -1,37 +1,12 @@
-var varstruct = require('varstruct')
 var Blake2s = require('blake2s')
 var ecc = require('eccjs')
 var k256 = ecc.curves.k256
 var pull = require('pull-stream')
 var assert = require('assert')
 var delayed = require('pull-delayed-sink')
-var b2s = varstruct.buffer(32)
-var signature = varstruct.buffer(64)
 var pl = require('pull-level')
 
-var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
-
-var UnsignedMessage = varstruct({
-  previous  : b2s,
-  author    : b2s,
-  sequence  : varstruct.varint,
-  type      : type,
-  message   : varstruct.varbuf(varstruct.byte)
-})
-
-var Message = varstruct({
-  previous  : b2s,
-  author    : b2s,
-  sequence  : varstruct.varint,
-  type      : type,
-  message   : varstruct.varbuf(varstruct.byte),
-  signature : signature
-})
-
-var Key = varstruct({
-  id: b2s,
-  sequence: varstruct.UInt64
-})
+var codex = require('./codex')
 
 var INIT = new Buffer('INIT')
 
@@ -43,13 +18,13 @@ function bsum (value) {
 }
 
 function validate(msg, keys) {
-  msg = Buffer.isBuffer(msg) ? message.decode(msg) : msg
+  msg = Buffer.isBuffer(msg) ? codex.Message.decode(msg) : msg
   process.assert(bsum(keys.public).toString('hex') === msg.author.toString('hex'), 'same author')
-  return ecc.verify(k256, keys, msg.signature, bsum(unsigned_message.encode(msg)))
+  return ecc.verify(k256, keys, msg.signature, bsum(codex.UnsignedMessage.encode(msg)))
 }
 
 function signMessage(msg, keys) {
-  msg.signature = ecc.sign(k256, keys, bsum(UnsignedMessage.encode(msg)))
+  msg.signature = ecc.sign(k256, keys, bsum(codex.UnsignedMessage.encode(msg)))
   return msg
 }
 
@@ -65,16 +40,19 @@ function Feed (db, keys) {
   var f
 
   function append (type, buffer, cb) {
+    var d = new Date()
     var msg = signMessage({
       previous: prev || zeros,
       author  : bsum(keys.public),
+      timestamp: +d,
+      timezone: d.getTimezoneOffset(),
       type    : type,
       sequence: seq,
       message : buffer
     }, keys)
 
-    var key = Key.encode({id: id, sequence: seq})
-    var value = Message.encode(msg)
+    var key = codex.Key.encode({id: id, sequence: seq})
+    var value = codex.Message.encode(msg)
 
     //TODO: THINK HARD ABOUT RACE CONDTION!
     //PROBABLY, UPDATE VIA A WRITE STREAM THAT USES BATCHES.
@@ -103,9 +81,8 @@ function Feed (db, keys) {
       function createSource () {
         return  pull(
             (opts && !isNaN(opts.gt))
-          ? pl.read(db, {gt: Key.encode({id: id, sequence: opts.gt, lte: last})})
-          : pl.read(db, {gte: Key.encode({id: id, sequence: 0}), lte: last}),
-          pull.through(console.log),
+          ? pl.read(db, {gt: codex.Key.encode({id: id, sequence: opts.gt, lte: last})})
+          : pl.read(db, {gte: codex.Key.encode({id: id, sequence: 0}), lte: last}),
           Feed.decodeStream()
         )
 
@@ -128,7 +105,7 @@ function Feed (db, keys) {
             if(!keys) {
               keys = {public: msg.message}
               f.id = id = bsum(keys.public)
-              first = Key.encode({id: id, sequence: 0})
+              first = codex.Key.encode({id: id, sequence: 0})
               last = Buffer.concat([id, ones])
             } else
               seq ++
@@ -137,13 +114,13 @@ function Feed (db, keys) {
             assert.deepEqual(msg.previous, prev, 'messages out of order')
             assert.equal(msg.sequence, seq, 'sequence number is incorrect')
 
-            var hash = bsum(UnsignedMessage.encode(msg))
+            var hash = bsum(codex.UnsignedMessage.encode(msg))
 
             if(!ecc.verify(k256, keys, msg.signature, hash))
               throw new Error('message was not validated by:' + id)
 
             //TODO: THINK HARD ABOUT RACE CONDTION!
-            prev = bsum(Message.encode(msg))
+            prev = bsum(codex.Message.encode(msg))
 
             return true
           }),
@@ -195,13 +172,13 @@ function Feed (db, keys) {
           assert.deepEqual(msg.previous, prev, 'messages out of order')
           assert.equal(msg.sequence, seq, 'sequence number is incorrect')
 
-          var hash = bsum(UnsignedMessage.encode(msg))
+          var hash = bsum(codex.UnsignedMessage.encode(msg))
 
           if(!ecc.verify(k256, keys, msg.signature, hash))
             throw new Error('message was not validated by:' + id)
 
           feed.push(msg)
-          prev = bsum(Message.encode(msg))
+          prev = bsum(codex.Message.encode(msg))
 
           return true
         }),
@@ -224,7 +201,7 @@ function Feed (db, keys) {
 //verify the signature, but not the sequence number or prev
 Feed.verify = function (msg, keys) {
   var public = keys.public || keys
-  var hash = bsum(UnsignedMessage.encode(msg))
+  var hash = bsum(codex.UnsignedMessage.encode(msg))
   if(!ecc.verify(k256, keys, msg.signature, hash))
     throw new Error('message was not validated by:' + bsum(public))
   return true
@@ -232,7 +209,7 @@ Feed.verify = function (msg, keys) {
 
 Feed.decodeStream = function () {
   return pull.map(function (op) {
-    return Message.decode(op.value)
+    return codex.Message.decode(op.value)
   })
 }
 
