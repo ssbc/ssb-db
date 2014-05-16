@@ -13,7 +13,8 @@
     "blake2s": "~1.0.0",
     "pull-stream": "~2.23.0",
     "pull-delayed-sink": "~1.0.0",
-    "pull-level": "~1.1.10"
+    "pull-level": "~1.1.10",
+    "signed-varint": "~1.0.0"
   },
   "devDependencies": {
     "tape": "~2.12.3",
