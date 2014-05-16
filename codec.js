@@ -26,8 +26,30 @@ exports.Message = varstruct({
   signature : signature
 })
 
+function prefix (value) {
+  function encode (v,b,o) {
+    return varstruct.byte.encode(value,b,o)
+  }
+  function decode (v,b,o) {
+    return varstruct.byte.decode(value,b,o)
+  }
+  encode.bytesWritten = decode.bytesRead = 1
+  return {
+    encode: encode,
+    decode: decode,
+    length: 1
+  }
+}
+
 exports.Key = varstruct({
+  magic: prefix(1),
   id: b2s,
   sequence: varstruct.UInt64
+})
+
+exports.FeedKey = varstruct({
+  magic: prefix(2),
+  timestamp: varstruct.UInt64,
+  hash: b2s
 })
 
