@@ -37,7 +37,7 @@ function hex (b) {
 
 function toHuman (msg) {
   return (
-    proquint.encode(msg.author).substring(0, 12*4) + ' / ' +
+    proquint.encodeCamel(msg.author).substring(0, 10*4) + ' / ' +
     msg.sequence + '\n' +
     msg.type.toString('utf8') + ' : '+
     new Date(msg.timestamp).toISOString() + '\n' +
