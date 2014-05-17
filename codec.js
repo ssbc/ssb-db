@@ -53,3 +53,7 @@ exports.FeedKey = varstruct({
   hash: b2s
 })
 
+exports.LatestKey = varstruct({
+  magic: prefix(3),
+  id: b2s
+})
