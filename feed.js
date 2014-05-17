@@ -1,12 +1,13 @@
 var Blake2s = require('blake2s')
-var ecc = require('eccjs')
-var k256 = ecc.curves.k256
-var pull = require('pull-stream')
-var assert = require('assert')
+var ecc     = require('eccjs')
+var k256    = ecc.curves.k256
+var pull    = require('pull-stream')
+var assert  = require('assert')
 var delayed = require('pull-delayed-sink')
-var pl = require('pull-level')
+var pl      = require('pull-level')
+var varint  = require('varstruct').varint
 
-var codec = require('./codec')
+var codec   = require('./codec')
 
 var INIT = new Buffer('INIT')
 
@@ -34,15 +35,6 @@ function toBuffer (str) {
   return str
 }
 
-//function compare (a, b) {
-//  var l = Math.min(a.length, b.length)
-//  for(var i = 0; i < l; i++) {
-//    if(a[i]<b[i]) return -1
-//    if(a[i]>b[i]) return  1
-//  }
-//  return a.length - b.length
-//}
-
 //verify the signature, but not the sequence number or prev
 Feed.verify = function (msg, keys) {
   var public = keys.public || keys
@@ -62,10 +54,11 @@ Feed.encodeWithIndexes = function (msg) {
   var key = codec.Key.encode({id: msg.author, sequence: msg.sequence})
   var value = codec.Message.encode(msg)
   var _key = codec.FeedKey.encode({hash: value, timestamp: msg.timestamp})
-
+  var latest = codec.LatestKey.encode({id: msg.author})
   return [
     {key: key, value: value, type: 'put'},
-    {key: _key, value: key, type: 'put'}
+    {key: _key, value: key, type: 'put'},
+    {key: latest, value: new Buffer(varint.encode(msg.sequence)), type: 'put'}
   ]
 
 }
@@ -238,8 +231,8 @@ function Feed (db, id, keys) {
 
           assert.deepEqual(msg.author, id, 'unexpected author')
           assert.deepEqual(msg.previous, prev, 'messages out of order')
-          assert.equal(msg.sequence, nextSeq, 'sequence number is incorrect')
-          seq = nextSeq
+          assert.equal(msg.sequence, seq, 'sequence number is incorrect')
+
           var hash = bsum(codec.UnsignedMessage.encode(msg))
 
           if(!ecc.verify(k256, keys, msg.signature, hash))
