@@ -4,6 +4,7 @@ var varstruct = require('varstruct')
 var b2s = varstruct.buffer(32)
 var signature = varstruct.buffer(64)
 var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
+var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
 
 exports.UnsignedMessage = varstruct({
   previous  : b2s,
@@ -12,7 +13,7 @@ exports.UnsignedMessage = varstruct({
   timezone  : svarint,
   sequence  : varstruct.varint,
   type      : type,
-  message   : varstruct.varbuf(varstruct.byte)
+  message   : content
 })
 
 exports.Message = varstruct({
@@ -22,7 +23,7 @@ exports.Message = varstruct({
   timestamp : varstruct.varint,
   timezone  : svarint,
   type      : type,
-  message   : varstruct.varbuf(varstruct.byte),
+  message   : content,
   signature : signature
 })
 
