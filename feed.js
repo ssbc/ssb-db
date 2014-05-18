@@ -77,15 +77,12 @@ function Feed (db, id, keys) {
   var feed = [], onVerify = [], state = 'created'
   var ready = false, verifying = false
   var ones = new Buffer(8); ones.fill(0xFF)
-  var first, last
   var prev = zeros, seq = 0
   var f
-  var last
 
-  if(keys) {
-    first = codec.Key.encode({id: id, sequence: 0})
-    last = Buffer.concat([new Buffer([1]), id, ones])
-  }
+  var first = codec.Key.encode({id: id, sequence: 0})
+  var last = Buffer.concat([new Buffer([1]), id, ones])
+
   function append (type, buffer, cb) {
     var d = new Date()
     var msg = signMessage({
@@ -130,18 +127,15 @@ function Feed (db, id, keys) {
       //defer until verified!
       var deferred = pull.defer()
       function createSource () {
-        var _start = codec.Key.encode({id: id, sequence: opts ? opts.gt|0 : 0})
+        var _start = (
+          opts && opts.gt != null
+        ? codec.Key.encode({id: id, sequence: opts.gt})
+        : first
+        )
         return  pull(
-          (opts && !isNaN(opts.gt)
-          ? pl.read(db, {
-              gt: _start,
-              lte: last,
-            })
-          : pl.read(db, {
-              gte: first,
-              lte: last,
-            })
-          ),
+          opts && opts.gt != null
+          ? pl.read(db, {gt: _start, lte: last})
+          : pl.read(db, {gte: _start, lte: last}),
           Feed.decodeStream()
         )
 
@@ -175,14 +169,13 @@ function Feed (db, id, keys) {
 
             var hash = bsum(codec.UnsignedMessage.encode(msg))
 
-            if(!ecc.verify(k256, keys, msg.signature, hash))
-              throw new Error('message was not validated by:' + id)
-
+            if(!ecc.verify(k256, keys.public, msg.signature, hash)) {
+              throw new Error('message was not validated by:' + id.toString('hex'))
+            }
             //TODO: THINK HARD ABOUT RACE CONDTION!
             prev = bsum(codec.Message.encode(msg))
             seq ++
-
-            return Feed.encodeWithIndexes(msg)
+            return Feed.encodeWithIndexes(msg) || []
           }),
           pull.flatten(),
           pl.write(db, function (err) {
@@ -235,9 +228,9 @@ function Feed (db, id, keys) {
 
           var hash = bsum(codec.UnsignedMessage.encode(msg))
 
-          if(!ecc.verify(k256, keys, msg.signature, hash))
+          if(!ecc.verify(k256, keys, msg.signature, hash)) {
             throw new Error('message was not validated by:' + id)
-
+          }
           feed.push(msg)
           prev = bsum(codec.Message.encode(msg))
           seq ++
