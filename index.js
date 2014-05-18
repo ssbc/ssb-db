@@ -6,8 +6,11 @@ var Blake2s = require('blake2s')
 var varint = require('varstruct').varint
 var codec = require('./codec')
 
+var pswitch = require('pull-switch')
+var u = require('./util')
 var first = new Buffer([2])
 var last = new Buffer(41) //1 + 8 + 32
+
 last.fill(255)
 last[0] = 2
 var firstLatest = new Buffer([3])
@@ -16,22 +19,19 @@ lastLatest.fill(255)
 lastLatest[0] = 3
 
 
-function bsum (value) {
-  return new Blake2s().update(value).digest()
-}
-
+var bsum = u.bsum
 
 module.exports = function (db, keys) {
 
   var feeds = {}
-
-  return {
+  var sbs
+  return sbs = {
     feed: function (id, keys) {
       if('string' === typeof id)
         id = new Buffer(id, 'hex')
       if(id.public)
         keys = id, id = bsum(keys.public)
-      return Feed(db, keys)
+      return Feed(db, id, keys)
     },
     latest: function () {
       return pull(
@@ -48,12 +48,25 @@ module.exports = function (db, keys) {
       opts = opts || {}
       opts.keys = false
       return pull(
-        pl.read(db, {gt: first, lte: last, keys: false}),
+        pl.read(db, {gte: first, lte: last, keys: false}),
         para(function (key, cb) {
           db.get(key, cb)
         }),
         Feed.decodeStream()
       )
+    },
+    createReadStream: function (opts) {
+      return this.createFeedStream()
+    },
+    createWriteStream: function (cb) {
+      var cbs = u.groups(cb)
+      return pswitch(function (msg) {
+         return msg.author.toString('hex')
+        }, function (msg) {
+            var key = msg.author.toString('hex')
+            feeds[key] = feeds[key] || sbs.feed(msg.author)
+            return feeds[key].createWriteStream(cbs())
+        })
     }
   }
 
