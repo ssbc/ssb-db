@@ -8,8 +8,8 @@
     "url": "git://github.com/dominictarr/secure-scuttlebutt.git"
   },
   "dependencies": {
-    "eccjs": "~0.3.1",
-    "varstruct": "~1.2.0",
+    "eccjs": "git://github.com/dominictarr/eccjs.git",
+    "varstruct": "~2.0.1",
     "blake2s": "~1.0.0",
     "pull-stream": "~2.23.0",
     "pull-delayed-sink": "~1.0.0",
@@ -22,7 +22,9 @@
     "osenv": "~0.0.3",
     "level": "~0.18.0",
     "varint": "~1.2.0",
-    "pull-merge": "~1.0.0"
+    "pull-handshake": "~0.0.2",
+    "pull-switch": "~2.0.0",
+    "pull-many": "~1.0.1"
   },
   "devDependencies": {
     "tape": "~2.12.3",
