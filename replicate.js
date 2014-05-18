@@ -1,4 +1,9 @@
+var handshake = require('pull-handshake')
+var pull = require('pull-stream')
+var many = require('pull-many')
+var pswitch = require('pull-switch')
 
+var u = require('./util')
 
 function listToObj(ary) {
   var obj = {}
@@ -17,36 +22,45 @@ function compare (a, b) {
   return a.length - b.length
 }
 
-module.exports = function (sb) {
-
-  return replicate(function (cb) {
-    pull(sb.lastest(), pull.collect(function (err, ary) {
-      if(err) cb(err)
-      else cb(null, ary)
-    })
+function replicate (sbs, done) {
+  var cbs = u.groups(done || function () {})
+  return handshake(function (cb) {
+    replicate.vector(sbs, cb)
   }, function (me, you) {
-    me  = listToObj(me)
-    you = listToObj(you)
-    //we now that I have a list
-    //of what you have, and where
-    //you are up to. I'll look in my database
-    //and see if I can help you.
-    var feeds = []
-    for(var key in you) {
-      if(me[key] != null && you[key] < me[key])
-        //send key's feed after you[key]
-        feeds.push(scuttlebutt.feed(key).createReadStream())
-    }
     return {
       source:
-        many(feeds),
+        replicate.feeds(sbs, me, you),
       sink:
-        pswitch(function (msg) {
-          return msg.author.toString('hex')
-        }, function (id) {
-          return sb.feed(id).createWriteStream()
-        })
+        sbs.createWriteStream(done)
     }
   })
-
 }
+
+replicate.vector = function (sbs, cb) {
+  pull(sbs.latest(), pull.collect(cb))
+}
+
+replicate.feeds = function (sbs, me, you) {
+  me  = listToObj(me)
+  you = listToObj(you)
+  //we now that I have a list
+  //of what you have, and where
+  //you are up to. I'll look in my database
+  //and see if I can help you.
+  var o = {}
+  var feeds = []
+  for(var key in you) {
+    if(me[key] != null && you[key] < me[key])
+      //send key's feed after you[key]
+      feeds.push(o[key] = sbs.feed(key).createReadStream())
+  }
+  //just to test, send all your data to them.
+  for(var key in me) {
+    if(you[key] == null)
+      feeds.push(o[key] = sbs.feed(key).createReadStream())
+  }
+
+  return many(feeds)
+}
+
+module.exports = replicate
