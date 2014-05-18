@@ -6,13 +6,18 @@ var ecc  = require('eccjs')
 var k256 = ecc.curves.k256
 var pull = require('pull-stream')
 var proquint = require('proquint-')
+var u = require('../util')
 
-var db = ScuttlebuttSecure(
-          level('scuttlebutt-secure-feeds', {
+function create(name) {
+
+  return ScuttlebuttSecure(
+          level(name, {
             keyEncoding: 'binary', valueEncoding: 'binary'
           })
         )
+}
 
+var db = create('scuttlebutt-secure-feeds')
 
 function writeMessages (feed, ary, cb) {
   pull(
@@ -49,6 +54,8 @@ function toHuman (msg) {
 
 tape('3 feeds', function (t) {
 
+  var cbs = u.groups(next)
+
   var alice = db.feed(ecc.generate(k256))
   var bob   = db.feed(ecc.generate(k256))
 
@@ -56,18 +63,15 @@ tape('3 feeds', function (t) {
     'hello there',
     'again again',
     'third time lucky'
-  ], next)
+  ], cbs())
   writeMessages(bob, [
     'foo bar baz',
     'apple banana cherry durian elderberry',
     'something else'
-  ], next)
+  ], cbs())
 
-  var n = 2
-
-  function next () {
-    if(--n) return
-
+  function next (err) {
+    if(err) throw err
     //request the feeds
     pull(
       db.createFeedStream(),
@@ -91,5 +95,39 @@ tape('3 feeds', function (t) {
 })
 
 
+tape('2 feeds - write', function (t) {
+  var cbs = u.groups(done)
+  var sbs1 = create('scuttlebutt-secure-feeds1')
+  var sbs2 = create('scuttlebutt-secure-feeds2')
+  var alice = sbs1.feed(ecc.generate(k256))
+  var bob   = sbs1.feed(ecc.generate(k256))
 
+  writeMessages(alice, [
+    'hello there',
+    'again again',
+    'third time lucky'
+  ], cbs())
+  writeMessages(bob, [
+    'foo bar baz',
+    'apple banana cherry durian elderberry',
+    'something else'
+  ], cbs())
 
+  function done (err) {
+    if(err) throw err
+
+    pull(
+      db.createReadStream(),
+      pull.through(function (msg) {
+        console.log(toHuman(msg))
+      }),
+      sbs2.createWriteStream(function (err, ary) {
+        if(err) throw err
+        console.log(ary)
+        t.end()
+      })
+    )
+
+  }
+
+})
