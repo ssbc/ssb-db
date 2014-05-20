@@ -1,6 +1,6 @@
 var svarint = require('signed-varint')
 var varstruct = require('varstruct')
-
+var assert = require('assert')
 var b2s = varstruct.buffer(32)
 var signature = varstruct.buffer(64)
 var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
@@ -27,19 +27,26 @@ exports.Message = varstruct({
   signature : signature
 })
 
-function prefix (value) {
+function fixed(codec, value) {
   function encode (v,b,o) {
-    return varstruct.byte.encode(value,b,o)
+    return codec.encode(value,b,o)
   }
-  function decode (v,b,o) {
-    return varstruct.byte.decode(value,b,o)
+  function decode (b,o) {
+    var v = codec.decode(b,o)
+    assert.deepEqual(v, value)
+    return v
   }
-  encode.bytesWritten = decode.bytesRead = 1
+  var length = codec.length || codec.encodingLength(value)
+  encode.bytesWritten = decode.bytesRead = length
   return {
     encode: encode,
     decode: decode,
-    length: 1
+    length: length
   }
+}
+
+function prefix (value) {
+  return fixed(varstruct.byte, value)
 }
 
 exports.Key = varstruct({
@@ -57,4 +64,13 @@ exports.FeedKey = varstruct({
 exports.LatestKey = varstruct({
   magic: prefix(3),
   id: b2s
+})
+
+exports.Broadcast = varstruct({
+  magic: fixed(varstruct.buffer(4), new Buffer('SCBT')),
+  id: b2s,
+  //don't use varints, so that the same buffer can be reused over and over.
+  port: varstruct.UInt32,
+  timestamp: varstruct.UInt64
+
 })
