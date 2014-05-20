@@ -67,7 +67,7 @@ try {
   console.error(err)
 }
 
-var config = require('rc')('scuttlebutt', {})
+var config = require('./config')
 
 var db = level(dbpath, {keyEncoding: 'binary', valueEncoding: 'binary'})
 var scuttlebutt = ScuttlebuttSecure(db)
@@ -134,10 +134,23 @@ exports.following = function (_, opts, cb) {
 
 exports.say = function (_, opts, cb) {
   var message = _.join(' ').trim() || opts.m || opts.message
-  console.log('  KEYS?',keys)
 
   var feed = scuttlebutt.feed(keys)
   feed.append(new Buffer('message'), message, cb)
+}
+
+exports.start = function () {
+  //create a broadcast stream that echos once a second
+  //to advertise that you are running secure scuttlebutt.
+  //send a message that looks like
+
+  // SCUTTLEBUTT,id,port,timestamp
+
+  // (port is the tcp port your replication server is on)
+
+  // it will then create a stream to connect to that server.
+  // when a new instance is discovered, it will connect to that server
+  // and replicate.
 }
 
 if(!module.parent) {
