@@ -18,8 +18,21 @@ var lastLatest = new Buffer(33)
 lastLatest.fill(255)
 lastLatest[0] = 3
 
-
 var bsum = u.bsum
+
+/*
+How to representing following in the database?
+
+you could do a "soft-follow" by just writing out the
+current value into the "latest" section, this means
+those will be requested when you follow someone.
+
+That will get follow working, but really, I want you to post a message
+that says you are following someone - so that other node's
+know they can replicate from you.
+
+
+*/
 
 module.exports = function (db, keys) {
 
