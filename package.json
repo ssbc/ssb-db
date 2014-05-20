@@ -24,7 +24,8 @@
     "varint": "~1.2.0",
     "pull-handshake": "~0.0.2",
     "pull-switch": "~2.0.0",
-    "pull-many": "~1.0.1"
+    "pull-many": "~1.0.1",
+    "broadcast-stream": "~0.0.0"
   },
   "devDependencies": {
     "tape": "~2.12.3",
