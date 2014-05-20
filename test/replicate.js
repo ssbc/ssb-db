@@ -119,3 +119,61 @@ tape('simple replicate', function (t) {
   }
 })
 
+
+tape('3-way replicate', function (t) {
+
+  var sbs1 = create('sbs-3replicate1')
+  var sbs2 = create('sbs-3replicate2')
+  var sbs3 = create('sbs-3replicate3')
+
+  var cb1 = u.groups(done)
+
+  init(sbs1, 10, cb1())
+  init(sbs2, 15, cb1())
+  init(sbs3, 20, cb1())
+
+  var ary = []
+
+  function done (err) {
+    if(err) throw err
+    var cb2 = u.groups(done2)
+
+    var a = replicate(sbs1, cb2())
+    var b = replicate(sbs2, cb2())
+
+    pull(a, b, a)
+
+    function done2 (err) {
+      if(err) throw err
+      //now check that the databases have really been updated.
+
+      var cb3 = u.groups(done3)
+
+      var c = replicate(sbs3, cb3())
+      var d = replicate(sbs2, cb3())
+
+      pull(c, d, c)
+
+      function done3 (err) {
+        if(err) throw err
+
+        var cbs = u.groups(next)
+
+        pull(sbs2.createFeedStream(), pull.collect(cbs()))
+        pull(sbs3.createFeedStream(), pull.collect(cbs()))
+
+        function next (err, ary) {
+          if(err) throw err
+
+          t.deepEqual(ary[0], ary[1])
+
+          console.log('replicated!!!')
+          t.end()
+        }
+      }
+    }
+  }
+})
+
+
+
