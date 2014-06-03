@@ -153,6 +153,11 @@ exports.start = function () {
   // and replicate.
 }
 
+exports.public = function (args, opts, cb) {
+  console.log(proquint.encode(bsum(keys.public)))
+  cb()
+}
+
 if(!module.parent) {
   var command = config._.shift()
 
