@@ -1,12 +1,13 @@
 var svarint = require('signed-varint')
 var varstruct = require('varstruct')
+var varmatch = require('varstruct-match')
 var assert = require('assert')
 var b2s = varstruct.buffer(32)
 var signature = varstruct.buffer(64)
 var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
 var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
 
-exports.UnsignedMessage = varstruct({
+var UnsignedMessage = varstruct({
   previous  : b2s,
   author    : b2s,
   timestamp : varstruct.varint,
@@ -16,7 +17,7 @@ exports.UnsignedMessage = varstruct({
   message   : content
 })
 
-exports.Message = varstruct({
+var Message = varstruct({
   previous  : b2s,
   author    : b2s,
   sequence  : varstruct.varint,
@@ -49,22 +50,18 @@ function prefix (value) {
   return fixed(varstruct.byte, value)
 }
 
-exports.Key = varstruct({
-  magic: prefix(1),
+
+var Key = varstruct({
   id: b2s,
   sequence: varstruct.UInt64
 })
 
-exports.FeedKey = varstruct({
-  magic: prefix(2),
+var FeedKey = varstruct({
   timestamp: varstruct.UInt64,
-  hash: b2s
-})
-
-exports.LatestKey = varstruct({
-  magic: prefix(3),
   id: b2s
 })
+
+var LatestKey = b2s
 
 exports.Broadcast = varstruct({
   magic: fixed(varstruct.buffer(4), new Buffer('SCBT')),
@@ -74,3 +71,33 @@ exports.Broadcast = varstruct({
   timestamp: varstruct.UInt64
 
 })
+
+function isInteger (n) {
+  return 'number' === typeof n && Math.round(n) === n
+}
+
+function isHash(b) {
+  return Buffer.isBuffer(b) && b.length == 32
+}
+
+exports = module.exports =
+  varmatch(varstruct.varint)
+  .type(0, Message, function (t) {
+    return isHash(t.previous) && isHash(t.author)
+  })
+  .type(1, Key, function (t) {
+    return isHash(t.id) && isInteger(t.sequence)
+  })
+  .type(2, FeedKey, function (t) {
+    return isHash(t.id) && isInteger(t.timestamp)
+  })
+  .type(3, LatestKey, isHash)
+  .type(4, varstruct.varint, isInteger)
+
+exports.UnsignedMessage = UnsignedMessage
+exports.Message = Message
+exports.Key = Key
+exports.FeedKey = FeedKey
+
+exports.buffer = true
+
