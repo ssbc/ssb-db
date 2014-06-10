@@ -22,6 +22,40 @@ function compare (a, b) {
   return a.length - b.length
 }
 
+/*
+todo: simplify all this, making it better for realtime.
+
+instead of doing the full handshake thing,
+just send requests and response streams.
+
+request: [req, hash, since]
+message: [res, message]
+
+this means tagging every encoded object with a type...
+that would probably simplify the code anyway.
+
+when you receive a request, look in the database to see if you have
+more recent messages from that user, if so, send them.
+
+when you have sent all the old messages, you can broadcast
+any realtime message you find...
+
+if someone sends you a message you do not want,
+just drop that message.
+
+read each stream of mesages using a live stream,
+so that you automatically go to sending realtime
+updates when you get to that.
+
+by making a request message it will be easy to have ranges
+partial ranges. Although... that could cause problems,
+because someone with a partial range would not know things
+that you want them to know... for example, if you have blocked
+someone, they wouldn't realize and so they might give your
+data to them.
+
+*/
+
 function replicate (sbs, done) {
   var cbs = u.groups(done || function () {})
   return handshake(function (cb) {
