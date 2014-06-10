@@ -8,15 +8,20 @@ var codec = require('./codec')
 
 var pswitch = require('pull-switch')
 var u = require('./util')
-var first = new Buffer([2])
+var first = new Buffer(32)
 var last = new Buffer(41) //1 + 8 + 32
 
 last.fill(255)
 last[0] = 2
-var firstLatest = new Buffer([3])
-var lastLatest = new Buffer(33)
-lastLatest.fill(255)
-lastLatest[0] = 3
+
+var firstHash = new Buffer(32); firstHash.fill(0)
+var lastHash = new Buffer(32); lastHash.fill(255)
+
+var first = codec.encode({timestamp: 0, id: firstHash})
+var last = codec.encode({timestamp: 0x1ffffffffffff, id: lastHash})
+
+firstHash = codec.encode(firstHash)
+lastHash = codec.encode(lastHash)
 
 var bsum = u.bsum
 
@@ -30,8 +35,6 @@ those will be requested when you follow someone.
 That will get follow working, but really, I want you to post a message
 that says you are following someone - so that other node's
 know they can replicate from you.
-
-
 */
 
 module.exports = function (db, keys) {
@@ -47,15 +50,7 @@ module.exports = function (db, keys) {
       return Feed(db, id, keys)
     },
     latest: function () {
-      return pull(
-        pl.read(db, {gte: firstLatest, lte: lastLatest}),
-        pull.map(function (data) {
-          return {
-            key: codec.LatestKey.decode(data.key).id,
-            value: varint.decode(data.value)
-          }
-        })
-      )
+      return pl.read(db, {gte: firstHash, lte: lastHash})
     },
     createFeedStream: function (opts) {
       opts = opts || {}
@@ -64,8 +59,7 @@ module.exports = function (db, keys) {
         pl.read(db, {gte: first, lte: last, keys: false}),
         para(function (key, cb) {
           db.get(key, cb)
-        }),
-        Feed.decodeStream()
+        })
       )
     },
     createReadStream: function (opts) {
@@ -82,5 +76,4 @@ module.exports = function (db, keys) {
         })
     }
   }
-
 }
