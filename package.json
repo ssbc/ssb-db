@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "eccjs": "git://github.com/dominictarr/eccjs.git",
-    "varstruct": "~2.0.1",
+    "varstruct": "~3.0.1",
     "blake2s": "~1.0.0",
     "pull-stream": "~2.23.0",
     "pull-delayed-sink": "~1.0.0",
@@ -31,7 +31,8 @@
     "tape": "~2.12.3",
     "level-mem": "~0.18.0",
     "level": "~0.18.0",
-    "level-test": "~1.6.2"
+    "level-test": "~1.6.2",
+    "varstruct-match": "~1.0.0"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
