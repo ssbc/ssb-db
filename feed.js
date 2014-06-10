@@ -1,3 +1,5 @@
+'use strict';
+
 var Blake2s = require('blake2s')
 var ecc     = require('eccjs')
 var k256    = ecc.curves.k256
@@ -19,7 +21,7 @@ function bsum (value) {
 }
 
 function validate(msg, keys) {
-  msg = Buffer.isBuffer(msg) ? codec.Message.decode(msg) : msg
+//  msg = Buffer.isBuffer(msg) ? codec.Message.decode(msg) : msg
   assert.deepEqual(bsum(keys.public), msg.author)
   return ecc.verify(k256, keys, msg.signature, bsum(codec.UnsignedMessage.encode(msg)))
 }
@@ -35,30 +37,43 @@ function toBuffer (str) {
   return str
 }
 
+function map(mapper) {
+  return function (read) {
+    return function (abort, cb) {
+      read(abort, function (end, data) {
+        try {
+          if(!end) data = mapper(data)
+        } catch (err) {
+          cb(err)
+          read(err, function () {})
+          return
+        }
+        cb(end, data)
+      })
+    }
+  }
+}
+
 //verify the signature, but not the sequence number or prev
 Feed.verify = function (msg, keys) {
-  var public = keys.public || keys
+  var pub = keys.public || keys
   var hash = bsum(codec.UnsignedMessage.encode(msg))
   if(!ecc.verify(k256, keys, msg.signature, hash))
-    throw new Error('message was not validated by:' + bsum(public))
+    throw new Error('message was not validated by:' + bsum(pub))
   return true
 }
 
 Feed.decodeStream = function () {
-  return pull.map(function (op) {
-    return codec.Message.decode(op.value ? op.value : op)
-  })
+  return pull.through()
 }
 
 Feed.encodeWithIndexes = function (msg) {
-  var key = codec.Key.encode({id: msg.author, sequence: msg.sequence})
-  var value = codec.Message.encode(msg)
-  var _key = codec.FeedKey.encode({hash: value, timestamp: msg.timestamp})
-  var latest = codec.LatestKey.encode({id: msg.author})
+  var key = {id: msg.author, sequence: msg.sequence}
+  var _key = {id: msg.author, timestamp: msg.timestamp}
   return [
-    {key: key, value: value, type: 'put'},
+    {key: key, value: msg, type: 'put'},
     {key: _key, value: key, type: 'put'},
-    {key: latest, value: new Buffer(varint.encode(msg.sequence)), type: 'put'}
+    {key: msg.author, value: msg.sequence, type: 'put'}
   ]
 
 }
@@ -72,16 +87,17 @@ function Feed (db, id, keys) {
   if(id.public)
     keys = id, id = bsum(keys.public)
 
-  if(!id)
-    throw new Error('must have a id')
+  if(!Buffer.isBuffer(id) || id.length != 32)
+    throw new Error('must have a valid id')
+
   var feed = [], onVerify = [], state = 'created'
   var ready = false, verifying = false
   var ones = new Buffer(8); ones.fill(0xFF)
   var prev = zeros, seq = 0
   var f
 
-  var first = codec.Key.encode({id: id, sequence: 0})
-  var last = Buffer.concat([new Buffer([1]), id, ones])
+  var first = {id: id, sequence: 0}
+  var last  = {id: id, sequence: 0x1fffffffffffff}
 
   function append (type, buffer, cb) {
     var d = new Date()
@@ -99,7 +115,7 @@ function Feed (db, id, keys) {
 
     //TODO: THINK HARD ABOUT RACE CONDTION!
     //PROBABLY, UPDATE VIA A WRITE STREAM THAT USES BATCHES.
-    prev = bsum(batch[0].value)
+    prev = bsum(codec.encode(msg))
     seq++
     db.batch(batch, function (err) {
       cb(null, msg.sequence, prev)
@@ -129,14 +145,14 @@ function Feed (db, id, keys) {
       function createSource () {
         var _start = (
           opts && opts.gt != null
-        ? codec.Key.encode({id: id, sequence: opts.gt})
+        ? {id: id, sequence: opts.gt}
         : first
         )
+
         return  pull(
           opts && opts.gt != null
-          ? pl.read(db, {gt: _start, lte: last})
-          : pl.read(db, {gte: _start, lte: last}),
-          Feed.decodeStream()
+          ? pl.read(db, {gt: codec.encode(_start), lte: codec.encode(last), keys: false})
+          : pl.read(db, {gte: codec.encode(_start), lte: codec.encode(last), keys: false})
         )
 
       }
@@ -154,15 +170,16 @@ function Feed (db, id, keys) {
       //don't read until verified.
       function createSink() {
         return pull(
-          pull.map(function (msg) {
+          map(function (msg) {
             if(!keys) {
               var _id = bsum(msg.message)
               assert.deepEqual(id, _id, 'unexpected id')
               keys = {public: f.public = msg.message}
-              first = codec.Key.encode({id: id, sequence: 0})
-              last = Buffer.concat([new Buffer([1]), id, ones])
+              first = {id: id, sequence: 0}
+              last =  {id: id, sequence: 0x1fffffffffffff}
             }
 
+            assert.deepEqual(bsum(keys.public), id, 'incorrect pubkey')
             assert.deepEqual(msg.author, id, 'unexpected author')
             assert.deepEqual(msg.previous, prev, 'messages out of order')
             assert.equal(msg.sequence, seq, 'sequence number is incorrect')
@@ -172,8 +189,9 @@ function Feed (db, id, keys) {
             if(!ecc.verify(k256, keys.public, msg.signature, hash)) {
               throw new Error('message was not validated by:' + id.toString('hex'))
             }
+
             //TODO: THINK HARD ABOUT RACE CONDTION!
-            prev = bsum(codec.Message.encode(msg))
+            prev = bsum(codec.encode(msg))
             seq ++
             return Feed.encodeWithIndexes(msg) || []
           }),
@@ -212,19 +230,21 @@ function Feed (db, id, keys) {
 
       pull(
         //oh, problem is that we don't KNOW the last thing yet?
-        pl.read(db, {gte: first, lte: last, keys: false}),
-        Feed.decodeStream(),
-        pull.map(function (msg) {
-          //just copied this from above, tidy up later.
+        pl.read(db, {gte: codec.encode(first), lte: codec.encode(last), keys: false}),
+        map(function (msg) {
+        //just copied this from above, tidy up later.
+
           if(!keys) {
             keys = {public: msg.message}
-            first = Keys.write({id: id, sequence: 0})
-            last = Buffer.concat([id, ones])
+            assert.equal(msg.sequence, 0, 'expected first message')
+            assert.deepEqual(bsum(keys.public), id, 'incorrect public key')
+            first = {id: id, sequence: 0}
+            last = {id: id, sequence: 0x1ffffffffff}
           }
 
           assert.deepEqual(msg.author, id, 'unexpected author')
-          assert.deepEqual(msg.previous, prev, 'messages out of order')
           assert.equal(msg.sequence, seq, 'sequence number is incorrect')
+          assert.deepEqual(msg.previous, prev, 'messages out of order')
 
           var hash = bsum(codec.UnsignedMessage.encode(msg))
 
@@ -232,7 +252,7 @@ function Feed (db, id, keys) {
             throw new Error('message was not validated by:' + id)
           }
           feed.push(msg)
-          prev = bsum(codec.Message.encode(msg))
+          prev = bsum(codec.encode(msg))
           seq ++
           return true
         }),
