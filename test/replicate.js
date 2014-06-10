@@ -9,6 +9,8 @@ var SBS       = require('../')
 var u         = require('../util')
 var replicate = require('../replicate')
 
+var codec     = require('../codec')
+
 //create a instance with a feed
 //then have another instance follow it.
 
@@ -21,7 +23,7 @@ function rand (n) {
 
 function create(name) {
   return SBS(level(name, {
-    keyEncoding: 'binary', valueEncoding: 'binary'
+    keyEncoding: codec, valueEncoding: codec
   }))
 }
 
@@ -35,7 +37,8 @@ function init (sbs, n, cb) {
     pull.asyncMap(function (r, cb) {
       f.append(MESSAGE, ''+r, cb)
     }),
-    pull.drain(null, function () {
+    pull.drain(null, function (err) {
+      if(err) return cb(err)
       f.verify(cb)
     })
   )
@@ -43,9 +46,7 @@ function init (sbs, n, cb) {
 }
 
 tape('unit - vector', function (t) {
-
   var sbs1 = create('sbs-unittest-vector')
-
   var keys = init(sbs1, 0, function (err) {
     if(err) throw err
     replicate.vector(sbs1, function (err, vector) {
@@ -76,7 +77,6 @@ function compareDbs (a, b, cb) {
   }
 }
 
-
 tape('simple replicate', function (t) {
 
   var sbs1 = create('sbs-replicate1')
@@ -87,7 +87,7 @@ tape('simple replicate', function (t) {
   init(sbs1, 5, cb1())
   init(sbs2, 4, cb1())
 
-  var ary = []
+  var ary = [], n = 1
 
   function done (err) {
     if(err) throw err
@@ -119,7 +119,7 @@ tape('simple replicate', function (t) {
   }
 })
 
-
+return
 tape('3-way replicate', function (t) {
 
   var sbs1 = create('sbs-3replicate1')
@@ -174,6 +174,4 @@ tape('3-way replicate', function (t) {
     }
   }
 })
-
-
 

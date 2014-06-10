@@ -7,12 +7,13 @@ var k256 = ecc.curves.k256
 var pull = require('pull-stream')
 var proquint = require('proquint-')
 var u = require('../util')
+var codec = require('../codec')
 
 function create(name) {
 
   return ScuttlebuttSecure(
           level(name, {
-            keyEncoding: 'binary', valueEncoding: 'binary'
+            keyEncoding: codec, valueEncoding: codec
           })
         )
 }
