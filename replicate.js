@@ -8,7 +8,7 @@ var u = require('./util')
 function listToObj(ary) {
   var obj = {}
   ary.forEach(function (data) {
-    obj[data.key.toString('hex')] = data.value
+    obj[data.id.toString('hex')] = data.sequence
   })
   return obj
 }
@@ -81,13 +81,14 @@ replicate.feeds = function (sbs, me, you) {
   //of what you have, and where
   //you are up to. I'll look in my database
   //and see if I can help you.
-  var o = {}
-  var feeds = []
+  var o = {}, feeds = []
+
   for(var key in you) {
     if(me[key] != null && you[key] < me[key])
       //send key's feed after you[key]
       feeds.push(o[key] = sbs.feed(key).createReadStream())
   }
+
   //just to test, send all your data to them.
   for(var key in me) {
     if(you[key] == null)

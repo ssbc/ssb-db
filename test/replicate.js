@@ -50,11 +50,11 @@ tape('unit - vector', function (t) {
   var keys = init(sbs1, 0, function (err) {
     if(err) throw err
     replicate.vector(sbs1, function (err, vector) {
-      t.deepEqual(vector, [{key: u.bsum(keys.public), value: 0}])
+      t.deepEqual(vector, [{id: u.bsum(keys.public), sequence: 0}])
 
       //this means they do not want anything.
       pull(
-        replicate.feeds(sbs1, vector, [{key: u.bsum(''), value: 0}]),
+        replicate.feeds(sbs1, vector, [{id: u.bsum(''), sequence: 0}]),
         pull.collect(function (err, ary) {
           console.log(ary)
           if(err) throw err

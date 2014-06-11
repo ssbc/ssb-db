@@ -50,7 +50,12 @@ module.exports = function (db, keys) {
       return Feed(db, id, keys)
     },
     latest: function () {
-      return pl.read(db, {gte: firstHash, lte: lastHash})
+      return pull(
+        pl.read(db, {gte: firstHash, lte: lastHash}),
+        pull.map(function (data) {
+          return {id: data.key, sequence: data.value}
+        })
+      )
     },
     createFeedStream: function (opts) {
       opts = opts || {}
