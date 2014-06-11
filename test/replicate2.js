@@ -7,7 +7,7 @@ var tape      = require('tape')
 
 var SBS       = require('../')
 var u         = require('../util')
-var replicate = require('../replicate')
+var replicate = require('../replicate2')
 
 var codec     = require('../codec')
 
@@ -42,28 +42,8 @@ function init (sbs, n, cb) {
       f.verify(cb)
     })
   )
-  return keys
+  return f
 }
-
-tape('unit - vector', function (t) {
-  var sbs1 = create('sbs-unittest-vector')
-  var keys = init(sbs1, 0, function (err) {
-    if(err) throw err
-    replicate.vector(sbs1, function (err, vector) {
-      t.deepEqual(vector, [{id: u.bsum(keys.public), sequence: 1}])
-
-      //this means they do not want anything.
-      pull(
-        replicate.feeds(sbs1, vector, [{id: u.bsum(''), sequence: 1}]),
-        pull.collect(function (err, ary) {
-          console.log(ary)
-          if(err) throw err
-          t.end()
-        })
-      )
-    })
-  })
-})
 
 function compareDbs (a, b, cb) {
 
@@ -84,21 +64,30 @@ tape('simple replicate', function (t) {
 
   var cb1 = u.groups(done)
 
-  init(sbs1, 5, cb1())
-  init(sbs2, 4, cb1())
+  var f1 = init(sbs1, 5, cb1())
+  var f2 = init(sbs2, 4, cb1())
+
+  f2.follow(f1.id, cb1())
+  f1.follow(f2.id, cb1())
 
   var ary = [], n = 1
 
   function done (err) {
+    console.log('initialized')
     if(err) throw err
     var cb2 = u.groups(done2)
 
     var a = replicate(sbs1, cb2())
     var b = replicate(sbs2, cb2())
 
-    pull(a, pull.through(function (e) {ary.push(e)}), b, a)
+    pull(a,
+      pull.through(function (e) {console.log('>>>', e); ary.push(e)}),
+      b,
+      pull.through(function (e) {console.log('<<<', e)}),
+      a)
 
     function done2 (err) {
+      console.log('REPLICATED')
       if(err) throw err
       //now check that the databases have really been updated.
 
@@ -119,7 +108,6 @@ tape('simple replicate', function (t) {
   }
 })
 
-return
 tape('3-way replicate', function (t) {
 
   var sbs1 = create('sbs-3replicate1')
@@ -128,9 +116,19 @@ tape('3-way replicate', function (t) {
 
   var cb1 = u.groups(done)
 
-  init(sbs1, 10, cb1())
-  init(sbs2, 15, cb1())
-  init(sbs3, 20, cb1())
+  var f1 = init(sbs1, 10, cb1())
+  var f2 = init(sbs2, 15, cb1())
+  var f3 = init(sbs3, 20, cb1())
+
+  f1.follow(f2.id, cb1())
+  f1.follow(f3.id, cb1())
+
+  f2.follow(f1.id, cb1())
+  f2.follow(f3.id, cb1())
+
+  f3.follow(f1.id, cb1())
+  f3.follow(f2.id, cb1())
+
 
   var ary = []
 

@@ -39,7 +39,7 @@ tape('simple', function (t) {
         t.equal(ary.length, 1)
         var msg = ary[0]
         t.deepEqual(msg.author, bsum(keys.public))
-        t.deepEqual(msg.message, keys.public)
+        t.deepEqual(msg.message, keys.public, '1st message should be pubkey')
         t.ok(Feed.verify(msg, keys))
         t.end()
       })
@@ -78,10 +78,10 @@ tape('can createReadStream(after) a given message', function (t) {
   author.append(MESSAGE, hello, function (err, seq, hash) {
 
     pull(
-      author.createReadStream({gt:0}),
+      author.createReadStream({gt:1}),
       pull.collect(function (err, values) {
         t.deepEqual(values[0].message, hello)
-        t.equal(values[0].sequence, 1)
+        t.equal(values[0].sequence, 2)
         t.end()
       })
     )
@@ -103,7 +103,7 @@ tape('writing can append multiple messages', function (t) {
 
   author.append(MESSAGE, new Buffer('hello world'), function (err, seq, hash) {
     if(err) throw err
-    t.equal(seq, 1)
+    t.equal(seq, 2)
     t.ok(hash)
 
     pull(
@@ -164,11 +164,11 @@ tape('can write a message from one author'
       author.append(MESSAGE, new Buffer('hello world'),
         function (err, _seq, _hash) {
           if(err) throw err
-          t.equal(_seq, 1)
+          t.equal(_seq, 2)
           t.ok(_hash)
 
           pull(
-            author.createReadStream({gt: 0}),
+            author.createReadStream({gt: 1}),
             follower.createWriteStream(function (err, seq, hash) {
               if(err) throw err
               t.equal(seq, _seq)
