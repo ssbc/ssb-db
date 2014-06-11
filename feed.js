@@ -8,6 +8,7 @@ var assert  = require('assert')
 var delayed = require('pull-delayed-sink')
 var pl      = require('pull-level')
 var varint  = require('varstruct').varint
+var u       = require('./util')
 
 var codec   = require('./codec')
 
@@ -93,7 +94,7 @@ function Feed (db, id, keys) {
   var feed = [], onVerify = [], state = 'created'
   var ready = false, verifying = false
   var ones = new Buffer(8); ones.fill(0xFF)
-  var prev = zeros, seq = 0
+  var prev = zeros, seq = 1
   var f
 
   var first = {id: id, sequence: 0}
@@ -139,6 +140,10 @@ function Feed (db, id, keys) {
       } else
         append(type, message, cb)
     },
+    follow: function (id, cb) {
+      if(!u.isHash(id)) return cb(new Error('expected id hash'))
+      db.put(id, 0, cb)
+    },
     createReadStream: function (opts) {
       //defer until verified!
       var deferred = pull.defer()
@@ -178,9 +183,9 @@ function Feed (db, id, keys) {
               first = {id: id, sequence: 0}
               last =  {id: id, sequence: 0x1fffffffffffff}
             }
-
             assert.deepEqual(bsum(keys.public), id, 'incorrect pubkey')
             assert.deepEqual(msg.author, id, 'unexpected author')
+            
             assert.deepEqual(msg.previous, prev, 'messages out of order')
             assert.equal(msg.sequence, seq, 'sequence number is incorrect')
 
@@ -236,7 +241,7 @@ function Feed (db, id, keys) {
 
           if(!keys) {
             keys = {public: msg.message}
-            assert.equal(msg.sequence, 0, 'expected first message')
+            assert.equal(msg.sequence, 1, 'expected first message')
             assert.deepEqual(bsum(keys.public), id, 'incorrect public key')
             first = {id: id, sequence: 0}
             last = {id: id, sequence: 0x1ffffffffff}
@@ -244,6 +249,7 @@ function Feed (db, id, keys) {
 
           assert.deepEqual(msg.author, id, 'unexpected author')
           assert.equal(msg.sequence, seq, 'sequence number is incorrect')
+          console.log(msg)
           assert.deepEqual(msg.previous, prev, 'messages out of order')
 
           var hash = bsum(codec.UnsignedMessage.encode(msg))
@@ -259,7 +265,7 @@ function Feed (db, id, keys) {
         pull.drain(null, function (err) {
           //if there where no records in the database...
           if(err) return cb(err)
-          else if(seq === 0 && keys && keys.private) {
+          else if(seq === 1 && keys && keys.private) {
             return append(INIT, keys.public, function (err, _seq, _hash) {
               cb(err, _seq, _hash)
             })
@@ -273,7 +279,3 @@ function Feed (db, id, keys) {
   }
 }
 
-if(!module.parent) {
-  var d = Key.encode({id: bsum('hello'), sequence: 0})
-  console.error(d)
-}

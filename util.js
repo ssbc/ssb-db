@@ -26,3 +26,11 @@ exports.bsum = function (value) {
     return new Blake2s().digest()
 }
 
+exports.isHash = function (v) {
+  return Buffer.isBuffer(v) && v.length === 32
+}
+
+exports.isInteger = function (v) {
+  return !isNaN(v) && Math.round(v)===v
+}
+

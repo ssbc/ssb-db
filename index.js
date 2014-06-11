@@ -43,11 +43,12 @@ module.exports = function (db, keys) {
   var sbs
   return sbs = {
     feed: function (id, keys) {
+      if(feeds[id]) return feeds[id]
       if('string' === typeof id)
         id = new Buffer(id, 'hex')
       if(id.public)
         keys = id, id = bsum(keys.public)
-      return Feed(db, id, keys)
+      return feeds[id] = Feed(db, id, keys)
     },
     latest: function () {
       return pull(
@@ -66,6 +67,9 @@ module.exports = function (db, keys) {
           db.get(key, cb)
         })
       )
+    },
+    createHistoryStream: function (id, sequence) {
+      return this.feed(id).createReadStream({gt: sequence || 0})
     },
     createReadStream: function (opts) {
       return this.createFeedStream()
