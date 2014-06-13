@@ -140,15 +140,44 @@ module.exports = function (db, keys) {
         sequence: lastSeq,
         reference: ref || _lastHash
       }
-      console.log('REf STREMA', codec.encode(start))
+
       return pl.read(db, {
           gte: codec.encode(start),
           lte: codec.encode(end),
           reverse: opts.reverse, tail: opts.tail,
           values: false
         })
+    },
+    createReferencedStream: function (opts) {
 
+      var type = opts.type
+      var id = opts.id
+      var ref = opts.referenced
+      if('string' === typeof type) {
+        var b = new Buffer(32)
+        b.fill(0)
+        b.write(type)
+        type = b
+      }
+      var start = {
+        referenced: ref || _firstHash,
+        type: type || _firstHash,
+        id: id || _firstHash,
+        sequence: firstSeq
+      }
+      var end = {
+        referenced: ref || _lastHash,
+        type: type || _lastHash,
+        id: id || _lastHash,
+        sequence: lastSeq
+      }
 
-    }
+      return pl.read(db, {
+          gte: codec.encode(start),
+          lte: codec.encode(end),
+          reverse: opts.reverse, tail: opts.tail,
+          values: false
+        })
+    },
   }
 }
