@@ -71,10 +71,26 @@ Feed.decodeStream = function () {
 Feed.encodeWithIndexes = function (msg) {
   var key = {id: msg.author, sequence: msg.sequence}
   var _key = {id: msg.author, timestamp: msg.timestamp}
+
+  var type = msg.type
+  if('string' === typeof type || type.length < 32) {
+    var b = new Buffer(32)
+    b.fill(0)
+    Buffer.isBuffer(b) ? type.copy(b) : b.write(type)
+    type = b
+  }
+
+  var typeIndex = {id: msg.author, sequence: msg.sequence, type: type}
+  console.log(typeIndex)
+  console.log(codec.encode(typeIndex))
+  //these are all encoded by a varmatch codec in codec.js
   return [
     {key: key, value: msg, type: 'put'},
     {key: _key, value: key, type: 'put'},
-    {key: msg.author, value: msg.sequence, type: 'put'}
+    {key: msg.author, value: msg.sequence, type: 'put'},
+
+    //index messages by their type.
+    {key: typeIndex, value: key, type: 'put'}
   ]
 
 }
@@ -88,7 +104,7 @@ function Feed (db, id, keys) {
   if(id.public)
     keys = id, id = bsum(keys.public)
 
-  if(!Buffer.isBuffer(id) || id.length != 32)
+  if(!u.isHash(id))
     throw new Error('must have a valid id')
 
   var feed = [], onVerify = [], state = 'created'
@@ -154,10 +170,12 @@ function Feed (db, id, keys) {
         : first
         )
 
+        var tail = opts && opts.tail || false
+
         return  pull(
           opts && opts.gt != null
-          ? pl.read(db, {gt: codec.encode(_start), lte: codec.encode(last), keys: false})
-          : pl.read(db, {gte: codec.encode(_start), lte: codec.encode(last), keys: false})
+          ? pl.read(db, {gt: codec.encode(_start), lte: codec.encode(last), keys: false, tail: tail})
+          : pl.read(db, {gte: codec.encode(_start), lte: codec.encode(last), keys: false, tail: tail})
         )
 
       }
@@ -185,7 +203,6 @@ function Feed (db, id, keys) {
             }
             assert.deepEqual(bsum(keys.public), id, 'incorrect pubkey')
             assert.deepEqual(msg.author, id, 'unexpected author')
-            
             assert.deepEqual(msg.previous, prev, 'messages out of order')
             assert.equal(msg.sequence, seq, 'sequence number is incorrect')
 
