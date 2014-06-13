@@ -5,7 +5,15 @@ var assert = require('assert')
 var b2s = varstruct.buffer(32)
 var signature = varstruct.buffer(64)
 var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
+
 var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
+
+//TODO, make a thing so that the total length of the
+//message + the references is <= 1024
+
+var References = varstruct.vararray(
+                    varstruct.bound(varstruct.varint, 0, 1024),
+                  varstruct.buffer(32))
 
 var UnsignedMessage = varstruct({
   previous  : b2s,
@@ -14,7 +22,8 @@ var UnsignedMessage = varstruct({
   timezone  : svarint,
   sequence  : varstruct.varint,
   type      : type,
-  message   : content
+  message   : content,
+  references: References
 })
 
 var Message = varstruct({
@@ -25,6 +34,7 @@ var Message = varstruct({
   timezone  : svarint,
   type      : type,
   message   : content,
+  references: References,
   signature : signature
 })
 
@@ -86,6 +96,13 @@ var TypeIndex = varstruct({
   sequence: varstruct.UInt64
 })
 
+var ReferenceIndex = varstruct({
+  type: varstruct.buffer(32),
+  id: b2s,
+  sequence: varstruct.UInt64,
+  reference: varstruct.buffer(32)
+})
+
 exports = module.exports =
   varmatch(varstruct.varint)
   .type(0, Message, function (t) {
@@ -100,7 +117,20 @@ exports = module.exports =
   .type(3, LatestKey, isHash)
   .type(4, varstruct.varint, isInteger)
   .type(5, TypeIndex, function (t) {
-     return Buffer.isBuffer(t.type) && isHash(t.id) && isInteger(t.sequence)
+     return (
+         Buffer.isBuffer(t.type)
+      && isHash(t.id)
+      && isInteger(t.sequence)
+      && !t.reference
+    )
+  })
+  .type(6, ReferenceIndex, function (t) {
+     return (
+      Buffer.isBuffer(t.type)
+    && isHash(t.id)
+    && isInteger(t.sequence)
+    && isHash(t.reference)
+    )
   })
 
 exports.UnsignedMessage = UnsignedMessage
@@ -109,6 +139,7 @@ exports.Key = Key
 exports.FeedKey = FeedKey
 exports.Broadcast = Broadcast
 exports.TypeIndex = TypeIndex
+exports.ReferenceIndex = ReferenceIndex
 
 exports.buffer = true
 
