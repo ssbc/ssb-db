@@ -63,7 +63,7 @@ var FeedKey = varstruct({
 
 var LatestKey = b2s
 
-exports.Broadcast = varstruct({
+var Broadcast = varstruct({
   magic: fixed(varstruct.buffer(4), new Buffer('SCBT')),
   id: b2s,
   //don't use varints, so that the same buffer can be reused over and over.
@@ -80,24 +80,35 @@ function isHash(b) {
   return Buffer.isBuffer(b) && b.length == 32
 }
 
+var TypeIndex = varstruct({
+  type: varstruct.buffer(32),
+  id: b2s,
+  sequence: varstruct.UInt64
+})
+
 exports = module.exports =
   varmatch(varstruct.varint)
   .type(0, Message, function (t) {
     return isHash(t.previous) && isHash(t.author)
   })
   .type(1, Key, function (t) {
-    return isHash(t.id) && isInteger(t.sequence)
+    return isHash(t.id) && isInteger(t.sequence) && !Buffer.isBuffer(t.type)
   })
   .type(2, FeedKey, function (t) {
     return isHash(t.id) && isInteger(t.timestamp)
   })
   .type(3, LatestKey, isHash)
   .type(4, varstruct.varint, isInteger)
+  .type(5, TypeIndex, function (t) {
+     return Buffer.isBuffer(t.type) && isHash(t.id) && isInteger(t.sequence)
+  })
 
 exports.UnsignedMessage = UnsignedMessage
 exports.Message = Message
 exports.Key = Key
 exports.FeedKey = FeedKey
+exports.Broadcast = Broadcast
+exports.TypeIndex = TypeIndex
 
 exports.buffer = true
 
