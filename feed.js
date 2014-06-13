@@ -68,6 +68,9 @@ Feed.decodeStream = function () {
   return pull.through()
 }
 
+//the code to manage this is split between 3 different places
+//which is not good.
+
 Feed.encodeWithIndexes = function (msg) {
   var key = {id: msg.author, sequence: msg.sequence}
   var _key = {id: msg.author, timestamp: msg.timestamp}
@@ -84,7 +87,7 @@ Feed.encodeWithIndexes = function (msg) {
   console.log(typeIndex)
   console.log(codec.encode(typeIndex))
   //these are all encoded by a varmatch codec in codec.js
-  return [
+  var batch = [
     {key: key, value: msg, type: 'put'},
     {key: _key, value: key, type: 'put'},
     {key: msg.author, value: msg.sequence, type: 'put'},
@@ -92,6 +95,17 @@ Feed.encodeWithIndexes = function (msg) {
     //index messages by their type.
     {key: typeIndex, value: key, type: 'put'}
   ]
+
+  msg.references.forEach(function (ref) {
+    batch.push({key: {
+      type: type,
+      id: msg.author,
+      sequence: msg.sequence,
+      reference: ref
+    }, value: 0, type: 'put'})
+  })
+
+  return batch
 
 }
 
@@ -116,8 +130,9 @@ function Feed (db, id, keys) {
   var first = {id: id, sequence: 0}
   var last  = {id: id, sequence: 0x1fffffffffffff}
 
-  function append (type, buffer, cb) {
+  function append (type, buffer, references, cb) {
     var d = new Date()
+    console.log(references)
     var msg = signMessage({
       previous: prev || zeros,
       author  : bsum(keys.public),
@@ -125,7 +140,8 @@ function Feed (db, id, keys) {
       timezone: d.getTimezoneOffset(),
       type    : type,
       sequence: seq,
-      message : buffer
+      message : buffer,
+      references: references
     }, keys)
 
     var batch = Feed.encodeWithIndexes(msg)
@@ -134,6 +150,7 @@ function Feed (db, id, keys) {
     //PROBABLY, UPDATE VIA A WRITE STREAM THAT USES BATCHES.
     prev = bsum(codec.encode(msg))
     seq++
+    console.log(batch)
     db.batch(batch, function (err) {
       cb(null, msg.sequence, prev)
     })
@@ -142,23 +159,37 @@ function Feed (db, id, keys) {
   return f = {
     id: id,
     feed: feed,
-    //expose a copy of the pub key, so no one can mess with it.
+    //expose a **COPY** of the pub key, so no one can mess with it.
     public: keys ? new Buffer(keys.public) : null,
-    append: function _append (type, message, cb) {
+    append: function _append (type, message, references, cb) {
+      if('function' === typeof references)
+        cb = references, references = []
       type = toBuffer(type)
       message = toBuffer(message)
 
       if(!ready) {
         f.verify(function (err, s, h) {
           if(err) return cb(err)
-          append(type, message, cb)
+          append(type, message, references || [], cb)
         })
       } else
-        append(type, message, cb)
+        append(type, message, references || [], cb)
     },
-    follow: function (id, cb) {
+    follow: function (id, message, cb) {
       if(!u.isHash(id)) return cb(new Error('expected id hash'))
-      db.put(id, 0, cb)
+      if('function' === typeof message)
+        cb = message, message = toBuffer('')
+      db.get(id, function (err, value) {
+        if(err)
+          db.put(id, 0, follow)
+        else follow()
+        function follow () {
+          //to do: add 
+          f.append('follow', message, [id], function (err) {
+            db.put(id, 0, cb)
+          })
+        }
+      })
     },
     createReadStream: function (opts) {
       //defer until verified!
@@ -283,7 +314,7 @@ function Feed (db, id, keys) {
           //if there where no records in the database...
           if(err) return cb(err)
           else if(seq === 1 && keys && keys.private) {
-            return append(INIT, keys.public, function (err, _seq, _hash) {
+            return append(INIT, keys.public, [], function (err, _seq, _hash) {
               cb(err, _seq, _hash)
             })
           }
