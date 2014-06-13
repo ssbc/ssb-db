@@ -14,14 +14,17 @@ var last = new Buffer(41) //1 + 8 + 32
 last.fill(255)
 last[0] = 2
 
-var firstHash = new Buffer(32); firstHash.fill(0)
-var lastHash = new Buffer(32); lastHash.fill(255)
+var _firstHash = new Buffer(32); _firstHash.fill(0)
+var _lastHash = new Buffer(32); _lastHash.fill(255)
 
-var first = codec.encode({timestamp: 0, id: firstHash})
-var last = codec.encode({timestamp: 0x1ffffffffffff, id: lastHash})
+var firstSeq = 0
+var lastSeq = 0x1ffffffffffff
 
-firstHash = codec.encode(firstHash)
-lastHash = codec.encode(lastHash)
+var first = codec.encode({timestamp: 0, id: _firstHash})
+var last = codec.encode({timestamp: lastSeq, id: _lastHash})
+
+var firstHash = codec.encode(_firstHash)
+var lastHash = codec.encode(_lastHash)
 
 var bsum = u.bsum
 
@@ -36,6 +39,13 @@ That will get follow working, but really, I want you to post a message
 that says you are following someone - so that other node's
 know they can replicate from you.
 */
+
+//follow:follower:followee
+//if there are references.
+
+//TYPE:AUTHOR:referenced:sequence -> message
+
+//TYPE:AUTHOR:sequence
 
 module.exports = function (db, keys) {
 
@@ -83,6 +93,31 @@ module.exports = function (db, keys) {
             feeds[key] = feeds[key] || sbs.feed(msg.author)
             return feeds[key].createWriteStream(cbs())
         })
+    },
+    createTypeStream: function (opts) {
+      var type = opts.type
+      var id = opts.id
+      if('string' === typeof type) {
+        var b = new Buffer(32)
+        b.fill(0)
+        b.write(type)
+        type = b
+      }
+      var start = {type: type, id: id || _firstHash, sequence: firstSeq}
+      var end = {type: type, id: id || _lastHash, sequence: lastSeq}
+
+      console.log('start, end', start, end)
+      console.log(codec.TypeIndex.encode(start))
+      return pull(
+        pl.read(db, {
+          gte: codec.encode(start),
+          lte: codec.encode(end),
+          reverse: opts.reverse, tail: opts.tail
+        }),
+        opts.lookup !== false ? pull.asyncMap(function (data, cb) {
+          db.get(data.value, cb)
+        }) : pull.through()
+      )
     }
   }
 }
