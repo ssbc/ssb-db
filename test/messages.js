@@ -110,7 +110,26 @@ tape('lookup messages', function (t) {
       t.equal(results[0].length, 1)
       t.equal(results[1].length, 1)
 
-      t.end()
+      var cbs2 = u.groups(next3)
+
+      pull(
+        db.createReferencedStream({type: 'follow', referenced: alice.id}),
+        pull.collect(cbs2())
+      )
+      pull(
+        db.createReferencedStream({type: 'follow', referenced: bob.id}),
+        pull.collect(cbs2())
+      )
+
+      function next3 (err, results) {
+        console.log('*****', results)
+        t.deepEqual(results[0][0].id, bob.id)
+        t.deepEqual(results[1][0].id, alice.id)
+        t.equal(results[0].length, 1)
+        t.equal(results[1].length, 1)
+        
+        t.end()
+      }
     }
   }
 })
