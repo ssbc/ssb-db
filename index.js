@@ -106,8 +106,6 @@ module.exports = function (db, keys) {
       var start = {type: type, id: id || _firstHash, sequence: firstSeq}
       var end = {type: type, id: id || _lastHash, sequence: lastSeq}
 
-      console.log('start, end', start, end)
-      console.log(codec.TypeIndex.encode(start))
       return pull(
         pl.read(db, {
           gte: codec.encode(start),
@@ -118,6 +116,39 @@ module.exports = function (db, keys) {
           db.get(data.value, cb)
         }) : pull.through()
       )
+    },
+    createReferenceStream: function (opts) {
+
+      var type = opts.type
+      var id = opts.id
+      var ref = opts.reference
+      if('string' === typeof type) {
+        var b = new Buffer(32)
+        b.fill(0)
+        b.write(type)
+        type = b
+      }
+      var start = {
+        type: type,
+        id: id || _firstHash,
+        sequence: firstSeq,
+        reference: ref || _firstHash
+      }
+      var end = {
+        type: type,
+        id: id || _lastHash,
+        sequence: lastSeq,
+        reference: ref || _lastHash
+      }
+      console.log('REf STREMA', codec.encode(start))
+      return pl.read(db, {
+          gte: codec.encode(start),
+          lte: codec.encode(end),
+          reverse: opts.reverse, tail: opts.tail,
+          values: false
+        })
+
+
     }
   }
 }
