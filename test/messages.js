@@ -26,9 +26,9 @@ function writeMessages (feed, ary, cb) {
   )
 }
 
-var db = create('scuttlebutt-secure-messages')
 
-tape('3 feeds', function (t) {
+tape('lookup messages', function (t) {
+  var db = create('scuttlebutt-secure-messages')
 
   var cbs = u.groups(next)
 
@@ -76,4 +76,42 @@ tape('3 feeds', function (t) {
 })
 
 
+tape('lookup messages', function (t) {
+  var db = create('scuttlebutt-secure-follows')
+
+  var cbs = u.groups(next)
+
+  var alice = db.feed(ecc.generate(k256))
+  var bob   = db.feed(ecc.generate(k256))
+
+  alice.follow(bob.id, cbs())
+  bob.follow(alice.id, cbs())
+
+  function next (err) {
+    if(err) throw err
+    //request the feeds
+    var cbs1 = u.groups(next2)
+
+
+    pull(
+      db.createReferenceStream({type: 'follow', id: alice.id}),
+      pull.collect(cbs1())
+    )
+    pull(
+      db.createReferenceStream({type: 'follow', id: bob.id}),
+      pull.collect(cbs1())
+    )
+
+    function next2(err, results) {
+      if(err) throw err
+      console.log('*****', results)
+      t.deepEqual(results[0][0].reference, bob.id)
+      t.deepEqual(results[1][0].reference, alice.id)
+      t.equal(results[0].length, 1)
+      t.equal(results[1].length, 1)
+
+      t.end()
+    }
+  }
+})
 
