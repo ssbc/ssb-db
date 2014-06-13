@@ -97,12 +97,21 @@ Feed.encodeWithIndexes = function (msg) {
   ]
 
   msg.references.forEach(function (ref) {
+    //this author referenced some object.
     batch.push({key: {
       type: type,
       id: msg.author,
       sequence: msg.sequence,
       reference: ref
     }, value: 0, type: 'put'})
+    //this object referenced by some message
+    batch.push({key: {
+      referenced: ref,
+      type: type,
+      id: msg.author,
+      sequence: msg.sequence
+    }, value: 0, type: 'put'})
+
   })
 
   return batch

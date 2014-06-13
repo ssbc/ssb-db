@@ -103,6 +103,14 @@ var ReferenceIndex = varstruct({
   reference: varstruct.buffer(32)
 })
 
+var ReferencedIndex = varstruct({
+  referenced: varstruct.buffer(32),
+  type: varstruct.buffer(32),
+  id: b2s,
+  sequence: varstruct.UInt64
+})
+
+
 exports = module.exports =
   varmatch(varstruct.varint)
   .type(0, Message, function (t) {
@@ -121,7 +129,7 @@ exports = module.exports =
          Buffer.isBuffer(t.type)
       && isHash(t.id)
       && isInteger(t.sequence)
-      && !t.reference
+      && !t.reference && !t.referenced
     )
   })
   .type(6, ReferenceIndex, function (t) {
@@ -132,6 +140,14 @@ exports = module.exports =
     && isHash(t.reference)
     )
   })
+  .type(7, ReferencedIndex, function (t) {
+     return (
+       isHash(t.referenced)
+    && Buffer.isBuffer(t.type)
+    && isHash(t.id)
+    && isInteger(t.sequence)
+    )
+  })
 
 exports.UnsignedMessage = UnsignedMessage
 exports.Message = Message
@@ -140,6 +156,7 @@ exports.FeedKey = FeedKey
 exports.Broadcast = Broadcast
 exports.TypeIndex = TypeIndex
 exports.ReferenceIndex = ReferenceIndex
+exports.ReferencedIndex = ReferencedIndex
 
 exports.buffer = true
 
