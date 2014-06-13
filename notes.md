@@ -1,5 +1,4 @@
 
-/*
 # replication strategy for the local network.
 
 1. broadcast beacon with udp.
@@ -75,6 +74,48 @@ both the maximum! that would add one byte extra per feed. or maybe it would be b
 a parameter that is global to the stream.
 
 This optimization is assuming that replications are nearly always mostly up to date.
-*/
+
+## API
+
+operations you need to do (just thinking out loud here, need to figure
+out permissions model) All these would take ordinary level options,
+lt, gt, lte, gte, and reverse, etc.
+
+idea: permissions could be implemented by white/black listing
+calls and arguments. This would make it possible to set permissions
+such as "may only create messages of type X". Or may only read
+given messages.
+
+### streamByAuthor (author)
+
+read all messages from a given author.
+
+### streamAll ()
+
+read all messages from all known authors.
+
+### streamByType (type, author?)
+
+get all messages of a given type (optionally, by a given author)
+
+### writeMessage(type, message)
+
+create a new message of a given type.
+
+### follow (id)
+
+follow another user
+
+### isFollowing (id1, id2)
+
+check if a given user is following another.
+
+### unfollow (id)
+
+unfollow another user.
+
+### createNearbysStream ()
+
+data created by other nodes on the same network.
 
 
