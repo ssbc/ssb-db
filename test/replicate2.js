@@ -147,8 +147,8 @@ tape('3-way replicate', function (t) {
 
       var cb3 = u.groups(done3)
 
-      var c = replicate(sbs3, cb3())
-      var d = replicate(sbs2, cb3())
+      var c = sbs3.createReplicationStream(cb3())
+      var d = sbs2.createReplicationStream(cb3())
 
       pull(c, d, c)
 

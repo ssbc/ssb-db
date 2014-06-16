@@ -127,7 +127,6 @@ tape('lookup messages', function (t) {
         t.deepEqual(results[1][0].id, alice.id)
         t.equal(results[0].length, 1)
         t.equal(results[1].length, 1)
-        
         t.end()
       }
     }

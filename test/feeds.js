@@ -128,7 +128,7 @@ tape('2 feeds - write', function (t) {
         t.end()
       })
     )
-
   }
-
 })
+
+
