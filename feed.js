@@ -84,8 +84,7 @@ Feed.encodeWithIndexes = function (msg) {
   }
 
   var typeIndex = {id: msg.author, sequence: msg.sequence, type: type}
-  console.log(typeIndex)
-  console.log(codec.encode(typeIndex))
+
   //these are all encoded by a varmatch codec in codec.js
   var batch = [
     {key: key, value: msg, type: 'put'},
@@ -141,7 +140,7 @@ function Feed (db, id, keys) {
 
   function append (type, buffer, references, cb) {
     var d = new Date()
-    console.log(references)
+
     var msg = signMessage({
       previous: prev || zeros,
       author  : bsum(keys.public),
@@ -159,7 +158,7 @@ function Feed (db, id, keys) {
     //PROBABLY, UPDATE VIA A WRITE STREAM THAT USES BATCHES.
     prev = bsum(codec.encode(msg))
     seq++
-    console.log(batch)
+
     db.batch(batch, function (err) {
       cb(null, msg.sequence, prev)
     })
@@ -176,24 +175,25 @@ function Feed (db, id, keys) {
       type = toBuffer(type)
       message = toBuffer(message)
 
-      if(!ready) {
+      if(!ready)
         f.verify(function (err, s, h) {
           if(err) return cb(err)
           append(type, message, references || [], cb)
         })
-      } else
+      else
         append(type, message, references || [], cb)
     },
     follow: function (id, message, cb) {
       if(!u.isHash(id)) return cb(new Error('expected id hash'))
       if('function' === typeof message)
         cb = message, message = toBuffer('')
+
       db.get(id, function (err, value) {
-        if(err)
+        if(err || !value)
           db.put(id, 0, follow)
         else follow()
         function follow () {
-          //to do: add 
+          //to do: add
           f.append('follow', message, [id], function (err) {
             db.put(id, 0, cb)
           })
@@ -306,7 +306,6 @@ function Feed (db, id, keys) {
 
           assert.deepEqual(msg.author, id, 'unexpected author')
           assert.equal(msg.sequence, seq, 'sequence number is incorrect')
-          console.log(msg)
           assert.deepEqual(msg.previous, prev, 'messages out of order')
 
           var hash = bsum(codec.UnsignedMessage.encode(msg))
