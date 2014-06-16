@@ -5,6 +5,8 @@ var para = require('pull-paramap')
 var Blake2s = require('blake2s')
 var varint = require('varstruct').varint
 var codec = require('./codec')
+var replicate = require('./replicate2')
+var cat = require('pull-cat')
 
 var pswitch = require('pull-switch')
 var u = require('./util')
@@ -50,15 +52,34 @@ know they can replicate from you.
 module.exports = function (db, keys) {
 
   var feeds = {}
-  var sbs
+  function createFeed (id, keys) {
+    if(feeds[id.toString('hex')]) return feeds[id.toString('hex')]
+    if('string' === typeof id)
+      id = new Buffer(id, 'hex')
+    if(id.public)
+      keys = id, id = bsum(keys.public)
+    return feeds[id] = Feed(db, id, keys)
+  }
+
+  function getMe (cb) {
+    if(!keys) {
+      cb(new Error('*must* have private keys to follow some one'))
+      return true
+    }
+    me = me || sbs.feed(sbs.id, keys)
+  }
+
+  var sbs, me
   return sbs = {
-    feed: function (id, keys) {
-      if(feeds[id]) return feeds[id]
-      if('string' === typeof id)
-        id = new Buffer(id, 'hex')
-      if(id.public)
-        keys = id, id = bsum(keys.public)
-      return feeds[id] = Feed(db, id, keys)
+    id: keys ? bsum(keys.public) : null,
+    feed: createFeed,
+    message: function (type, data, refs, cb) {
+      if(getMe(cb)) return
+      me.append(type, data, refs, cb)
+    },
+    follow: function (other, cb) {
+      if(getMe(cb)) return
+      me.follow(other, cb)
     },
     latest: function () {
       return pull(
@@ -68,14 +89,35 @@ module.exports = function (db, keys) {
         })
       )
     },
+    isFollowing: function (me, you, cb) {
+      pull(
+        sbs.createReferenceStream({
+          id: me, reference: you, type: 'follow'
+        }),
+        pull.collect(function (err, ary) {
+          console.error(ary)
+          cb(err, !!ary.length)
+        })
+      )
+    },
     createFeedStream: function (opts) {
       opts = opts || {}
       opts.keys = false
       return pull(
-        pl.read(db, {gte: first, lte: last, keys: false}),
+        cat([
+          pl.read(db, {gte: first, lte: last, keys: false}),
+          //work around to get live streams working, with pull level.
+          opts.live ? pull(pl.live(db), pull.map(function (data) {
+            return data.key.id && data.key.timestamp ? data.value : null
+          }), pull.filter(Boolean)) : pull.empty()
+        ]),
         para(function (key, cb) {
-          db.get(key, cb)
-        })
+          db.get(key, function (err, value) {
+            if(!err) return cb(null, value)
+            console.error(err, key, value)
+          })
+        }),
+        pull.filter(Boolean)
       )
     },
     createHistoryStream: function (id, sequence) {
@@ -179,5 +221,10 @@ module.exports = function (db, keys) {
           values: false
         })
     },
+    createReplicationStream: function (cb) {
+      //if(!keys) throw new Error('cannot replicate without keys')
+      //var me = this.feed(keys)
+      return replicate(sbs, cb || function () {})
+    }
   }
 }
