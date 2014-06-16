@@ -8,16 +8,15 @@ var Emitter = require('events').EventEmitter
 // emit local beacons on udp, so that it's easy
 // to connect to friends when nearby.
 
-module.exports = function (sbs, config) {
+module.exports = function (sbs, port, config) {
 
   var stream = broadcastStream(8999)
 
   var emitter = new Emitter()
-  var port = 1024 + ~~(40000* Math.random())
   emitter.peers = {}
 
   //this should be hash of public key.
-  var id = u.bsum('' + process.pid)
+  var id = sbs.id
 
   var buffer = new Buffer(codec.Broadcast.length)
 
@@ -52,4 +51,5 @@ module.exports = function (sbs, config) {
 
 if(!module.parent) {
   module.exports()
+  .on('update', console.error)
 }
