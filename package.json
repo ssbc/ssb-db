@@ -25,7 +25,11 @@
     "pull-handshake": "~0.0.2",
     "pull-switch": "~2.0.0",
     "pull-many": "~1.0.1",
-    "broadcast-stream": "~0.0.0"
+    "broadcast-stream": "~0.0.0",
+    "pull-varstruct": "~1.0.1",
+    "pull-stream-to-stream": "~1.2.6",
+    "dateformat": "~1.0.8-1.2.3",
+    "pull-cat": "~1.1.5"
   },
   "devDependencies": {
     "tape": "~2.12.3",
