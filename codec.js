@@ -99,8 +99,8 @@ var TypeIndex = varstruct({
 var ReferenceIndex = varstruct({
   type: varstruct.buffer(32),
   id: b2s,
-  sequence: varstruct.UInt64,
-  reference: varstruct.buffer(32)
+  reference: varstruct.buffer(32),
+  sequence: varstruct.UInt64
 })
 
 var ReferencedIndex = varstruct({
