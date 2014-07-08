@@ -29,14 +29,19 @@
     "pull-varstruct": "~1.0.1",
     "pull-stream-to-stream": "~1.2.6",
     "dateformat": "~1.0.8-1.2.3",
-    "pull-cat": "~1.1.5"
+    "pull-cat": "~1.1.5",
+    "level-worklog": "~0.0.0",
+    "bytewise": "~0.7.0",
+    "continuable": "~1.1.8",
+    "continuable-para": "~1.2.0"
   },
   "devDependencies": {
     "tape": "~2.12.3",
     "level-mem": "~0.18.0",
     "level": "~0.18.0",
     "level-test": "~1.6.2",
-    "varstruct-match": "~1.0.0"
+    "varstruct-match": "~1.0.0",
+    "level-sublevel": "~5.2.0"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
