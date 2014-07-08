@@ -19,9 +19,16 @@ function flipRandomBit(buf) {
     return buf
 }
 
+function clone (obj) {
+  var o = {}
+  for(var k in obj) o[k] = obj[k]
+  return o
+}
+
 module.exports = function (opts) {
 
   var validation = require('../validation')(null, opts)
+  var create = require('../message')(opts)
 
   var empty = opts.hash(new Buffer(0))
   var zeros = new Buffer(empty.length)
@@ -33,16 +40,10 @@ module.exports = function (opts) {
 
     var keys = opts.generate()
 
-    var msg = {
-      prev: zeros,
-      sequence: 1,
-      message: keys.public,
-      type: new Buffer('INIT', 'utf8')
-    }
+    var msg = create(keys, 'init', keys.public)
 
     var encoded = opts.encode(msg)
     var hash = opts.hash(encoded)
-    console.log(hash, encoded)
     var sig = opts.sign(keys, hash)
 
     opts.verify(keys, sig, hash)
@@ -59,42 +60,47 @@ module.exports = function (opts) {
 
   // validate a message
 
-  function sign (msg, keys) {
-
-    msg.signature =
-      opts.sign(keys, opts.hash(opts.encode(msg)))
-
-    return msg
-  }
-
   tape('validate message', function (t) {
 
     var keys = opts.generate()
 
-    var msg = sign({
-      prev: zeros,
-      sequence: 1,
-      message: keys.public,
-      type: new Buffer('INIT', 'utf8')
-    }, keys)
+    var msg = create(keys, 
+      'init',      //type
+      keys.public, //message
+      null         //previous
+    )
 
-    var msg2 = sign({
-      prev: opts.hash(opts.encode(msg)),
-      sequence: 2,
-      message: new Buffer('hello'),
-      type: new Buffer('INIT', 'utf8')
-    }, keys)
+    var msg2 = create(keys, 'msg', 'hello', msg)
+
+    console.log(msg)
+    console.log(msg2)
 
     //should this throw?
     t.ok(validation.validate(msg, null, keys))
     t.ok(validation.validate(msg2, msg, keys))
 
-    t.end()
+    for(var i = 0; i < 10; i++) {
 
+      var _msg
+      _msg = clone(msg2)
+      _msg.signature = flipRandomBit(_msg.signature)
+      t.notOk(validation.validate(_msg, msg, keys))
+
+      _msg = clone(msg2)
+      _msg.prev = flipRandomBit(_msg.prev)
+      _msg = create.sign(_msg, keys)
+      t.notOk(validation.validate(_msg, msg, keys))
+
+      _msg = clone(msg2)
+      _msg.author = flipRandomBit(_msg.author)
+      _msg = create.sign(_msg, keys)
+      t.notOk(validation.validate(_msg, msg, keys))
+    }
+
+    t.end()
   })
 
 }
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
