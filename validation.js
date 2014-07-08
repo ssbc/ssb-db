@@ -67,8 +67,6 @@ module.exports = function (ssb, opts) {
 
       if(!queue.length && !batch.length) {
         queue.push({msg: msg, cb: cb})
-
-        console.log(ssb)
         var lastDB = ssb.sublevel('lst')
 
         contpara(
@@ -79,7 +77,7 @@ module.exports = function (ssb, opts) {
           prev = err ? null :results[0]
           //get PUBLIC KEY out of FIRST MESSAGE.
           pub = err ? msg.message : results[1]
-          console.log(results)
+
           if((err ? 1 : results[2] + 1) !== msg.sequence)
             return cb(new Error('sequence out of order'))
 
@@ -94,7 +92,7 @@ module.exports = function (ssb, opts) {
         while(queue.length) {
           var e = queue.shift()
           cbs.push(e.cb)
-          console.log(e.msg, prev, pub)
+
           validateSync(e.msg, prev, pub)
           batch.push({
             key: hash(encode(e.msg)), value: msg, type: 'put'
