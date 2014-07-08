@@ -2,6 +2,7 @@
 var deepEqual = require('deep-equal')
 var pull = require('pull-stream')
 var contpara = require('continuable-para')
+var bytewise = require('bytewise/hex').encode
 
 // make a validation stream?
 // read the latest record in the database
@@ -16,15 +17,17 @@ function clone (obj) {
 
 function get (db, key) {
   return function (cb) {
-    return db.get(key, cb)
+    return db.get(bytewise(key), cb)
   }
 }
 
 module.exports = function (ssb, opts) {
 
+
+  var lastDB = ssb.sublevel('lst')
   var hash = opts.hash
   var zeros = opts.hash(new Buffer(0))
-  zeros.fill(0)
+      zeros.fill(0)
 
   var verify = opts.verify
   var encode = opts.encode
@@ -40,8 +43,8 @@ module.exports = function (ssb, opts) {
     }
     else {
       if(!deepEqual(msg.prev, zeros)
-        && data.sequence === 1
-        && data.timestamp > 0)
+        && msg.sequence === 1
+        && msg.timestamp > 0)
         return false
     }
     if(!deepEqual(msg.author, hash(pub.public || pub)))
@@ -67,19 +70,22 @@ module.exports = function (ssb, opts) {
 
       if(!queue.length && !batch.length) {
         queue.push({msg: msg, cb: cb})
-        var lastDB = ssb.sublevel('lst')
 
         contpara(
           get(ssb, msg.prev),
           ssb.getPublicKey(msg.author),
           get(lastDB, msg.author)
         )(function (err, results) {
-          prev = err ? null :results[0]
+          prev = err ? null : results[0]
           //get PUBLIC KEY out of FIRST MESSAGE.
           pub = err ? msg.message : results[1]
 
-          if((err ? 1 : results[2] + 1) !== msg.sequence)
-            return cb(new Error('sequence out of order'))
+          var expected = err ? 1 : results[2] + 1
+          if(expected !== msg.sequence)
+            return cb(
+              new Error('sequence out of order, expected:'
+                + expected + ' got: ' + msg.sequence)
+            )
 
           drain()
         })
@@ -87,25 +93,28 @@ module.exports = function (ssb, opts) {
       }
       else
         queue.push({msg: msg, cb: cb})
+    }
 
-      function drain () {
-        while(queue.length) {
-          var e = queue.shift()
-          cbs.push(e.cb)
+    function drain () {
+      while(queue.length) {
+        var e = queue.shift()
+        cbs.push(e.cb)
 
-          validateSync(e.msg, prev, pub)
+        if(validateSync(e.msg, prev, pub)) {
           batch.push({
-            key: hash(encode(e.msg)), value: msg, type: 'put'
+            key: bytewise(hash(encode(e.msg))), value: e.msg, type: 'put'
           })
           prev = e.msg
         }
-
-        ssb.batch(batch, function (err) {
-          batch = []; while(cbs.length) cbs.shift()(err)
-          if(queue.length) drain()
-          else delete validators[id.toString('base64')]
-        })
+        else
+          cb(new Error('invalid message:' + hash(encode(e.msg))))
       }
+
+      ssb.batch(batch, function (err) {
+        batch = []; while(cbs.length) cbs.shift()(err)
+        if(queue.length) drain()
+        else delete validators[id.toString('base64')]
+      })
     }
   }
 
