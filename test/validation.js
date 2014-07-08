@@ -1,12 +1,17 @@
 var tape     = require('tape')
 var level    = require('level-test')()
 var sublevel = require('level-sublevel')
+var pull     = require('pull-stream')
+var JSONB    = require('json-buffer')
 
 module.exports = function (opts) {
 
   var db = sublevel(level('test-ssb-validate', {
-    keyEncoding: require('bytewise/hex'),
-    valueEncoding: 'json'
+    valueEncoding: {
+      encode: JSONB.stringify,
+      decode: JSONB.parse,
+      buffer: false
+    }
   }))
 
   var create = require('../message')(opts)
@@ -16,16 +21,16 @@ module.exports = function (opts) {
 
 
   tape('simple', function (t) {
-
     var keys = opts.generate()
     var id = opts.hash(keys.public)
+
     var prev
     var messages = [
       prev = create(keys, 'init', keys.public),
       prev = create(keys, 'msg', 'hello', prev),
       prev = create(keys, 'msg', 'hello2', prev)
     ]
-    console.log(messages)
+
     var _msg = null
     messages.forEach(function (msg) {
       validation.validate(msg, function (err) {
@@ -38,32 +43,42 @@ module.exports = function (opts) {
           t.end()
       })
     })
+  })
 
-//    var prev
-//    ssb.add(
-//      prev = create(keys, 'init', keys.public),
-//      function () {
-//
-//        ssb.add(
-//          prev = create(keys, 'msg', 'hello', prev),
-//          function () {
-//
-//            ssb.add(
-//              prev = create(keys, 'msg', 'hello2', pre),
-//              function () {
-//                pull(
-//                  db.createFeedStream(id),
-//                  validation.createValidationStream(function (err, _prev) {
-//                    t.deepEqual(_prev, prev)
-//                    t.end()
-//                  })
-//                )
-//              }
-//            )
-//          }
-//        )
-//      }
-//    )
+  tape('add & validate', function (t) {
+    var keys = opts.generate()
+    var id = opts.hash(keys.public)
+    var prev
+    ssb.add(
+      prev = create(keys, 'init', keys.public),
+      function (err) {
+        if(err) throw err
+
+        ssb.add(
+          prev = create(keys, 'msg', 'hello', prev),
+          function (err) {
+            if(err) throw err
+
+            ssb.add(
+              prev = create(keys, 'msg', 'hello2', prev),
+              function (err) {
+                console.log('*************?')
+                if(err) throw err
+                pull(
+                  db.createFeedStream(id),
+                  pull.collect(function (err, ary) {
+                    if(err) throw err
+
+                    t.deepEqual(ary.pop(), prev)
+                    t.end()
+                  })
+                )
+              }
+            )
+          }
+        )
+      }
+    )
   })
 }
 
