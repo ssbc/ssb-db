@@ -1,3 +1,4 @@
+'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
 var sublevel = require('level-sublevel')
@@ -79,6 +80,46 @@ module.exports = function (opts) {
         )
       }
     )
+  })
+
+  tape('race: should queue', function (t) {
+    var keys = opts.generate()
+    var id = opts.hash(keys.public)
+    var prev, calls = 0
+    ssb.add(
+      prev = create(keys, 'init', keys.public),
+      function (err) {
+        if(err) throw err
+        calls ++
+      }
+    )
+    ssb.add(
+      prev = create(keys, 'msg', 'hello', prev),
+      function (err) {
+        if(err) throw err
+        calls ++
+      }
+    )
+    ssb.add(
+      prev = create(keys, 'msg', 'hello2', prev),
+      function (err) {
+        if(err) throw err
+        calls ++
+      }
+    )
+    setTimeout(function () {
+      ssb.add(
+        prev = create(keys, 'msg', 'hello3', prev),
+        function (err) {
+          if(err) throw err
+          calls ++
+          t.equal(calls, 4)
+          t.end()
+        }
+      )
+    })
+
+
   })
 }
 
