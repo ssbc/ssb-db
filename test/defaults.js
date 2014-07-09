@@ -89,7 +89,7 @@ module.exports = function (opts) {
       t.notOk(validation.validateSync(_msg, msg, keys))
 
       _msg = clone(msg2)
-      _msg.prev = flipRandomBit(_msg.prev)
+      _msg.previous = flipRandomBit(_msg.previous)
       _msg = create.sign(_msg, keys)
       t.notOk(validation.validateSync(_msg, msg, keys))
 

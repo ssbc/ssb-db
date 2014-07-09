@@ -36,7 +36,7 @@ module.exports = function (opts) {
     messages.forEach(function (msg) {
       validation.validate(msg, function (err) {
         if(_msg)
-          t.deepEqual(opts.hash(opts.encode(_msg)), msg.prev)
+          t.deepEqual(opts.hash(opts.encode(_msg)), msg.previous)
         _msg = msg
         if(err) throw err
         console.log('validated?', err, msg.sequence)
