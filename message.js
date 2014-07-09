@@ -14,14 +14,19 @@ module.exports = function (opts) {
     return msg
   }
 
+  function toBuffer (b) {
+    return Buffer.isBuffer(b) ? b : new Buffer(b, 'utf8')
+  }
+
   function create (keys, type, content, prev) {
     return sign({
-      prev: prev ? opts.hash(opts.encode(prev)) : zeros,
+      previous: prev ? opts.hash(opts.encode(prev)) : zeros,
       author: opts.hash(keys.public),
-      type: type,
-      message: content,
       sequence: prev ? prev.sequence + 1 : 1,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      timezone: new Date().getTimezoneOffset(),
+      type: toBuffer(type),
+      message: toBuffer(content),
     }, keys)
   }
 

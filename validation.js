@@ -35,7 +35,7 @@ module.exports = function (ssb, opts) {
 
   function validateSync (msg, prev, pub) {
     if(prev) {
-      if(!deepEqual(msg.prev, hash(encode(prev)))) {
+      if(!deepEqual(msg.previous, hash(encode(prev)))) {
 
         validateSync.reason = 'expected previous: '
           + hash(encode(prev)).toString('base64')
@@ -51,7 +51,7 @@ module.exports = function (ssb, opts) {
       }
     }
     else {
-      if(!deepEqual(msg.prev, zeros)
+      if(!deepEqual(msg.previous, zeros)
         && msg.sequence === 1 && msg.timestamp > 0) {
 
           validateSync.reason = 'expected initial message'
@@ -98,7 +98,7 @@ module.exports = function (ssb, opts) {
         queue.push({msg: msg, cb: cb})
 
         contpara(
-          get(ssb, msg.prev),
+          get(ssb, msg.previous),
           ssb.getPublicKey(msg.author),
           get(lastDB, msg.author)
         )(function (err, results) {
