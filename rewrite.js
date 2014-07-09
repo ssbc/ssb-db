@@ -12,6 +12,7 @@ var encode = bytewise.encode
 module.exports = function (db, opts) {
 
   var logDB = db.sublevel('log')
+  var feedDB = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
   var lastDB = db.sublevel('lst')
 
@@ -29,6 +30,10 @@ module.exports = function (db, opts) {
     add({
       key: encode([msg.author, msg.sequence]), value: op.key,
       type: 'put', prefix: clockDB
+    })
+    add({
+      key: encode([msg.timestamp, msg.author]), value: op.key,
+      type: 'put', prefix: feedDB
     })
     // index the latest message from each author
     add({
@@ -53,7 +58,12 @@ module.exports = function (db, opts) {
   db.add = function (msg, cb) {
     //check that msg is valid (follows from end of database)
     //then insert into database.
-    validation.validate(msg, cb)
+    var n = 1
+    validation.validate(msg, function (err) {
+      console.error(err)
+      if(--n) throw new Error('called twice')
+      cb(err)
+    })
   }
 
   db.createFeedStream = function (id, opts) {
@@ -70,5 +80,43 @@ module.exports = function (db, opts) {
 
   }
 
+  db.latest = function (opts) {
+    return pull(
+      pl.read(lastDB),
+      pull.map(function (data) {
+        var d = {id: bytewise.decode(data.key), sequence: data.value}
+        console.log(d)
+        return d
+      })
+    )
+  }
+
+  db.follow = function (other, cb) {
+    lastDB.put(encode(other), 0, cb)
+  }
+
+  db.createHistoryStream = function (id, seq, live) {
+    return pull(
+      pl.read(clockDB, {
+        start:   encode([id, seq]),
+        end:  encode([id, MAX_INT]),
+        tail: live, live: live,
+        keys: false
+      }),
+      paramap(function (key, cb) {
+        db.get(key, cb)
+      })
+    )
+  }
+
+  db.createWriteStream = function (cb) {
+    return pull(
+      paramap(function (data, cb) {
+        db.add(data, cb)
+      }),
+      pull.drain(null, cb)
+    )
+  }
+
   return db
-d}
+}
