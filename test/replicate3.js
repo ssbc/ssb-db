@@ -29,11 +29,13 @@ module.exports = function (opts) {
 
   function createDB(name) {
     return SSB(sublevel(level(name, {
-      valueEncoding: {
-        encode: JSONB.stringify,
-        decode: JSONB.parse,
-        buffer: false
-      }
+      valueEncoding: 
+        require('../codec')
+//      {
+//        encode: JSONB.stringify,
+//        decode: JSONB.parse,
+//        buffer: false
+//      }
     })), opts)
   }
 
