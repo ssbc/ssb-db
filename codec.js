@@ -34,7 +34,7 @@ var Message = varstruct({
   timezone  : svarint,
   type      : type,
   message   : content,
-  references: References,
+//  references: References,
   signature : signature
 })
 
@@ -122,32 +122,32 @@ exports = module.exports =
   .type(2, FeedKey, function (t) {
     return isHash(t.id) && isInteger(t.timestamp)
   })
-  .type(3, LatestKey, isHash)
+//  .type(3, LatestKey, isHash)
   .type(4, varstruct.varint, isInteger)
-  .type(5, TypeIndex, function (t) {
-     return (
-         Buffer.isBuffer(t.type)
-      && isHash(t.id)
-      && isInteger(t.sequence)
-      && !t.reference && !t.referenced
-    )
-  })
-  .type(6, ReferenceIndex, function (t) {
-     return (
-      Buffer.isBuffer(t.type)
-    && isHash(t.id)
-    && isInteger(t.sequence)
-    && isHash(t.reference)
-    )
-  })
-  .type(7, ReferencedIndex, function (t) {
-     return (
-       isHash(t.referenced)
-    && Buffer.isBuffer(t.type)
-    && isHash(t.id)
-    && isInteger(t.sequence)
-    )
-  })
+//  .type(5, TypeIndex, function (t) {
+//     return (
+//         Buffer.isBuffer(t.type)
+//      && isHash(t.id)
+//      && isInteger(t.sequence)
+//      && !t.reference && !t.referenced
+//    )
+//  })
+//  .type(6, ReferenceIndex, function (t) {
+//     return (
+//      Buffer.isBuffer(t.type)
+//    && isHash(t.id)
+//    && isInteger(t.sequence)
+//    && isHash(t.reference)
+//    )
+//  })
+//  .type(7, ReferencedIndex, function (t) {
+//     return (
+//       isHash(t.referenced)
+//    && Buffer.isBuffer(t.type)
+//    && isHash(t.id)
+//    && isInteger(t.sequence)
+//    )
+//  })
 
 exports.UnsignedMessage = UnsignedMessage
 exports.Message = Message
