@@ -1,101 +1,37 @@
-var handshake = require('pull-handshake')
 var pull = require('pull-stream')
 var many = require('pull-many')
-var pswitch = require('pull-switch')
+var cat  = require('pull-cat')
+var u    = require('./util')
+var codec = require('./codec')
+var pvstruct = require('pull-varstruct')
 
-var u = require('./util')
+module.exports = function (sbs, opts, cb) {
+  if('function' === typeof opts)
+    cb = opts, opts = {}
 
-function listToObj(ary) {
-  var obj = {}
-  ary.forEach(function (data) {
-    obj[data.id.toString('hex')] = data.sequence
-  })
-  return obj
-}
+  opts = opts || {}
 
-function compare (a, b) {
-  var l = Math.min(a.length, b.length)
-  for(var i = 0; i < l; i++) {
-    if(a[i]<b[i]) return -1
-    if(a[i]>b[i]) return  1
+  var source = many()
+
+  //source: stream {id: hash(pubkey), sequence: latest}
+  //pairs, then {okay: true} to show you are at the end.
+  source.add(cat([sbs.latest(), pull.once(1)]))
+
+  //sink: filter out metadata, and write the actual data.
+  var sink = pull(
+    pull.filter(function (data) {
+      if(data.author) return true
+      if(u.isHash(data.id) && u.isInteger(data.sequence)) {
+        source.add(sbs.createHistoryStream(data.id, data.sequence, opts.live))
+      }
+      if(data === 1)
+        source.cap()
+    }),
+    sbs.createWriteStream(cb)
+  )
+
+  return {
+    source: pull(source, pvstruct.encode(codec)),
+    sink: pull(pvstruct.decode(codec), sink)
   }
-  return a.length - b.length
 }
-
-/*
-todo: simplify all this, making it better for realtime.
-
-instead of doing the full handshake thing,
-just send requests and response streams.
-
-request: [req, hash, since]
-message: [res, message]
-
-this means tagging every encoded object with a type...
-that would probably simplify the code anyway.
-
-when you receive a request, look in the database to see if you have
-more recent messages from that user, if so, send them.
-
-when you have sent all the old messages, you can broadcast
-any realtime message you find...
-
-if someone sends you a message you do not want,
-just drop that message.
-
-read each stream of mesages using a live stream,
-so that you automatically go to sending realtime
-updates when you get to that.
-
-by making a request message it will be easy to have ranges
-partial ranges. Although... that could cause problems,
-because someone with a partial range would not know things
-that you want them to know... for example, if you have blocked
-someone, they wouldn't realize and so they might give your
-data to them.
-
-*/
-
-function replicate (sbs, done) {
-  var cbs = u.groups(done || function () {})
-  return handshake(function (cb) {
-    replicate.vector(sbs, cb)
-  }, function (me, you) {
-    return {
-      source:
-        replicate.feeds(sbs, me, you),
-      sink:
-        sbs.createWriteStream(done)
-    }
-  })
-}
-
-replicate.vector = function (sbs, cb) {
-  pull(sbs.latest(), pull.collect(cb))
-}
-
-replicate.feeds = function (sbs, me, you) {
-  me  = listToObj(me)
-  you = listToObj(you)
-  //we now that I have a list
-  //of what you have, and where
-  //you are up to. I'll look in my database
-  //and see if I can help you.
-  var o = {}, feeds = []
-
-  for(var key in you) {
-    if(me[key] != null && you[key] < me[key])
-      //send key's feed after you[key]
-      feeds.push(o[key] = sbs.feed(key).createReadStream())
-  }
-
-  //just to test, send all your data to them.
-  for(var key in me) {
-    if(you[key] == null)
-      feeds.push(o[key] = sbs.feed(key).createReadStream())
-  }
-
-  return many(feeds)
-}
-
-module.exports = replicate

@@ -6,9 +6,9 @@ var pull      = require('pull-stream')
 var ecc       = require('eccjs')
 var tape      = require('tape')
 
-var SSB       = require('../rewrite')
+var SSB       = require('../')
 var u         = require('../util')
-var replicate = require('../replicate2')
+var replicate = require('../replicate')
 
 var codec     = require('../codec')
 var JSONB     = require('json-buffer')

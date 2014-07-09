@@ -1,230 +1,134 @@
-var pl = require('pull-level')
-var pull = require('pull-stream')
-var Feed = require('./feed')
-var para = require('pull-paramap')
-var Blake2s = require('blake2s')
-var varint = require('varstruct').varint
-var codec = require('./codec')
-var replicate = require('./replicate2')
-var cat = require('pull-cat')
+var worklog  = require('level-worklog')
+var contpara = require('continuable-para')
+var pull     = require('pull-stream')
+var pl       = require('pull-level')
+var paramap  = require('pull-paramap')
+var bytewise = require('bytewise/hex')
+var replicate = require('./replicate')
+var timestamp = require('monotonic-timestamp')
 
-var pswitch = require('pull-switch')
-var u = require('./util')
-var first = new Buffer(32)
-var last = new Buffer(41) //1 + 8 + 32
+//53 bit integer
+var MAX_INT  = 0x1fffffffffffff
+var encode = bytewise.encode
 
-last.fill(255)
-last[0] = 2
+module.exports = function (db, opts) {
 
-var _firstHash = new Buffer(32); _firstHash.fill(0)
-var _lastHash = new Buffer(32); _lastHash.fill(255)
+  var logDB = db.sublevel('log', {valueEncoding: opts})
+  var feedDB = db.sublevel('fd')
+  var clockDB = db.sublevel('clk')
+  var lastDB = db.sublevel('lst')
 
-var firstSeq = 0
-var lastSeq = 0x1ffffffffffff
-
-var first = codec.encode({timestamp: 0, id: _firstHash})
-var last = codec.encode({timestamp: lastSeq, id: _lastHash})
-
-var firstHash = codec.encode(_firstHash)
-var lastHash = codec.encode(_lastHash)
-
-var bsum = u.bsum
-
-/*
-How to representing following in the database?
-
-you could do a "soft-follow" by just writing out the
-current value into the "latest" section, this means
-those will be requested when you follow someone.
-
-That will get follow working, but really, I want you to post a message
-that says you are following someone - so that other node's
-know they can replicate from you.
-*/
-
-//follow:follower:followee
-//if there are references.
-
-//TYPE:AUTHOR:referenced:sequence -> message
-
-//TYPE:AUTHOR:sequence
-
-module.exports = function (db, keys) {
-
-  var feeds = {}
-  function createFeed (id, keys) {
-    if(feeds[id.toString('hex')]) return feeds[id.toString('hex')]
-    if('string' === typeof id)
-      id = new Buffer(id, 'hex')
-    if(id.public)
-      keys = id, id = bsum(keys.public)
-    return feeds[id] = Feed(db, id, keys)
+  function get (db, key) {
+    return function (cb) { db.get(encode(key), cb) }
   }
 
-  function getMe (cb) {
-    if(!keys) {
-      cb(new Error('*must* have private keys to follow some one'))
-      return true
+//  worklog(db, logDB)
+
+  var validation = require('./validation')(db, opts)
+
+  db.pre(function (op, add, _batch) {
+    var msg = op.value
+    // index by sequence number
+    var hash = bytewise.decode(op.key)
+    add({
+      key: encode([msg.author, msg.sequence]), value: hash,
+      type: 'put', prefix: clockDB
+    })
+    add({
+      key: encode([msg.timestamp, msg.author]), value: hash,
+      type: 'put', prefix: feedDB
+    })
+    // index the latest message from each author
+    add({
+      key: encode(msg.author), value: msg.sequence,
+      type: 'put', prefix: lastDB
+    })
+
+    add({
+      key: encode(timestamp()), value: hash,
+      type: 'put', prefix: logDB
+    })
+
+  })
+
+  db.getPublicKey = function (id, cb) {
+    function cont (cb) {
+      clockDB.get(encode([id, 1]), function (err, hash) {
+      if(err) return cb(err)
+        db.get(encode(hash), function (err, msg) {
+          if(err) return cb(err)
+          cb(null, msg.message)
+        })
+      })
     }
-    me = me || sbs.feed(sbs.id, keys)
+    return cb ? cont(cb) : cont
   }
 
-  var sbs, me
-  return sbs = {
-    id: keys ? bsum(keys.public) : null,
-    feed: createFeed,
-    message: function (type, data, refs, cb) {
-      if(getMe(cb)) return
-      me.append(type, data, refs, cb)
-    },
-    follow: function (other, cb) {
-      if(getMe(cb)) return
-      me.follow(other, cb)
-    },
-    latest: function () {
-      return pull(
-        pl.read(db, {gte: firstHash, lte: lastHash}),
-        pull.map(function (data) {
-          return {id: data.key, sequence: data.value}
-        })
-      )
-    },
-    isFollowing: function (me, you, cb) {
-      pull(
-        sbs.createReferenceStream({
-          id: me, reference: you, type: 'follow'
-        }),
-        pull.collect(function (err, ary) {
-          console.error(ary)
-          cb(err, !!ary.length)
-        })
-      )
-    },
-    createFeedStream: function (opts) {
-      opts = opts || {}
-      opts.keys = false
-      return pull(
-        cat([
-          pl.read(db, {gte: first, lte: last, keys: false}),
-          //work around to get live streams working, with pull level.
-          opts.live ? pull(pl.live(db), pull.map(function (data) {
-            return data.key.id && data.key.timestamp ? data.value : null
-          }), pull.filter(Boolean)) : pull.empty()
-        ]),
-        para(function (key, cb) {
-          db.get(key, function (err, value) {
-            if(!err) return cb(null, value)
-            console.error(err, key, value)
-          })
-        }),
-        pull.filter(Boolean)
-      )
-    },
-    createHistoryStream: function (id, sequence) {
-      return this.feed(id).createReadStream({gt: sequence || 0})
-    },
-    createReadStream: function (opts) {
-      return this.createFeedStream()
-    },
-    createWriteStream: function (cb) {
-      var cbs = u.groups(cb)
-      return pswitch(function (msg) {
-         return msg.author.toString('hex')
-        }, function (msg) {
-            var key = msg.author.toString('hex')
-            feeds[key] = feeds[key] || sbs.feed(msg.author)
-            return feeds[key].createWriteStream(cbs())
-        })
-    },
-    createTypeStream: function (opts) {
-      var type = opts.type
-      var id = opts.id
-      if('string' === typeof type) {
-        var b = new Buffer(32)
-        b.fill(0)
-        b.write(type)
-        type = b
-      }
-      var start = {type: type, id: id || _firstHash, sequence: firstSeq}
-      var end = {type: type, id: id || _lastHash, sequence: lastSeq}
-
-      return pull(
-        pl.read(db, {
-          gte: codec.encode(start),
-          lte: codec.encode(end),
-          reverse: opts.reverse, tail: opts.tail
-        }),
-        opts.lookup !== false ? pull.asyncMap(function (data, cb) {
-          db.get(data.value, cb)
-        }) : pull.through()
-      )
-    },
-    createReferenceStream: function (opts) {
-
-      var type = opts.type
-      var id = opts.id
-      var ref = opts.reference
-      if('string' === typeof type) {
-        var b = new Buffer(32)
-        b.fill(0)
-        b.write(type)
-        type = b
-      }
-      var start = {
-        type: type,
-        id: id || _firstHash,
-        sequence: firstSeq,
-        reference: ref || _firstHash
-      }
-      var end = {
-        type: type,
-        id: id || _lastHash,
-        sequence: lastSeq,
-        reference: ref || _lastHash
-      }
-
-      return pl.read(db, {
-          gte: codec.encode(start),
-          lte: codec.encode(end),
-          reverse: opts.reverse, tail: opts.tail,
-          values: false
-        })
-    },
-    createReferencedStream: function (opts) {
-
-      var type = opts.type
-      var id = opts.id
-      var ref = opts.referenced
-      if('string' === typeof type) {
-        var b = new Buffer(32)
-        b.fill(0)
-        b.write(type)
-        type = b
-      }
-      var start = {
-        referenced: ref || _firstHash,
-        type: type || _firstHash,
-        id: id || _firstHash,
-        sequence: firstSeq
-      }
-      var end = {
-        referenced: ref || _lastHash,
-        type: type || _lastHash,
-        id: id || _lastHash,
-        sequence: lastSeq
-      }
-
-      return pl.read(db, {
-          gte: codec.encode(start),
-          lte: codec.encode(end),
-          reverse: opts.reverse, tail: opts.tail,
-          values: false
-        })
-    },
-    createReplicationStream: function (cb) {
-      //if(!keys) throw new Error('cannot replicate without keys')
-      //var me = this.feed(keys)
-      return replicate(sbs, cb || function () {})
-    }
+  db.add = function (msg, cb) {
+    //check that msg is valid (follows from end of database)
+    //then insert into database.
+    var n = 1
+    validation.validate(msg, function (err) {
+      if(--n) throw new Error('called twice')
+      cb(err)
+    })
   }
+
+  db.createFeedStream = function (id, opts) {
+    opts = opts || {}
+    opts.start = encode([id, 0])
+    opts.end = encode([id, MAX_INT])
+    opts.keys = false
+    return pull(
+      pl.read(clockDB, opts),
+      paramap(function (key, cb) {
+        db.get(encode(key), cb)
+      })
+    )
+
+  }
+
+  db.latest = function (opts) {
+    return pull(
+      pl.read(lastDB),
+      pull.map(function (data) {
+        var d = {id: bytewise.decode(data.key), sequence: data.value}
+        return d
+      })
+    )
+  }
+
+  db.follow = function (other, cb) {
+    lastDB.put(encode(other), 0, cb)
+  }
+
+  db.createHistoryStream = function (id, seq, live) {
+    return pull(
+      pl.read(clockDB, {
+        start:   encode([id, seq]),
+        end:  encode([id, MAX_INT]),
+        tail: live, live: live,
+        keys: false
+      }),
+      paramap(function (key, cb) {
+        db.get(encode(key), cb)
+      })
+    )
+  }
+
+  db.createWriteStream = function (cb) {
+    return pull(
+      paramap(function (data, cb) {
+        db.add(data, cb)
+      }),
+      pull.drain(null, cb)
+    )
+  }
+
+  db.createReplicationStream = function (cb) {
+    return replicate(db, cb || function () {})
+  }
+
+
+  return db
 }
