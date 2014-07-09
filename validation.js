@@ -1,9 +1,9 @@
+'use strict';
 
 var deepEqual = require('deep-equal')
 var pull = require('pull-stream')
 var contpara = require('continuable-para')
 var bytewise = require('bytewise/hex').encode
-
 // make a validation stream?
 // read the latest record in the database
 // check it against the incoming data,
@@ -23,7 +23,6 @@ function get (db, key) {
 
 module.exports = function (ssb, opts) {
 
-
   var lastDB = ssb.sublevel('lst')
   var hash = opts.hash
   var zeros = opts.hash(new Buffer(0))
@@ -36,28 +35,54 @@ module.exports = function (ssb, opts) {
 
   function validateSync (msg, prev, pub) {
     if(prev) {
-      if(!deepEqual(msg.prev, hash(encode(prev)))
-        && msg.sequence === prev.sequence + 1
-        && msg.timestamp > prev.timestamp)
+      if(!deepEqual(msg.prev, hash(encode(prev)))) {
+
+        validateSync.reason = 'expected previous: '
+          + hash(encode(prev)).toString('base64')
+
         return false
+      }
+      if(msg.sequence === prev.sequence + 1 
+        && msg.timestamp < prev.timestamp) {
+
+          validateSync.reason = 'out of order'
+
+          return false
+      }
     }
     else {
       if(!deepEqual(msg.prev, zeros)
-        && msg.sequence === 1
-        && msg.timestamp > 0)
-        return false
+        && msg.sequence === 1 && msg.timestamp > 0) {
+
+          validateSync.reason = 'expected initial message'
+
+          return false
+      }
     }
-    if(!deepEqual(msg.author, hash(pub.public || pub)))
+    if(!deepEqual(msg.author, hash(pub.public || pub))) {
+
+      validateSync.reason = 'expected different author:'+
+        hash(pub.public || pub).toString('base64') +
+        'but found:' +
+        msg.author.toString('base64')
+
       return false
+    }
 
     var _msg = clone(msg)
     delete _msg.signature
-    return verify(pub, msg.signature, hash(encode(_msg)))
+    if(!verify(pub, msg.signature, hash(encode(_msg)))) {
+
+      validateSync.reason = 'signature was invalid'
+
+      return false
+    }
+    return true
   }
 
   function createValidator (id) {
 
-    var queue = [], batch = [], prev, pubKey, cbs = []
+    var queue = [], batch = [], prev, pub, cbs = []
 
     return function (msg, cb) {
 
@@ -69,6 +94,7 @@ module.exports = function (ssb, opts) {
       // goto DRAIN
 
       if(!queue.length && !batch.length) {
+
         queue.push({msg: msg, cb: cb})
 
         contpara(
@@ -81,11 +107,13 @@ module.exports = function (ssb, opts) {
           pub = err ? msg.message : results[1]
 
           var expected = err ? 1 : results[2] + 1
-          if(expected !== msg.sequence)
+          if(expected != msg.sequence) {
+            queue.shift()
             return cb(
               new Error('sequence out of order, expected:'
                 + expected + ' got: ' + msg.sequence)
             )
+          }
 
           drain()
         })
@@ -99,7 +127,6 @@ module.exports = function (ssb, opts) {
       while(queue.length) {
         var e = queue.shift()
         cbs.push(e.cb)
-
         if(validateSync(e.msg, prev, pub)) {
           batch.push({
             key: bytewise(hash(encode(e.msg))), value: e.msg, type: 'put'
@@ -107,11 +134,13 @@ module.exports = function (ssb, opts) {
           prev = e.msg
         }
         else
-          cb(new Error('invalid message:' + hash(encode(e.msg))))
+          e.cb(new Error(validateSync.reason))
+
       }
 
       ssb.batch(batch, function (err) {
-        batch = []; while(cbs.length) cbs.shift()(err)
+        while(cbs.length) cbs.shift()(err)
+        batch = [];
         if(queue.length) drain()
         else delete validators[id.toString('base64')]
       })
