@@ -21,9 +21,8 @@ module.exports = function (opts) {
       type: type,
       message: content,
       sequence: prev ? prev.sequence + 1 : 1,
-
+      timestamp: Date.now()
     }, keys)
-
   }
 
   create.sign = sign
