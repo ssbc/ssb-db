@@ -1,10 +1,10 @@
-var svarint = require('signed-varint')
+var svarint   = require('signed-varint')
 var varstruct = require('varstruct')
-var varmatch = require('varstruct-match')
-var assert = require('assert')
-var b2s = varstruct.buffer(32)
+var varmatch  = require('varstruct-match')
+var assert    = require('assert')
+var b2s       = varstruct.buffer(32)
 var signature = varstruct.buffer(64)
-var type = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
+var type      = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
 
 var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
 
@@ -22,8 +22,7 @@ var UnsignedMessage = varstruct({
   timezone  : svarint,
   sequence  : varstruct.varint,
   type      : type,
-  message   : content,
-  references: References
+  message   : content
 })
 
 var Message = varstruct({
@@ -113,7 +112,10 @@ var ReferencedIndex = varstruct({
 exports = module.exports =
   varmatch(varstruct.varint)
   .type(0, Message, function (t) {
-    return isHash(t.previous) && isHash(t.author)
+    return isHash(t.previous) && isHash(t.author) && t.signature
+  })
+  .type(0, UnsignedMessage, function (t) {
+    return isHash(t.previous) && isHash(t.author) && !t.signature
   })
   .type(1, Key, function (t) {
     return isHash(t.id) && isInteger(t.sequence) && !Buffer.isBuffer(t.type)
@@ -158,4 +160,5 @@ exports.ReferenceIndex = ReferenceIndex
 exports.ReferencedIndex = ReferencedIndex
 
 exports.buffer = true
+
 

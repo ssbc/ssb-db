@@ -8,11 +8,13 @@ var JSONB    = require('json-buffer')
 module.exports = function (opts) {
 
   var db = sublevel(level('test-ssb-validate', {
-    valueEncoding: {
-      encode: JSONB.stringify,
-      decode: JSONB.parse,
-      buffer: false
-    }
+    valueEncoding: 
+      require('../codec')
+//    {
+//      encode: JSONB.stringify,
+//      decode: JSONB.parse,
+//      buffer: false
+//    }
   }))
 
   var create = require('../message')(opts)

@@ -1,10 +1,12 @@
 
 var Blake2s = require('blake2s')
-var crypto = require('crypto')
-var JSONB = require('json-buffer')
-var ecc = require('eccjs')
+var crypto  = require('crypto')
+var JSONB   = require('json-buffer')
+var ecc     = require('eccjs')
 
-var curve = ecc.curves.k256
+var codec   = require('./codec')
+
+var curve   = ecc.curves.k256
 
 exports.hash = function (data) {
   return new Blake2s().update(data).digest()
@@ -22,10 +24,16 @@ exports.sign = function (pub, hash) {
   return ecc.sign(curve, pub, hash)
 }
 
-exports.encode = function (data) {
-  return JSONB.stringify(data)
-}
+exports.encode = codec.encode
+exports.decode = codec.decode
+exports.buffer = true
 
-exports.decode = function (data) {
-  return JSONB.parse(data)
-}
+//exports.encode = function (data) {
+//  return JSONB.stringify(data)
+//}
+//
+//exports.decode = function (data) {
+//  return JSONB.parse(data)
+//}
+
+

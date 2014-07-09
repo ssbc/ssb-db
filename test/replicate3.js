@@ -121,6 +121,7 @@ module.exports = function (opts) {
       }
     }
   })
+  return
 
   tape('3-way replicate', function (t) {
 
