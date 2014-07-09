@@ -151,7 +151,13 @@ module.exports = function (opts) {
       var a = replicate(sbs1, cb2())
       var b = replicate(sbs2, cb2())
 
-      pull(a, b, a)
+      pull(
+        a,
+        pull.through(function (e) {console.log('>>>', e)}),
+        b,
+        pull.through(function (e) {console.log('>>>', e)}),
+        a
+      )
 
       function done2 (err) {
         if(err) throw err
@@ -162,7 +168,13 @@ module.exports = function (opts) {
         var c = sbs3.createReplicationStream(cb3())
         var d = sbs2.createReplicationStream(cb3())
 
-        pull(c, d, c)
+        pull(
+          c,
+          pull.through(function (e) {console.log('>>>', e)}),
+          d,
+          pull.through(function (e) {console.log('>>>', e)}),
+          c
+        )
 
         function done3 (err) {
           if(err) throw err
