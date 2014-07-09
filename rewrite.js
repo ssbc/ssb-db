@@ -4,6 +4,7 @@ var pull     = require('pull-stream')
 var pl       = require('pull-level')
 var paramap  = require('pull-paramap')
 var bytewise = require('bytewise/hex')
+var replicate = require('./replicate2')
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 
@@ -60,7 +61,6 @@ module.exports = function (db, opts) {
     //then insert into database.
     var n = 1
     validation.validate(msg, function (err) {
-      console.error(err)
       if(--n) throw new Error('called twice')
       cb(err)
     })
@@ -85,7 +85,6 @@ module.exports = function (db, opts) {
       pl.read(lastDB),
       pull.map(function (data) {
         var d = {id: bytewise.decode(data.key), sequence: data.value}
-        console.log(d)
         return d
       })
     )
@@ -117,6 +116,11 @@ module.exports = function (db, opts) {
       pull.drain(null, cb)
     )
   }
+
+  db.createReplicationStream = function (cb) {
+    return replicate(db, cb || function () {})
+  }
+
 
   return db
 }
