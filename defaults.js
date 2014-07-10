@@ -16,6 +16,14 @@ exports.generate = function () {
   return ecc.restore(curve, crypto.randomBytes(32))
 }
 
+exports.restore = function (private) {
+  return ecc.restore(curve, private)
+}
+
+exports.serializeKeys = function (keys) {
+  return keys.private
+}
+
 exports.verify = function (pub, sig, hash) {
   return ecc.verify(curve, pub, sig, hash)
 }
