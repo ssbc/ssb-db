@@ -1,11 +1,12 @@
-var worklog  = require('level-worklog')
-var contpara = require('continuable-para')
-var pull     = require('pull-stream')
-var pl       = require('pull-level')
-var paramap  = require('pull-paramap')
-var bytewise = require('bytewise/hex')
+//var worklog  = require('level-worklog')
+var contpara  = require('continuable-para')
+var pull      = require('pull-stream')
+var pl        = require('pull-level')
+var paramap   = require('pull-paramap')
+var bytewise  = require('bytewise/hex')
 var replicate = require('./replicate')
 var timestamp = require('monotonic-timestamp')
+var Feed      = require('./feed')
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
@@ -13,7 +14,7 @@ var encode = bytewise.encode
 
 module.exports = function (db, opts) {
 
-  var logDB = db.sublevel('log', {valueEncoding: opts})
+  var logDB = db.sublevel('log')
   var feedDB = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
   var lastDB = db.sublevel('lst')
@@ -75,17 +76,15 @@ module.exports = function (db, opts) {
   }
 
   db.createFeedStream = function (id, opts) {
+
     opts = opts || {}
-    opts.start = encode([id, 0])
-    opts.end = encode([id, MAX_INT])
     opts.keys = false
     return pull(
-      pl.read(clockDB, opts),
+      pl.read(feedDB, opts),
       paramap(function (key, cb) {
         db.get(encode(key), cb)
       })
     )
-
   }
 
   db.latest = function (opts) {
@@ -129,6 +128,21 @@ module.exports = function (db, opts) {
     return replicate(db, cb || function () {})
   }
 
+  db.createFeed = function (keys) {
+    if(!keys)
+      keys = opts.generate()
+    return Feed(db, keys, opts)
+  }
+
+  db.getLatest = function (id, cb) {
+    lastDB.get(encode(id), function (err, v) {
+      if(err) return cb(err)
+      clockDB.get(encode([id, v]), function (err, hash) {
+        if(err) return cb(err)
+        db.get(encode(hash), cb)
+      })
+    })
+  }
 
   return db
 }
