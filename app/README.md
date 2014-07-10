@@ -1,6 +1,0 @@
-# app
-
-
-## License
-
-MIT
