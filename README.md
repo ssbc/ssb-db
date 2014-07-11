@@ -107,6 +107,10 @@ Since messages are signed, and replication is eventually consistent,
 it does not matter if A receives B's messages via C, they can verify
 B's messages offline (i.e, when A is out of contact with B)
 
+However, no networking is provided by this module, so that it's
+useful as a replicatable database - however, a gossip based networking
+layer is in development.
+
 ## API
 
 ### ssb = require('secure-scuttlebutt/create')(path)
