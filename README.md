@@ -65,6 +65,48 @@ var stream = net.connect(1234)
 stream.pipe(toStream(ssb2.createReplicationStream())).pipe(stream)
 ```
 
+## Concepts
+
+Building upon secure-scuttlebutt requires understanding a few concepts
+that it uses to ensure security.
+
+### Identity
+
+Each node's identity is represented by the hash of their public
+key. Although they are not "human readable", this does
+gaurantee that you get unique identifiers (without a central registry)
+and it's infeasible for anyone to forge your identity.
+
+### Secure Data Structures
+
+SecureScuttlebutt uses a signed block-chain,
+where each block points to the previous block,
+the signing key, and contains a short message
+and a signature.
+
+This creates an append-only data structure that
+can be written to exclusively by the keys' owner.
+Also, the append-only structure can be efficiently replicated.
+
+### Replication
+
+secure-scuttlebutt is based on [Scuttlebutt](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf)
+Except that there is no way for old messages to be obsoleted by new message.
+All messages are eventually replicated - secure-scuttlebutt is eventually consistent.
+
+Perhaps the simplest way to look at it is as many simultanious
+master-slave replications. The master appends to a log,
+giving each message a monotonically increasing sequence number.
+When the slave connects to the master and requests the messages
+that came after the sequence number they received last time.
+
+Now, each node is the master of their own feed, so scuttlebutt
+replication is just like doing many simultanious master-slave replications.
+
+Since messages are signed, and replication is eventually consistent,
+it does not matter if A receives B's messages via C, they can verify
+B's messages offline (i.e, when A is out of contact with B)
+
 ## API
 
 ### ssb = require('secure-scuttlebutt/create')(path)
