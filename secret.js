@@ -49,6 +49,8 @@ exports.decode = function (buffer) {
 }
 
 exports.generate = function () {
+  //use node's crypto because eccjs expects to be in a browser
+  //and wont beable to do random number generation properly.
   return ecc.restore(k256, crypto.randomBytes(32))
 }
 
