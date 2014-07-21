@@ -75,7 +75,7 @@ module.exports = function (db, opts) {
     })
   }
 
-  db.createFeedStream = function (id, opts) {
+  db.createFeedStream = function (opts) {
 
     opts = opts || {}
     opts.keys = false
@@ -99,6 +99,14 @@ module.exports = function (db, opts) {
 
   db.follow = function (other, cb) {
     lastDB.put(encode(other), 0, cb)
+  }
+
+  db.isFollowing = function (other, cb) {
+    lastDB.get(encode(other), cb)
+  }
+
+  db.following = function () {
+    return pl.read(lastDB)
   }
 
   db.createHistoryStream = function (id, seq, live) {
