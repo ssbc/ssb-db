@@ -3,7 +3,6 @@ var tape     = require('tape')
 var level    = require('level-test')()
 var sublevel = require('level-sublevel')
 var pull     = require('pull-stream')
-var JSONB    = require('json-buffer')
 
 module.exports = function (opts) {
 
@@ -59,13 +58,11 @@ module.exports = function (opts) {
             ssb.add(
               prev = create(keys, 'msg', 'hello2', prev),
               function (err) {
-                console.log('*************?')
                 if(err) throw err
                 pull(
                   db.createFeedStream(id),
                   pull.collect(function (err, ary) {
                     if(err) throw err
-
                     t.deepEqual(ary.pop(), prev)
                     t.end()
                   })
