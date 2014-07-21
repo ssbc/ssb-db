@@ -1,7 +1,7 @@
 var codec = require('./codec')
 
 var db = require('level')(process.argv[2], {
-    keyEncoding: codec, valueEncoding: codec
+    keyEncoding: 'utf8', valueEncoding: codec
   })
 
 db.createReadStream()
