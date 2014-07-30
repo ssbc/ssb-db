@@ -1,7 +1,7 @@
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
-var sublevel = require('level-sublevel')
+var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 
 module.exports = function (opts) {

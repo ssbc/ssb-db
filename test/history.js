@@ -1,7 +1,7 @@
 'use strict';
 
 var level     = require('level-test')()
-var sublevel  = require('level-sublevel/legacy')
+var sublevel  = require('level-sublevel/bytewise')
 var pull      = require('pull-stream')
 var ecc       = require('eccjs')
 var tape      = require('tape')
