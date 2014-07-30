@@ -42,7 +42,7 @@
     "level": "~0.18.0",
     "level-test": "~1.6.2",
     "varstruct-match": "~1.0.0",
-    "level-sublevel": "~6.2.0",
+    "level-sublevel": "~6.2.1",
     "ltgt": "~1.0.2"
   },
   "scripts": {
