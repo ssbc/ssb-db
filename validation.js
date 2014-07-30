@@ -3,7 +3,6 @@
 var deepEqual = require('deep-equal')
 var pull = require('pull-stream')
 var contpara = require('continuable-para')
-var bytewise = require('bytewise/hex').encode
 // make a validation stream?
 // read the latest record in the database
 // check it against the incoming data,
@@ -17,7 +16,7 @@ function clone (obj) {
 
 function get (db, key) {
   return function (cb) {
-    return db.get(bytewise(key), cb)
+    return db.get(key, cb)
   }
 }
 
@@ -129,7 +128,7 @@ module.exports = function (ssb, opts) {
         cbs.push(e.cb)
         if(validateSync(e.msg, prev, pub)) {
           batch.push({
-            key: bytewise(hash(encode(e.msg))), value: e.msg, type: 'put'
+            key: hash(encode(e.msg)), value: e.msg, type: 'put'
           })
           prev = e.msg
         }

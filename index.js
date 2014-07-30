@@ -1,16 +1,14 @@
-//var worklog  = require('level-worklog')
+'use strict';
 var contpara  = require('continuable-para')
 var pull      = require('pull-stream')
 var pl        = require('pull-level')
 var paramap   = require('pull-paramap')
-var bytewise  = require('bytewise/hex')
 var replicate = require('./replicate')
 var timestamp = require('monotonic-timestamp')
 var Feed      = require('./feed')
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
-var encode = bytewise.encode
 
 module.exports = function (db, opts) {
 
@@ -23,30 +21,27 @@ module.exports = function (db, opts) {
     return function (cb) { db.get(encode(key), cb) }
   }
 
-//  worklog(db, logDB)
-
   var validation = require('./validation')(db, opts)
 
   db.pre(function (op, add, _batch) {
     var msg = op.value
     // index by sequence number
-    var hash = bytewise.decode(op.key)
     add({
-      key: encode([msg.author, msg.sequence]), value: hash,
+      key: [msg.author, msg.sequence], value: op.key,
       type: 'put', prefix: clockDB
     })
     add({
-      key: encode([msg.timestamp, msg.author]), value: hash,
+      key: [msg.timestamp, msg.author], value: op.key,
       type: 'put', prefix: feedDB
     })
     // index the latest message from each author
     add({
-      key: encode(msg.author), value: msg.sequence,
+      key: msg.author, value: msg.sequence,
       type: 'put', prefix: lastDB
     })
 
     add({
-      key: encode(timestamp()), value: hash,
+      key: timestamp(), value: op.key,
       type: 'put', prefix: logDB
     })
 
@@ -54,9 +49,9 @@ module.exports = function (db, opts) {
 
   db.getPublicKey = function (id, cb) {
     function cont (cb) {
-      clockDB.get(encode([id, 1]), function (err, hash) {
+      clockDB.get([id, 1], function (err, hash) {
       if(err) return cb(err)
-        db.get(encode(hash), function (err, msg) {
+        db.get(hash, function (err, msg) {
           if(err) return cb(err)
           cb(null, msg.message)
         })
@@ -82,7 +77,7 @@ module.exports = function (db, opts) {
     return pull(
       pl.read(feedDB, opts),
       paramap(function (key, cb) {
-        db.get(encode(key), cb)
+        db.get(key, cb)
       })
     )
   }
@@ -91,18 +86,18 @@ module.exports = function (db, opts) {
     return pull(
       pl.read(lastDB),
       pull.map(function (data) {
-        var d = {id: bytewise.decode(data.key), sequence: data.value}
+        var d = {id: data.key, sequence: data.value}
         return d
       })
     )
   }
 
   db.follow = function (other, cb) {
-    lastDB.put(encode(other), 0, cb)
+    lastDB.put(other, 0, cb)
   }
 
   db.isFollowing = function (other, cb) {
-    lastDB.get(encode(other), cb)
+    lastDB.get(other, cb)
   }
 
   db.following = function () {
@@ -112,13 +107,13 @@ module.exports = function (db, opts) {
   db.createHistoryStream = function (id, seq, live) {
     return pull(
       pl.read(clockDB, {
-        start:   encode([id, seq]),
-        end:  encode([id, MAX_INT]),
+        start:   [id, seq],
+        end:  [id, MAX_INT],
         tail: live, live: live,
         keys: false
       }),
       paramap(function (key, cb) {
-        db.get(encode(key), cb)
+        db.get(key, cb)
       })
     )
   }
@@ -143,11 +138,11 @@ module.exports = function (db, opts) {
   }
 
   db.getLatest = function (id, cb) {
-    lastDB.get(encode(id), function (err, v) {
+    lastDB.get(id, function (err, v) {
       if(err) return cb(err)
-      clockDB.get(encode([id, v]), function (err, hash) {
+      clockDB.get([id, v], function (err, hash) {
         if(err) return cb(err)
-        db.get(encode(hash), cb)
+        db.get(hash, cb)
       })
     })
   }

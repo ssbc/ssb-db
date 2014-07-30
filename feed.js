@@ -38,7 +38,6 @@ module.exports = function (ssb, keys, opts) {
         while(queue.length) {
           var m = queue.shift()
           prev = create(keys, m.type, m.message, prev)
-          console.log(prev)
           ssb.add(prev, m.cb)
         }
       }
