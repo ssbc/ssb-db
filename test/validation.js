@@ -34,7 +34,6 @@ module.exports = function (opts) {
           t.deepEqual(opts.hash(opts.encode(_msg)), msg.previous)
         _msg = msg
         if(err) throw err
-        console.log('validated?', err, msg.sequence)
         if(msg.sequence === 3)
           t.end()
       })
