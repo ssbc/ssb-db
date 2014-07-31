@@ -15,16 +15,16 @@ module.exports = function (sbs, opts, cb) {
 
   //source: stream {id: hash(pubkey), sequence: latest}
   //pairs, then {okay: true} to show you are at the end.
-  source.add(cat([sbs.latest(), pull.once(1)]))
+  source.add(cat([sbs.latest(), pull.once({okay: true})]))
 
   //sink: filter out metadata, and write the actual data.
   var sink = pull(
     pull.filter(function (data) {
       if(data.author) return true
-      if(u.isHash(data.id) && u.isInteger(data.sequence)) {
+      else if(u.isHash(data.id) && u.isInteger(data.sequence)) {
         source.add(sbs.createHistoryStream(data.id, data.sequence, opts.live))
       }
-      if(data === 1)
+      else if(data && data.okay === true)
         source.cap()
     }),
     sbs.createWriteStream(cb)
