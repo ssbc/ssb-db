@@ -36,14 +36,14 @@ var Message = varstruct({
   signature : signature
 })
 
-function fixed(codec, value) {
+function fixed(codec, encodeAs, decodeAs) {
   function encode (v,b,o) {
-    return codec.encode(value,b,o)
+    return codec.encode(encodeAs,b,o)
   }
   function decode (b,o) {
     var v = codec.decode(b,o)
-    assert.deepEqual(v, value)
-    return v
+    assert.deepEqual(v, encodeAs)
+    return decodeAs || v
   }
   var length = codec.length || codec.encodingLength(value)
   encode.bytesWritten = decode.bytesRead = length
@@ -108,6 +108,8 @@ var ReferencedIndex = varstruct({
   sequence: varstruct.UInt64
 })
 
+var Okay =
+  fixed(varstruct.buffer(4), new Buffer('okay'), {okay: true})
 
 exports = module.exports =
   varmatch(varstruct.varint)
@@ -125,30 +127,9 @@ exports = module.exports =
   })
   .type(3, LatestKey, isHash)
   .type(4, varstruct.varint, isInteger)
-//  .type(5, TypeIndex, function (t) {
-//     return (
-//         Buffer.isBuffer(t.type)
-//      && isHash(t.id)
-//      && isInteger(t.sequence)
-//      && !t.reference && !t.referenced
-//    )
-//  })
-//  .type(6, ReferenceIndex, function (t) {
-//     return (
-//      Buffer.isBuffer(t.type)
-//    && isHash(t.id)
-//    && isInteger(t.sequence)
-//    && isHash(t.reference)
-//    )
-//  })
-//  .type(7, ReferencedIndex, function (t) {
-//     return (
-//       isHash(t.referenced)
-//    && Buffer.isBuffer(t.type)
-//    && isHash(t.id)
-//    && isInteger(t.sequence)
-//    )
-//  })
+  .type(5, Okay, function (b) {
+    return b && b.okay
+  })
 
 exports.UnsignedMessage = UnsignedMessage
 exports.Message = Message
