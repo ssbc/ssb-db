@@ -17,7 +17,7 @@ module.exports = function (opts) {
 
 
   tape('simple', function (t) {
-    var keys = opts.generate()
+    var keys = opts.keys.generate()
     var id = opts.hash(keys.public)
 
     var prev
@@ -31,7 +31,7 @@ module.exports = function (opts) {
     messages.forEach(function (msg) {
       validation.validate(msg, function (err) {
         if(_msg)
-          t.deepEqual(opts.hash(opts.encode(_msg)), msg.previous)
+          t.deepEqual(opts.hash(opts.codec.encode(_msg)), msg.previous)
         _msg = msg
         if(err) throw err
         if(msg.sequence === 3)
@@ -41,7 +41,7 @@ module.exports = function (opts) {
   })
 
   tape('add & validate', function (t) {
-    var keys = opts.generate()
+    var keys = opts.keys.generate()
     var id = opts.hash(keys.public)
     var prev
     ssb.add(
@@ -75,7 +75,7 @@ module.exports = function (opts) {
   })
 
   tape('race: should queue', function (t) {
-    var keys = opts.generate()
+    var keys = opts.keys.generate()
     var id = opts.hash(keys.public)
     var prev, calls = 0
     ssb.add(

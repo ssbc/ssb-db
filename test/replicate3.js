@@ -42,7 +42,7 @@ module.exports = function (opts) {
   var MESSAGE = new Buffer('msg')
 
   function init (ssb, n, cb) {
-    var keys = opts.generate()
+    var keys = opts.keys.generate()
     var prev
 
     ssb.add(prev = create(keys, 'init', keys.public), function () {

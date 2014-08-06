@@ -40,22 +40,22 @@ module.exports = function (opts) {
   // encode, hash, sign, verify
   tape('simple', function (t) {
 
-    var keys = opts.generate()
+    var keys = opts.keys.generate()
 
     var msg = create(keys, 'init', keys.public)
 
-    var encoded = opts.encode(msg)
+    var encoded = opts.codec.encode(msg)
     var hash = opts.hash(encoded)
-    var sig = opts.sign(keys, hash)
+    var sig = opts.keys.sign(keys, hash)
 
-    opts.verify(keys, sig, hash)
+    opts.keys.verify(keys, sig, hash)
 
     for(var i = 0; i < 3; i++) {
-      t.notOk(opts.verify(keys, flipRandomBit(sig), hash))
-      t.notOk(opts.verify(keys, sig, flipRandomBit(hash)))
+      t.notOk(opts.keys.verify(keys, flipRandomBit(sig), hash))
+      t.notOk(opts.keys.verify(keys, sig, flipRandomBit(hash)))
 
-      var _keys = opts.generate()
-      t.notOk(opts.verify(_keys, sig, hash))
+      var _keys = opts.keys.generate()
+      t.notOk(opts.keys.verify(_keys, sig, hash))
     }
     t.end()
   })
@@ -64,7 +64,7 @@ module.exports = function (opts) {
 
   tape('validate message', function (t) {
 
-    var keys = opts.generate()
+    var keys = opts.keys.generate()
 
     var msg = create(keys, 
       'init',      //type
