@@ -128,39 +128,54 @@ secure-scuttlebutt works.
 
 The following methods all apply to a `SecureScuttlebutt` instance
 
-### .createFeed (keys?)
+### SecureScuttlebutt#createFeed (keys?)
 
-Create a Feed object. This handles the state needed to append valid
-messages to a feed.
+Create a Feed object. A feed is a chain of messages signed
+by a single key (the identity of the feed).
+This handles the state needed to append valid messages to a feed.
+If keys are not provided, then a new key pair will be generated.
 
-### .follow (id)
+#### Feed#add (type, message, cb)
+
+Adds a message of a given type to a feed.
+This is the recommended way to append messages.
+
+#### Feed#id
+
+the id of the feed (which is the hash of the feeds public key)
+
+#### Feed#keys
+
+the key pair for this feed.
+
+### SecureScuttlebutt#follow (id)
 
 Mark `id`'s feed as replicated. this instance will request
 data created by `id` when replicating.
 see [createReplicationStream](#createReplicationStream)
 The id must be the hash of id's public key.
 
-### .getPublicKey(id, cb)
+### SecureScuttlebutt#getPublicKey(id, cb)
 
 Retrive the public key for `id`, if it is in the database.
 If you have replicated id's data then you will have the public key,
 as public keys are contained in the first message.
 
-### .createFeedStream (opts)
+### SecureScuttlebutt#createFeedStream (opts)
 
 Create a [pull-stream](https://github.com/dominictarr/pull-stream)
 of the data in the database, ordered by timestamps.
 All [pull-level](https://github.com/dominictarr/pull-level) options
 are allowed (start, end, reverse, tail)
 
-### .createHistoryStream (id, seq?, live?)
+### SecureScuttlebutt#createHistoryStream (id, seq?, live?)
 
 Create a stream of the history of `id`. If `seq > 0`, then
 only stream messages with sequence numbers greater than `seq`.
 if `live` is true, the stream will be a
 [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
-### .createReplicationStream()
+### SecureScuttlebutt#createReplicationStream()
 
 Create a duplex pull-stream that speak's secure-scuttlebutt's replication protocol.
 this will be a pull-stream so you will need to use it with 

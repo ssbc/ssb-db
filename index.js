@@ -60,6 +60,12 @@ module.exports = function (db, opts) {
     return cb ? cont(cb) : cont
   }
 
+  //msg must be an already valid message, with signature.
+  //since creating this involves some state (it must increment
+  //the sequence and point to the previous message)
+  //it's recommended to append messages via a Feed object
+  //which will manage that for you. (see feed.js)
+
   db.add = function (msg, cb) {
     //check that msg is valid (follows from end of database)
     //then insert into database.
