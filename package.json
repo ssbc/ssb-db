@@ -30,10 +30,10 @@
     "rc": "~0.3.5",
     "signed-varint": "~1.0.0",
     "level-worklog": "~0.0.0",
-    "monotonic-timestamp": "~0.0.8"
+    "monotonic-timestamp": "~0.0.8",
     "varint": "~1.2.0",
     "varstruct": "~3.0.1",
-    "varstruct-match": "~1.0.0",
+    "varstruct-match": "~1.0.0"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
@@ -43,6 +43,7 @@
     "level-sublevel": "~6.2.1",
     "level-test": "~1.6.2",
     "ltgt": "~1.0.2",
+    "memdb": "^0.2.0",
     "tape": "~2.12.3"
   },
   "scripts": {
