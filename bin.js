@@ -63,13 +63,13 @@ try {
         .replace(/\s*\#[^\n]*/g, '')
     )
   keys = ecc.restore(k256, PRIVATE)
-} catch (err) { 
+} catch (err) {
   console.error(err)
 }
 
 var config = require('./config')
 
-var db = level(dbpath, {keyEncoding: 'binary', valueEncoding: 'binary'})
+var db = level(dbpath, {valueEncoding: 'binary'})
 var scuttlebutt = ScuttlebuttSecure(db)
 
 exports.create = function (args, opts, cb) {
