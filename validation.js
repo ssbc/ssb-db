@@ -27,8 +27,8 @@ module.exports = function (ssb, opts) {
   var zeros = opts.hash(new Buffer(0))
       zeros.fill(0)
 
-  var verify = opts.verify
-  var encode = opts.encode
+  var verify = opts.keys.verify
+  var encode = opts.codec.encode
 
   var validators = {}
 

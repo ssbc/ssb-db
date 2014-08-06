@@ -9,7 +9,7 @@ module.exports = function (opts) {
   function sign (msg, keys) {
 
     msg.signature =
-      opts.sign(keys, opts.hash(opts.encode(msg)))
+      opts.keys.sign(keys, opts.hash(opts.codec.encode(msg)))
 
     return msg
   }
@@ -20,7 +20,7 @@ module.exports = function (opts) {
 
   function create (keys, type, content, prev) {
     return sign({
-      previous: prev ? opts.hash(opts.encode(prev)) : zeros,
+      previous: prev ? opts.hash(opts.codec.encode(prev)) : zeros,
       author: opts.hash(keys.public),
       sequence: prev ? prev.sequence + 1 : 1,
       timestamp: Date.now(),

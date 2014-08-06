@@ -8,40 +8,41 @@ var codec   = require('./codec')
 
 var curve   = ecc.curves.k256
 
-exports.hash = function (data) {
-  return new Blake2s().update(data).digest()
+// this is all the developer specifiable things
+// you need to give secure-scuttlebutt to get it to work.
+// these should not be user-configurable, but it will
+// be handy for forks to be able to use different
+// crypto or encodings etc.
+
+module.exports = {
+
+  hash: function (data, enc) {
+    return new Blake2s().update(data, enc).digest()
+  },
+
+  keys: {
+    generate: function () {
+      return ecc.restore(curve, crypto.randomBytes(32))
+    },
+    sign: function (pub, hash) {
+      return ecc.sign(curve, pub, hash)
+    },
+    verify: function (pub, sig, hash) {
+      return ecc.verify(curve, pub, sig, hash)
+    },
+    codec: {
+      decode: function (private) {
+        return ecc.restore(curve, private)
+      },
+      encode: function (keys) {
+        return keys.private
+      },
+      //this makes this a valid level codec.
+      buffer: true
+    }
+  },
+
+  codec: codec
+
 }
-
-exports.generate = function () {
-  return ecc.restore(curve, crypto.randomBytes(32))
-}
-
-exports.restore = function (private) {
-  return ecc.restore(curve, private)
-}
-
-exports.serializeKeys = function (keys) {
-  return keys.private
-}
-
-exports.verify = function (pub, sig, hash) {
-  return ecc.verify(curve, pub, sig, hash)
-}
-
-exports.sign = function (pub, hash) {
-  return ecc.sign(curve, pub, hash)
-}
-
-exports.encode = codec.encode
-exports.decode = codec.decode
-exports.buffer = true
-
-//exports.encode = function (data) {
-//  return JSONB.stringify(data)
-//}
-//
-//exports.decode = function (data) {
-//  return JSONB.parse(data)
-//}
-
 
