@@ -8,7 +8,7 @@
     "url": "git://github.com/dominictarr/secure-scuttlebutt.git"
   },
   "dependencies": {
-    "eccjs": "git://github.com/dominictarr/eccjs.git",
+    "eccjs": "git://github.com/dominictarr/eccjs.git#f575e740a1838e6ca483eb59837624952c24d497",
     "blake2s": "~1.0.0",
     "bytewise": "~0.7.0",
     "continuable": "~1.1.8",
@@ -38,12 +38,9 @@
   "devDependencies": {
     "deep-equal": "^0.2.1",
     "json-buffer": "^2.0.9",
-    "level": "~0.18.0",
-    "level-mem": "~0.18.0",
     "level-sublevel": "~6.2.1",
     "level-test": "~1.6.2",
     "ltgt": "~1.0.2",
-    "memdb": "^0.2.0",
     "tape": "~2.12.3"
   },
   "scripts": {
