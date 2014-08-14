@@ -153,5 +153,21 @@ module.exports = function (db, opts) {
     })
   }
 
+  db.createLogStream = function (opts) {
+    var _opts = {
+      gt : opts && opts.gt || 0, tail: opts && opts.tail || false
+    }
+    return pull(
+      pl.read(logDB, opts),
+      paramap(function (data, cb) {
+        var key = data.value
+        var seq = data.key
+        db.get(key, function (err, value) {
+          cb(err, {key: key, value: value, timestamp: seq})
+        })
+      })
+    )
+  }
+
   return db
 }
