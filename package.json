@@ -33,7 +33,8 @@
     "monotonic-timestamp": "~0.0.8",
     "varint": "~1.2.0",
     "varstruct": "~3.0.1",
-    "varstruct-match": "~1.0.0"
+    "varstruct-match": "~1.0.0",
+    "deep-equal": "~0.2.1"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
