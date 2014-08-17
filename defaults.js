@@ -1,7 +1,6 @@
 
 var Blake2s = require('blake2s')
 var crypto  = require('crypto')
-var JSONB   = require('json-buffer')
 var ecc     = require('eccjs')
 
 var codec   = require('./codec')
