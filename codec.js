@@ -141,5 +141,5 @@ exports.ReferenceIndex = ReferenceIndex
 exports.ReferencedIndex = ReferencedIndex
 
 exports.buffer = true
-
+exports.type = 'secure-scuttlebutt-codec'
 
