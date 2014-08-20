@@ -1,7 +1,7 @@
 {
   "name": "secure-scuttlebutt",
   "description": "a secure, replicatable database",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "homepage": "https://github.com/dominictarr/secure-scuttlebutt",
   "repository": {
     "type": "git",
