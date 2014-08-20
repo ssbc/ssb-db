@@ -139,7 +139,7 @@ module.exports = function (db, opts) {
 
   db.createFeed = function (keys) {
     if(!keys)
-      keys = opts.generate()
+      keys = opts.keys.generate()
     return Feed(db, keys, opts)
   }
 
