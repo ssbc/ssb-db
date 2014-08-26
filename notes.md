@@ -146,4 +146,15 @@ auth them, so you don't tell them about private feeds,
 for this, you probably want to keep followers and blocks and privacy
 settings in memory.
 
+## Relays
+
+1. start a server on a static ip address
+2. command that server to relay you.
+   this is like following you, but also replicating everyone you follow.
+3. back on your local instance, add that node as your initial relay.
+
+so this depends on two things: a relay message, that points to an addressable
+node that follows you, and being able to traverse follow messages.
+to get the network of a given node...
+
 
