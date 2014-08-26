@@ -102,6 +102,10 @@ module.exports = function (db, opts) {
     lastDB.put(other, 0, cb)
   }
 
+  db.unfollow = function (other, cb) {
+    lastDB.del(other, cb)
+  }
+
   db.isFollowing = function (other, cb) {
     lastDB.get(other, cb)
   }
