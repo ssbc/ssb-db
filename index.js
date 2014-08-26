@@ -144,7 +144,9 @@ module.exports = function (db, opts) {
   }
 
   db.createReplicationStream = function (cb) {
-    return replicate(db, cb || function () {})
+    return replicate(db, cb || function (err) {
+      throw err
+    })
   }
 
   db.createFeed = function (keys) {
