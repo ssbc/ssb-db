@@ -46,23 +46,12 @@ module.exports = function (opts) {
       var cb2 = u.groups(done2)
 
       var server = net.createServer(function (stream) {
-
+        stream.on('data', console.log)
         stream
           .pipe(toStream( replicate(sbs1, cb2()) ))
           .pipe(stream)
 
       }).listen(null, function () {
-
-        var b = replicate(sbs2, cb2())
-
-    console.log(b)
-
-//        pull(a,
-//          pull.through(function (e) {console.log('>>>', e); ary.push(e)}),
-//          b,
-//          pull.through(function (e) {console.log('<<<', e)}),
-//          a)
-//
 
         var stream = net.connect(server.address().port)
         stream.pipe(toStream( replicate(sbs2, cb2()) )).pipe(stream)
