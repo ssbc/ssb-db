@@ -123,8 +123,8 @@ module.exports = function (db, opts) {
   db.createHistoryStream = function (id, seq, live) {
     return pull(
       pl.read(clockDB, {
-        start:   [id, seq],
-        end:  [id, MAX_INT],
+        gte:  [id, seq],
+        lte:  [id, MAX_INT],
         tail: live, live: live,
         keys: false
       }),
