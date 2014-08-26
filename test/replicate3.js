@@ -1,17 +1,10 @@
 'use strict';
 
-var level     = require('level-test')()
-var sublevel  = require('level-sublevel/bytewise')
 var pull      = require('pull-stream')
-var ecc       = require('eccjs')
 var tape      = require('tape')
 
-var SSB       = require('../')
 var u         = require('../util')
 var replicate = require('../replicate')
-
-var codec     = require('../codec')
-var JSONB     = require('json-buffer')
 
 //create a instance with a feed
 //then have another instance follow it.
@@ -25,60 +18,17 @@ function rand (n) {
 
 module.exports = function (opts) {
 
-  var create = require('../message')(opts)
-
-  function createDB(name) {
-    return SSB(sublevel(level(name, {
-      valueEncoding: 
-        require('../codec')
-//      {
-//        encode: JSONB.stringify,
-//        decode: JSONB.parse,
-//        buffer: false
-//      }
-    })), opts)
-  }
-
-  var MESSAGE = new Buffer('msg')
-
-  function init (ssb, n, cb) {
-    var keys = opts.keys.generate()
-    var prev
-
-    ssb.add(prev = create(keys, 'init', keys.public), function () {
-      pull(
-        pull.values(rand(n)),
-        pull.asyncMap(function (r, cb) {
-          ssb.add(prev =
-            create(keys, 'msg', ''+r, prev), cb)
-        }),
-        pull.drain(null, cb)
-      )
-    })
-      return keys
-  }
-
-  function compareDbs (a, b, cb) {
-
-    var cbs = u.groups(next)
-
-    pull(a.createFeedStream(), pull.collect(cbs()))
-    pull(b.createFeedStream(), pull.collect(cbs()))
-
-    function next(err, ary) {
-      cb(err, ary && ary[0], ary && ary[1])
-    }
-  }
+  var w = require('./util')(opts)
 
   tape('simple replicate', function (t) {
 
-    var sbs1 = createDB('sbs-replicate1')
-    var sbs2 = createDB('sbs-replicate2')
+    var sbs1 = w.createDB('sbs-replicate1')
+    var sbs2 = w.createDB('sbs-replicate2')
 
     var cb1 = u.groups(done)
 
-    var f1 = init(sbs1, 5, cb1())
-    var f2 = init(sbs2, 4, cb1())
+    var f1 = w.init(sbs1, 5, cb1())
+    var f2 = w.init(sbs2, 4, cb1())
 
     sbs2.follow(opts.hash(f1.public), cb1())
     sbs1.follow(opts.hash(f2.public), cb1())
@@ -125,15 +75,15 @@ module.exports = function (opts) {
 
   tape('3-way replicate', function (t) {
 
-    var sbs1 = createDB('sbs-3replicate1')
-    var sbs2 = createDB('sbs-3replicate2')
-    var sbs3 = createDB('sbs-3replicate3')
+    var sbs1 = w.createDB('sbs-3replicate1')
+    var sbs2 = w.createDB('sbs-3replicate2')
+    var sbs3 = w.createDB('sbs-3replicate3')
 
     var cb1 = u.groups(done)
 
-    var f1 = init(sbs1, 10, cb1())
-    var f2 = init(sbs2, 15, cb1())
-    var f3 = init(sbs3, 20, cb1())
+    var f1 = w.init(sbs1, 10, cb1())
+    var f2 = w.init(sbs2, 15, cb1())
+    var f3 = w.init(sbs3, 20, cb1())
 
     sbs1.follow(opts.hash(f2.public), cb1())
     sbs1.follow(opts.hash(f3.public), cb1())
