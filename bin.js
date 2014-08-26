@@ -35,6 +35,7 @@ var osenv    = require('osenv')
 var path     = require('path')
 
 var level    = require('level')
+var sublevel = require('level-sublevel/bytewise')
 var proquint = require('proquint-')
 var ecc      = require('eccjs')
 var k256     = ecc.curves.k256
@@ -69,7 +70,7 @@ try {
 
 var config = require('./config')
 
-var db = level(dbpath, {valueEncoding: 'binary'})
+var db = sublevel(level(dbpath, {valueEncoding: 'binary'}))
 var scuttlebutt = ScuttlebuttSecure(db)
 
 exports.create = function (args, opts, cb) {
