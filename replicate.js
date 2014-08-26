@@ -22,7 +22,7 @@ module.exports = function (sbs, opts, cb) {
     pull.filter(function (data) {
       if(data.author) return true
       else if(u.isHash(data.id) && u.isInteger(data.sequence)) {
-        source.add(sbs.createHistoryStream(data.id, data.sequence, opts.live))
+        source.add(sbs.createHistoryStream(data.id, data.sequence + 1, opts.live))
       }
       else if(data && data.okay === true)
         source.cap()
