@@ -19,7 +19,7 @@
     "proquint-": "~1.1.0",
     "pull-cat": "~1.1.5",
     "pull-stream": "~2.23.0",
-    "pull-paramap": "~1.0.5",
+    "pull-paramap": "~1.1.1",
     "pull-delayed-sink": "~1.0.0",
     "pull-level": "~1.1.10",
     "pull-handshake": "~0.0.2",
