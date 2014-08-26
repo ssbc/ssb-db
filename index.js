@@ -30,16 +30,22 @@ module.exports = function (db, opts) {
       key: [msg.author, msg.sequence], value: op.key,
       type: 'put', prefix: clockDB
     })
+
+    // index my timestamp, used to generate feed.
     add({
       key: [msg.timestamp, msg.author], value: op.key,
       type: 'put', prefix: feedDB
     })
+
     // index the latest message from each author
     add({
       key: msg.author, value: msg.sequence,
       type: 'put', prefix: lastDB
     })
 
+    // index messages in the order _received_
+    // this will be used to pass to plugins which
+    // must create their indexes asyncly.
     add({
       key: timestamp(), value: op.key,
       type: 'put', prefix: logDB
