@@ -15,7 +15,7 @@ module.exports = function (sbs, opts, cb) {
 
   //source: stream {id: hash(pubkey), sequence: latest}
   //pairs, then {okay: true} to show you are at the end.
-  source.add(cat([sbs.latest(), pull.once({okay: true})]))
+  source.add(sbs.latest()))
 
   //sink: filter out metadata, and write the actual data.
   var expected = {}
@@ -30,16 +30,6 @@ module.exports = function (sbs, opts, cb) {
           sbs.createHistoryStream(data.id, data.sequence + 1, opts.live)
         )
       }
-      else if(data && data.okay === true) {
-//        n--
-//        process.nextTick(function () {
-//          if(n === 0) {
-//            console.log('ENDED FAST')
-//            source.cap()
-//          }
-//        })
-      }
-        //source.cap()
     }),
     pull(
       pull.through(function (msg) {
