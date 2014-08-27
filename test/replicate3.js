@@ -82,11 +82,106 @@ module.exports = function (opts, duplexPipe, name) {
   }
 
   createSimple(1, 1)
-
   createSimple(1, 2)
-
-  //this one is failing with net currently.
   createSimple(3, 2)
+
+  function createReplicate(ssb1, ssb2, cb) {
+
+    var cb2 = u.groups(done2)
+
+    var a = replicate(ssb1, {progress: log('A')}, cb2())
+    var b = replicate(ssb2, {progress: log('B')}, cb2())
+
+    duplexPipe(a, b)
+
+    function done2 (err) {
+      if(err) throw err
+      //now check that the databases have really been updated.
+
+      var cbs = u.groups(next)
+
+      pull(ssb1.createFeedStream(), pull.collect(cbs()))
+      pull(ssb2.createFeedStream(), pull.collect(cbs()))
+
+      function next (err, ary) {
+        cb(err, ary)
+      }
+    }
+  }
+
+  tape(name + ': replicate when already in sync', function (t) {
+    var s = ''+ z++
+
+    var ssb1 = w.createDB('sbs-replicate1_' + name + s)
+    var ssb2 = w.createDB('sbs-replicate2_' + name + s)
+
+    var cb1 = u.groups(next)
+
+    var f1 = w.init(ssb1, 5, cb1())
+    var f2 = w.init(ssb2, 4, cb1())
+
+    ssb2.follow(opts.hash(f1.public), cb1())
+    ssb1.follow(opts.hash(f2.public), cb1())
+
+    function next (err) {
+      if(err) throw err
+
+      createReplicate(ssb1, ssb2, function (err, ary) {
+        t.deepEqual(ary[0].map(hash), ary[1].map(hash))
+        //*******************************************
+
+        console.log('replicate when already in sync!')
+        createReplicate(ssb1, ssb2, function (err, ary) {
+
+          t.deepEqual(ary[0].map(hash), ary[1].map(hash))
+          console.log('replicated!!!')
+          t.end()
+
+        })
+      })
+    }
+  })
+
+  tape(name + ': replicate when already in sync', function (t) {
+
+    var s = ''+ z++
+
+    var ssb1 = w.createDB('sbs-replicate1_' + name + s)
+    var ssb2 = w.createDB('sbs-replicate2_' + name + s)
+
+    var cb1 = u.groups(next)
+
+    var f1 = w.init(ssb1, 5, cb1())
+    var f2 = w.init(ssb2, 4, cb1())
+
+    ssb2.follow(opts.hash(f1.public), cb1())
+    ssb1.follow(opts.hash(f2.public), cb1())
+
+    function next (err) {
+      if(err) throw err
+
+      createReplicate(ssb1, ssb2, function (err, ary) {
+        t.deepEqual(ary[0].map(hash), ary[1].map(hash))
+        //*******************************************
+        var cb2 = u.groups(next)
+
+        w.load(ssb1, f1, 3, cb2())
+        w.load(ssb2, f2, 2, cb2())
+
+        function next () {
+
+          console.log('replicate after updating')
+          createReplicate(ssb1, ssb2, function (err, ary) {
+
+            t.deepEqual(ary[0].map(hash), ary[1].map(hash))
+            console.log('replicated!!!')
+            t.end()
+          })
+        }
+      })
+    }
+  })
+
 
   tape(name + ': 3-way replicate', function (t) {
 
@@ -142,7 +237,6 @@ module.exports = function (opts, duplexPipe, name) {
           function next (err, ary) {
             if(err) throw err
 
-  //          t.deepEqual(ary[0], ary[1])
             t.deepEqual(ary[0].map(hash), ary[1].map(hash))
 
             console.log('replicated!!!')
@@ -160,11 +254,7 @@ if(!module.parent) {
   var opts = require('../defaults')
 
   module.exports(opts, function (a, b) {
-    pull(a,
-//      pull.through(function (e) {console.log('>>>', e)}),
-      b,
-//      pull.through(function (e) {console.log('<<<', e)}),
-      a)
+    pull(a, b, a)
   }, 'pull-stream')
 
   var toStream = require('pull-stream-to-stream')
@@ -179,6 +269,5 @@ if(!module.parent) {
       })
     })
   }, 'net')
-
 
 }
