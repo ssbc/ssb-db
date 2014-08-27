@@ -160,9 +160,9 @@ if(!module.parent) {
 
   module.exports(opts, function (a, b) {
     pull(a,
-      pull.through(function (e) {console.log('>>>', e)}),
+//      pull.through(function (e) {console.log('>>>', e)}),
       b,
-      pull.through(function (e) {console.log('<<<', e)}),
+//      pull.through(function (e) {console.log('<<<', e)}),
       a)
   }, 'pull-stream')
 
