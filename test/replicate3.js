@@ -2,6 +2,7 @@
 
 var pull      = require('pull-stream')
 var tape      = require('tape')
+var net       = require('net')
 
 var u         = require('../util')
 var replicate = require('../replicate')
@@ -15,69 +16,82 @@ function rand (n) {
     a.push(Math.random())
   return a
 }
+var z = 0
 
-module.exports = function (opts) {
-
+module.exports = function (opts, duplexPipe, name) {
+  var s = z++
   var w = require('./util')(opts)
 
-  tape('simple replicate', function (t) {
+  //used to hash the feed output to make assertion failures easier to eyeball.
+  function hash(msg) {
+    return opts.hash(opts.codec.encode(msg)).toString('hex')
+  }
 
-    var sbs1 = w.createDB('sbs-replicate1')
-    var sbs2 = w.createDB('sbs-replicate2')
+  function createSimple(n,m) {
+    tape(name + ': simple replicate ' + JSON.stringify([n,m]), function (t) {
+      var s = ''+ z++
 
-    var cb1 = u.groups(done)
+      var sbs1 = w.createDB('sbs-replicate1_' + name + s)
+      var sbs2 = w.createDB('sbs-replicate2_' + name + s)
 
-    var f1 = w.init(sbs1, 5, cb1())
-    var f2 = w.init(sbs2, 4, cb1())
+      var cb1 = u.groups(done)
 
-    sbs2.follow(opts.hash(f1.public), cb1())
-    sbs1.follow(opts.hash(f2.public), cb1())
+      var f1 = w.init(sbs1, n, cb1())
+      var f2 = w.init(sbs2, m, cb1())
 
-    var ary = [], n = 1
+      sbs2.follow(opts.hash(f1.public), cb1())
+      sbs1.follow(opts.hash(f2.public), cb1())
 
-    function done (err) {
-      console.log('initialized')
+      var ary = [], n = 1
 
-      if(err) throw err
-      var cb2 = u.groups(done2)
+      function done (err) {
+        console.log('initialized')
 
-      var a = replicate(sbs1, cb2())
-      var b = replicate(sbs2, cb2())
-
-      pull(a,
-        pull.through(function (e) {console.log('>>>', e); ary.push(e)}),
-        b,
-        pull.through(function (e) {console.log('<<<', e)}),
-        a)
-
-      function done2 (err) {
-        console.log('REPLICATED')
         if(err) throw err
-        //now check that the databases have really been updated.
+        var cb2 = u.groups(done2)
 
-        var cbs = u.groups(next)
+        var a = replicate(sbs1, cb2())
+        var b = replicate(sbs2, cb2())
 
-        pull(sbs1.createFeedStream(), pull.collect(cbs()))
-        pull(sbs2.createFeedStream(), pull.collect(cbs()))
+        duplexPipe(a, b)
 
-        function next (err, ary) {
+        function done2 (err) {
+          console.log('REPLICATED')
           if(err) throw err
+          //now check that the databases have really been updated.
 
-          t.deepEqual(ary[0], ary[1])
+          var cbs = u.groups(next)
 
-          console.log('replicated!!!')
-          t.end()
+          pull(sbs1.createFeedStream(), pull.collect(cbs()))
+          pull(sbs2.createFeedStream(), pull.collect(cbs()))
+
+          function next (err, ary) {
+            if(err) throw err
+
+//            t.deepEqual(ary[0], ary[1])
+            t.deepEqual(ary[0].map(hash), ary[1].map(hash))
+
+            console.log('replicated!!!')
+            t.end()
+          }
         }
       }
-    }
-  })
+    })
 
+  }
 
-  tape('3-way replicate', function (t) {
+  createSimple(1, 1)
 
-    var sbs1 = w.createDB('sbs-3replicate1')
-    var sbs2 = w.createDB('sbs-3replicate2')
-    var sbs3 = w.createDB('sbs-3replicate3')
+  createSimple(1, 2)
+
+  //this one is failing with net currently.
+  createSimple(3, 2)
+
+  tape(name + ': 3-way replicate', function (t) {
+
+    var sbs1 = w.createDB('sbs-3replicate1_' + name + s)
+    var sbs2 = w.createDB('sbs-3replicate2_' + name + s)
+    var sbs3 = w.createDB('sbs-3replicate3_' + name + s)
 
     var cb1 = u.groups(done)
 
@@ -94,7 +108,6 @@ module.exports = function (opts) {
     sbs3.follow(opts.hash(f1.public), cb1())
     sbs3.follow(opts.hash(f2.public), cb1())
 
-
     var ary = []
 
     function done (err) {
@@ -104,13 +117,7 @@ module.exports = function (opts) {
       var a = replicate(sbs1, cb2())
       var b = replicate(sbs2, cb2())
 
-      pull(
-        a,
-        pull.through(function (e) {console.log('>>>', e)}),
-        b,
-        pull.through(function (e) {console.log('>>>', e)}),
-        a
-      )
+      duplexPipe(a, b)
 
       function done2 (err) {
         if(err) throw err
@@ -121,13 +128,7 @@ module.exports = function (opts) {
         var c = sbs3.createReplicationStream(cb3())
         var d = sbs2.createReplicationStream(cb3())
 
-        pull(
-          c,
-          pull.through(function (e) {console.log('>>>', e)}),
-          d,
-          pull.through(function (e) {console.log('>>>', e)}),
-          c
-        )
+        duplexPipe(c, d)
 
         function done3 (err) {
           if(err) throw err
@@ -140,7 +141,8 @@ module.exports = function (opts) {
           function next (err, ary) {
             if(err) throw err
 
-            t.deepEqual(ary[0], ary[1])
+  //          t.deepEqual(ary[0], ary[1])
+            t.deepEqual(ary[0].map(hash), ary[1].map(hash))
 
             console.log('replicated!!!')
             t.end()
@@ -153,5 +155,29 @@ module.exports = function (opts) {
 
 }
 
-if(!module.parent)
-  module.exports(require('../defaults'))
+if(!module.parent) {
+  var opts = require('../defaults')
+
+  module.exports(opts, function (a, b) {
+    pull(a,
+      pull.through(function (e) {console.log('>>>', e)}),
+      b,
+      pull.through(function (e) {console.log('<<<', e)}),
+      a)
+  }, 'pull-stream')
+
+  var toStream = require('pull-stream-to-stream')
+  module.exports(opts, function (a, b) {
+    var server = net.createServer(function (stream) {
+      stream.pipe(toStream(a)).pipe(stream)
+    }).listen(function () {
+      var stream = net.connect(server.address().port)
+      stream.pipe(toStream(b)).pipe(stream)
+      stream.on('close', function () {
+        server.close()
+      })
+    })
+  }, 'net')
+
+
+}
