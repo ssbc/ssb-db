@@ -33,6 +33,21 @@ module.exports = function (opts) {
 
   var MESSAGE = new Buffer('msg')
 
+  function load (ssb, keys, n, cb) {
+    var prev
+    ssb.getLatest(opts.hash(keys.public), function (err, prev) {
+      if(err) return cb(err)
+      pull(
+        pull.values(rand(n)),
+        pull.asyncMap(function (r, cb) {
+          ssb.add(prev =
+            create(keys, 'msg', ''+r, prev), cb)
+        }),
+        pull.drain(null, cb)
+      )
+    })
+  }
+
   function init (ssb, n, cb) {
     var keys = opts.keys.generate()
     var prev
@@ -63,7 +78,7 @@ module.exports = function (opts) {
   }
 
   return {
-    createDB: createDB, init: init, compareDbs: compareDbs
+    createDB: createDB, init: init, compareDbs: compareDbs, load: load
   }
 
 }
