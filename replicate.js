@@ -18,16 +18,38 @@ module.exports = function (sbs, opts, cb) {
   source.add(cat([sbs.latest(), pull.once({okay: true})]))
 
   //sink: filter out metadata, and write the actual data.
+  var expected = {}
+
+  var n = 1
   var sink = pull(
     pull.filter(function (data) {
       if(data.author) return true
       else if(u.isHash(data.id) && u.isInteger(data.sequence)) {
-        source.add(sbs.createHistoryStream(data.id, data.sequence + 1, opts.live))
+        expected[data.id.toString('base64')] = data.sequence
+        source.add(
+          sbs.createHistoryStream(data.id, data.sequence + 1, opts.live)
+        )
       }
-      else if(data && data.okay === true)
-        source.cap()
+      else if(data && data.okay === true) {
+//        n--
+//        process.nextTick(function () {
+//          if(n === 0) {
+//            console.log('ENDED FAST')
+//            source.cap()
+//          }
+//        })
+      }
+        //source.cap()
     }),
-    sbs.createWriteStream(cb)
+    pull(
+      pull.through(function (msg) {
+        if(expected[msg.author.toString('base64')] == msg.sequence) {
+          n--
+          if(n === 0) source.cap()
+        }
+      }),
+      sbs.createWriteStream(cb)
+    )
   )
 
   return {
