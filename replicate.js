@@ -15,17 +15,25 @@ module.exports = function (sbs, opts, cb) {
 
   //source: stream {id: hash(pubkey), sequence: latest}
   //pairs, then {okay: true} to show you are at the end.
-  source.add(sbs.latest()))
+  source.add(sbs.latest())
 
-  //sink: filter out metadata, and write the actual data.
+  //track how many more messages we expect to see.
+  //TODO: expose progress information, to send and to receive.
   var expected = {}
+  function remember(id, seq) {
+    expected[id.toString('base64')] = seq
+  }
+  function check(id, seq) {
+    return expected[id.toString('base64')] == seq
+  }
 
-  var n = 1
+  var n = 0
   var sink = pull(
     pull.filter(function (data) {
       if(data.author) return true
       else if(u.isHash(data.id) && u.isInteger(data.sequence)) {
-        expected[data.id.toString('base64')] = data.sequence
+        remember(data.id, data.sequence)
+        n++
         source.add(
           sbs.createHistoryStream(data.id, data.sequence + 1, opts.live)
         )
@@ -33,7 +41,7 @@ module.exports = function (sbs, opts, cb) {
     }),
     pull(
       pull.through(function (msg) {
-        if(expected[msg.author.toString('base64')] == msg.sequence) {
+        if(check(msg.author, msg.sequence)) {
           n--
           if(n === 0) source.cap()
         }

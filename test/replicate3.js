@@ -27,6 +27,12 @@ module.exports = function (opts, duplexPipe, name) {
     return opts.hash(opts.codec.encode(msg)).toString('hex')
   }
 
+  function log(name) {
+    return function (sent, recv) {
+      console.error(name, (100*sent).toPrecision(3), (100*recv).toPrecision(3))
+    }
+  }
+
   function createSimple(n,m) {
     tape(name + ': simple replicate ' + JSON.stringify([n,m]), function (t) {
       var s = ''+ z++
@@ -50,13 +56,12 @@ module.exports = function (opts, duplexPipe, name) {
         if(err) throw err
         var cb2 = u.groups(done2)
 
-        var a = replicate(sbs1, cb2())
-        var b = replicate(sbs2, cb2())
+        var a = replicate(sbs1, {progress: log('A')}, cb2())
+        var b = replicate(sbs2, {progress: log('B')}, cb2())
 
         duplexPipe(a, b)
 
         function done2 (err) {
-          console.log('REPLICATED')
           if(err) throw err
           //now check that the databases have really been updated.
 
@@ -67,11 +72,7 @@ module.exports = function (opts, duplexPipe, name) {
 
           function next (err, ary) {
             if(err) throw err
-
-//            t.deepEqual(ary[0], ary[1])
             t.deepEqual(ary[0].map(hash), ary[1].map(hash))
-
-            console.log('replicated!!!')
             t.end()
           }
         }
@@ -114,8 +115,8 @@ module.exports = function (opts, duplexPipe, name) {
       if(err) throw err
       var cb2 = u.groups(done2)
 
-      var a = replicate(sbs1, cb2())
-      var b = replicate(sbs2, cb2())
+      var a = replicate(sbs1, {progress: log('A')}, cb2())
+      var b = replicate(sbs2, {progress: log('B')}, cb2())
 
       duplexPipe(a, b)
 
@@ -125,8 +126,8 @@ module.exports = function (opts, duplexPipe, name) {
 
         var cb3 = u.groups(done3)
 
-        var c = sbs3.createReplicationStream(cb3())
-        var d = sbs2.createReplicationStream(cb3())
+        var c = sbs3.createReplicationStream({progress: log('C')}, cb3())
+        var d = sbs2.createReplicationStream({progress: log('B')}, cb3())
 
         duplexPipe(c, d)
 
