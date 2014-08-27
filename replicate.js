@@ -5,16 +5,18 @@ var u    = require('./util')
 var codec = require('./codec')
 var pvstruct = require('pull-varstruct')
 
+function ratio(a, b) {
+  if(a === 0 && b === 0) return 1
+  return a / b
+}
+
 module.exports = function (sbs, opts, cb) {
   if('function' === typeof opts)
     cb = opts, opts = {}
 
   var progress = opts.progress || function () {}
-
   opts = opts || {}
-
   var expected = {}
-
   var source = many()
 
   //source: stream {id: hash(pubkey), sequence: latest}
@@ -26,9 +28,7 @@ module.exports = function (sbs, opts, cb) {
   }
 
   function complete() {
-    var needRecv = 0
-    var needSend = 0
-    var sent = 0, recv = 0
+    var needRecv = 0, needSend = 0, sent = 0, recv = 0
     for(var k in expected) {
       var item = expected[k]
         //if one of us does not need this author, ignore.
@@ -40,7 +40,7 @@ module.exports = function (sbs, opts, cb) {
           ;
         else if (item.me > item.you) {
           needSend += item.me - item.you
-          sent +=item.sent
+          sent += item.sent
         }
         else if (item.you > item.me) {
           needRecv += item.you - item.me
@@ -49,9 +49,26 @@ module.exports = function (sbs, opts, cb) {
       }
     }
 
-    progress(sent / needSend, recv / needRecv)
+    progress(ratio(sent, needSend), ratio(recv, needRecv))
+
     if(needRecv - recv === 0 && needSend - sent === 0) {
       return true
+    }
+  }
+
+  var n = 2
+  function checkEmpty () {
+    if(--n) return
+    if(complete()) source.cap()
+  }
+
+  function once () {
+    var done = false
+    return function (abort, cb) {
+      if(done) return cb(true)
+      done = true
+      checkEmpty()
+      cb(abort, {okay: true})
     }
   }
 
@@ -62,7 +79,7 @@ module.exports = function (sbs, opts, cb) {
         get(data.id).me = data.sequence
       })
     ),
-    pull.once({okay: true})
+    once()
   ]))
 
   //track how many more messages we expect to see.
@@ -77,16 +94,18 @@ module.exports = function (sbs, opts, cb) {
           pull(
             sbs.createHistoryStream(data.id, data.sequence + 1, opts.live),
             pull.through(function (data) {
-              get(data.author).sent = data.sequence
+              get(data.author).sent ++
               if(complete()) source.cap()
             })
           )
         )
       }
+      else if(data.okay) checkEmpty()
+
     }),
     pull(
       pull.through(function (msg) {
-        get(msg.author).recv = msg.sequence
+        get(msg.author).recv ++
         if(complete()) source.cap()
       }),
       sbs.createWriteStream(cb)
