@@ -79,6 +79,8 @@ module.exports = function (sbs, opts, cb) {
         get(data.id).me = data.sequence
       })
     ),
+    //when all the requests are sent, send a marker,
+    //so we can detect if the instances are already in sync.
     once()
   ]))
 
@@ -117,3 +119,4 @@ module.exports = function (sbs, opts, cb) {
     sink: pull(pvstruct.decode(codec), sink)
   }
 }
+
