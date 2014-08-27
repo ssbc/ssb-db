@@ -145,7 +145,7 @@ module.exports = function (db, opts) {
 
   db.createReplicationStream = function (cb) {
     return replicate(db, cb || function (err) {
-      throw err
+      if(err) throw err
     })
   }
 
