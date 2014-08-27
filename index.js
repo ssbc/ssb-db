@@ -167,11 +167,12 @@ module.exports = function (db, opts) {
   }
 
   db.createLogStream = function (opts) {
+    opts = opts || {}
     var _opts = {
-      gt : opts && opts.gt || 0, tail: opts && opts.tail || false
+      gt : opts.gt || 0, tail: opts.tail || false
     }
     return pull(
-      pl.read(logDB, opts),
+      pl.read(logDB, _opts),
       paramap(function (data, cb) {
         var key = data.value
         var seq = data.key
