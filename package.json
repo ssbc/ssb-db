@@ -40,7 +40,7 @@
   "devDependencies": {
     "deep-equal": "^0.2.1",
     "json-buffer": "^2.0.9",
-    "level-sublevel": "~6.2.1",
+    "level-sublevel": "~6.3.7",
     "level-test": "~1.6.2",
     "ltgt": "~1.0.2",
     "tape": "~2.12.3"
