@@ -78,7 +78,7 @@ module.exports = function (db, opts) {
     var n = 1
     validation.validate(msg, function (err) {
       if(--n) throw new Error('called twice')
-      cb(err)
+      cb && cb(err)
     })
   }
 
