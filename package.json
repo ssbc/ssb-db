@@ -18,10 +18,10 @@
     "osenv": "~0.0.3",
     "proquint-": "~1.1.0",
     "pull-cat": "~1.1.5",
-    "pull-stream": "~2.23.0",
+    "pull-stream": "~2.24.1",
     "pull-paramap": "~1.1.1",
     "pull-delayed-sink": "~1.0.0",
-    "pull-level": "~1.1.10",
+    "pull-level": "~1.1.12",
     "pull-handshake": "~0.0.2",
     "pull-switch": "~2.0.0",
     "pull-many": "~1.0.1",
@@ -35,7 +35,7 @@
     "varstruct": "~3.0.1",
     "varstruct-match": "~1.0.0",
     "deep-equal": "~0.2.1",
-    "level-sublevel": "~6.3.1"
+    "level-sublevel": "~6.3.8"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
