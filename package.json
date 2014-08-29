@@ -8,7 +8,8 @@
     "url": "git://github.com/dominictarr/secure-scuttlebutt.git"
   },
   "dependencies": {
-    "eccjs": "git://github.com/dominictarr/eccjs.git#f575e740a1838e6ca483eb59837624952c24d497",
+    "eccjs": "git://github.com/dominictarr/eccjs.git#586f6d47507184a2efe84684ed0a30605cbc43a5
+",
     "blake2s": "~1.0.0",
     "bytewise": "~0.7.0",
     "continuable": "~1.1.8",
