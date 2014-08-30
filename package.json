@@ -26,7 +26,7 @@
     "pull-switch": "~2.0.0",
     "pull-many": "~1.0.1",
     "pull-varstruct": "~1.0.1",
-    "pull-stream-to-stream": "~1.2.6",
+    "pull-stream-to-stream": "~1.3.0",
     "rc": "~0.3.5",
     "signed-varint": "~1.0.0",
     "level-worklog": "~0.0.0",
