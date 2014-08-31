@@ -18,7 +18,7 @@
     "osenv": "~0.0.3",
     "proquint-": "~1.1.0",
     "pull-cat": "~1.1.5",
-    "pull-stream": "~2.24.1",
+    "pull-stream": "~2.24.0",
     "pull-paramap": "~1.1.1",
     "pull-delayed-sink": "~1.0.0",
     "pull-level": "~1.1.12",
