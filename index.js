@@ -6,20 +6,34 @@ var paramap   = require('pull-paramap')
 var replicate = require('./replicate')
 var timestamp = require('monotonic-timestamp')
 var Feed      = require('./feed')
+var assert    = require('assert')
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 
+
+function isString (s) {
+  return 'string' === typeof s
+}
+
+function isFunction (f) {
+  return 'function' === typeof f
+}
+
+
 module.exports = function (db, opts) {
 
-  var logDB = db.sublevel('log')
-  var feedDB = db.sublevel('fd')
+  var logDB   = db.sublevel('log')
+  var feedDB  = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
-  var lastDB = db.sublevel('lst')
+  var lastDB  = db.sublevel('lst')
+  var appsDB  = db.sublevel('app')
 
   function get (db, key) {
     return function (cb) { db.get(encode(key), cb) }
   }
+
+  db.apps = {}
 
   var validation = require('./validation')(db, opts)
 
@@ -181,6 +195,20 @@ module.exports = function (db, opts) {
         })
       })
     )
+  }
+
+  db.app = function (name) {
+    return db.apps[name]
+  }
+
+  db.use =
+  db.addApp = function (opts) {
+    assert.equal('string', typeof opts.name)
+    assert.equal('function', typeof opts.init)
+    //TODO, remove and restart the app... (this will require running it in child process)
+    if(db.apps[opts.name]) throw new Error('app:' + opts.name + ' is already installed')
+    return db.apps[opts.name] =
+      opts.init(db, appsDB.sublevel(opts.name, opts.options || {}))
   }
 
   return db
