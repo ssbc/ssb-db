@@ -36,7 +36,8 @@
     "varstruct-match": "~2.0.0",
     "deep-equal": "~0.2.1",
     "level-sublevel": "~6.3.8",
-    "cont": "~1.0.0"
+    "cont": "~1.0.0",
+    "msgpack": "~0.2.4"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
