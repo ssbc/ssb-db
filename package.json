@@ -46,7 +46,8 @@
     "level-test": "~1.6.2",
     "ltgt": "~1.0.2",
     "tape": "~2.12.3",
-    "typewiselite": "~1.0.0"
+    "typewiselite": "~1.0.0",
+    "rimraf": "~2.2.8"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
