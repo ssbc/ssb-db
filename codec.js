@@ -47,6 +47,7 @@ function fixed(codec, encodeAs, decodeAs) {
   }
   var length = codec.length || codec.encodingLength(value)
   encode.bytesWritten = decode.bytesRead = length
+  encode.bytes = decode.bytes = length
   return {
     encode: encode,
     decode: decode,
