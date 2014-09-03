@@ -36,6 +36,17 @@ module.exports = function (opts) {
   var zeros = new Buffer(empty.length)
   zeros.fill(0)
 
+  tape('encode/decode', function (t) {
+
+    var keys = opts.keys.generate()
+
+    var msg = create(keys, 'init', new Buffer([0,1,2,3,4,5,6,7,8]))
+
+    var encoded = opts.codec.encode(msg)
+    var _msg = opts.codec.decode(encoded)
+    t.deepEqual(_msg, msg)
+    t.end()
+  })
 
   // encode, hash, sign, verify
   tape('simple', function (t) {
@@ -78,11 +89,10 @@ module.exports = function (opts) {
     console.log(msg2)
 
     //should this throw?
-    t.ok(validation.validateSync(msg, null, keys))
-    t.ok(validation.validateSync(msg2, msg, keys))
+    t.ok(validation.validateSync(msg, null, keys), 'initial message')
+    t.ok(validation.validateSync(msg2, msg, keys), 'second message')
 
     for(var i = 0; i < 10; i++) {
-
       var _msg
       _msg = clone(msg2)
       _msg.signature = flipRandomBit(_msg.signature)
