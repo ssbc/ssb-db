@@ -12,9 +12,10 @@ exports.init = function(ssb, db) {
 
   app.getPost = function(messageid, cb) {
     db.get(messageid, function(err, value) {
+      if (err) return cb(err)
       var obj = msgpack.unpack(value)
-      if (obj.plain) cb(null, obj.plain);
-      else cb(new Error('Unrecognized text object'));
+      if (obj.plain) cb(null, obj.plain)
+      else cb(new Error('Unrecognized text object'))
     })
   }
 
