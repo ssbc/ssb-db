@@ -16,8 +16,10 @@ module.exports = function (opts) {
 
     var feed = ssb.createFeed(opts.keys.generate())
 
-    feed.add('msg', 'hello there!', function (err, msg) {
+    feed.add('msg', 'hello there!', function (err, msg, hash) {
       if(err) throw err
+      t.assert(!!msg)
+      t.assert(!!hash)
       pull(
         ssb.createFeedStream(),
         pull.collect(function (err, ary) {
@@ -43,10 +45,13 @@ module.exports = function (opts) {
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2;
-    feed.add('msg', 'hello there!', function (err, msg) {
+    feed.add('msg', 'hello there!', function (err, msg1, lasthash) {
       if(err) throw err
       function addAgain() {
-        feed.add('msg', 'message '+nDrains, function(err) {
+        feed.add('msg', 'message '+nDrains, function(err, msgX, hashX) {
+          t.equal(msgX.previous.toString('hex'), lasthash.toString('hex'))
+          console.log(msgX.previous.toString('hex'), lasthash.toString('hex'))
+          lasthash = hashX;
           nAdds++;
           console.log('add', nAdds);
           if (err) throw err;
