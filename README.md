@@ -1,6 +1,6 @@
 # secure-scuttlebutt
 
-A secure database with replication that is gauranteed to work.
+A secure database with replication that is guaranteed to work.
 
 ``` js
 // create a scuttlebutt instance and add a message to it.
@@ -74,7 +74,7 @@ that it uses to ensure security.
 
 Each node's identity is represented by the hash of their public
 key. Although they are not "human readable", this does
-gaurantee that you get unique identifiers (without a central registry)
+guarantee that you get unique identifiers (without a central registry)
 and it's infeasible for anyone to forge your identity.
 
 ### Secure Data Structures
@@ -94,7 +94,7 @@ secure-scuttlebutt is based on [Scuttlebutt](http://www.cs.cornell.edu/home/rvr/
 Except that there is no way for old messages to be obsoleted by new message.
 All messages are eventually replicated - secure-scuttlebutt is eventually consistent.
 
-Perhaps the simplest way to look at it is as many simultanious
+Perhaps the simplest way to look at it is as many simultaneous
 master-slave replications. The master appends to a log,
 giving each message a monotonically increasing sequence number.
 When the slave connects to the master and requests the messages
