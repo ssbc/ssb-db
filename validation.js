@@ -92,9 +92,11 @@ module.exports = function (ssb, opts) {
       // after writing, if there are more queued queued messages
       // goto DRAIN
 
+      var msghash = hash(encode(msg))
+
       if(!queue.length && !batch.length) {
 
-        queue.push({msg: msg, cb: cb})
+        queue.push({hash: msghash, msg: msg, cb: cb})
 
         contpara(
           get(ssb, msg.previous),
@@ -119,16 +121,16 @@ module.exports = function (ssb, opts) {
 
       }
       else
-        queue.push({msg: msg, cb: cb})
+        queue.push({hash: msghash, msg: msg, cb: cb})
     }
 
     function drain () {
       while(queue.length) {
         var e = queue.shift()
-        cbs.push(e.cb)
+        cbs.push(e)
         if(validateSync(e.msg, prev, pub)) {
           batch.push({
-            key: hash(encode(e.msg)), value: e.msg, type: 'put'
+            key: e.hash, value: e.msg, type: 'put'
           })
           prev = e.msg
         }
@@ -138,7 +140,10 @@ module.exports = function (ssb, opts) {
       }
 
       ssb.batch(batch, function (err) {
-        while(cbs.length) cbs.shift()(err)
+        while(cbs.length) {
+          var e = cbs.shift()
+          e.cb(err, e.msg, e.hash)
+        }
         batch = [];
         if(queue.length) drain()
         else delete validators[id.toString('base64')]

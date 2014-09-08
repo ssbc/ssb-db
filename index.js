@@ -90,9 +90,9 @@ module.exports = function (db, opts) {
     //check that msg is valid (follows from end of database)
     //then insert into database.
     var n = 1
-    validation.validate(msg, function (err) {
+    validation.validate(msg, function (err, msg, hash) {
       if(--n) throw new Error('called twice')
-      cb && cb(err)
+      cb && cb(err, msg, hash)
     })
   }
 

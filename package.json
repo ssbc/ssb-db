@@ -36,7 +36,8 @@
     "varstruct-match": "~2.0.0",
     "deep-equal": "~0.2.1",
     "level-sublevel": "~6.3.8",
-    "cont": "~1.0.0"
+    "cont": "~1.0.0",
+    "msgpack": "~0.2.4"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
@@ -45,7 +46,8 @@
     "level-test": "~1.6.2",
     "ltgt": "~1.0.2",
     "tape": "~2.12.3",
-    "typewiselite": "~1.0.0"
+    "typewiselite": "~1.0.0",
+    "rimraf": "~2.2.8"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
