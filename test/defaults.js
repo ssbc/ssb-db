@@ -27,6 +27,10 @@ function clone (obj) {
 
 function noop () {}
 
+function b(s) {
+  return new Buffer(s, 'utf8')
+}
+
 module.exports = function (opts) {
 
   var validation = require('../validation')({sublevel: noop}, opts)
@@ -40,8 +44,8 @@ module.exports = function (opts) {
 
     var keys = opts.keys.generate()
 
-    var msg = create(keys, 'init', new Buffer([0,1,2,3,4,5,6,7,8]))
-
+    var msg = create(keys, b('init'), new Buffer([0,1,2,3,4,5,6,7,8]))
+    console.log(msg)
     var encoded = opts.codec.encode(msg)
     var _msg = opts.codec.decode(encoded)
     t.deepEqual(_msg, msg)
@@ -53,7 +57,7 @@ module.exports = function (opts) {
 
     var keys = opts.keys.generate()
 
-    var msg = create(keys, 'init', keys.public)
+    var msg = create(keys, b('init'), keys.public)
 
     var encoded = opts.codec.encode(msg)
     var hash = opts.hash(encoded)
@@ -77,13 +81,13 @@ module.exports = function (opts) {
 
     var keys = opts.keys.generate()
 
-    var msg = create(keys, 
-      'init',      //type
+    var msg = create(keys,
+      b('init'),      //type
       keys.public, //message
       null         //previous
     )
 
-    var msg2 = create(keys, 'msg', 'hello', msg)
+    var msg2 = create(keys, b('msg'), b('hello', 'utf8'), msg)
 
     console.log(msg)
     console.log(msg2)
