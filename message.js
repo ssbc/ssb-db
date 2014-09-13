@@ -1,6 +1,4 @@
 
-
-
 module.exports = function (opts) {
 
   var zeros = opts.hash(new Buffer(0))
@@ -15,7 +13,7 @@ module.exports = function (opts) {
   }
 
   function toBuffer (b) {
-    return Buffer.isBuffer(b) ? b : new Buffer(b, 'utf8')
+    return 'string' !== typeof b ? b : new Buffer(b, 'utf8')
   }
 
   function create (keys, type, content, prev) {
@@ -26,7 +24,7 @@ module.exports = function (opts) {
       timestamp: Date.now(),
       timezone: new Date().getTimezoneOffset(),
       type: toBuffer(type),
-      message: toBuffer(content),
+      message: content,
     }, keys)
   }
 
