@@ -1,4 +1,5 @@
 'use strict';
+
 var contpara  = require('continuable-para')
 var pull      = require('pull-stream')
 var pl        = require('pull-level')
@@ -7,6 +8,12 @@ var replicate = require('./replicate')
 var timestamp = require('monotonic-timestamp')
 var Feed      = require('./feed')
 var assert    = require('assert')
+var msgpack   = require('msgpack-js')
+
+//this makes msgpack a valid level codec.
+msgpack.buffer = true
+
+var u         = require('./util')
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
@@ -20,6 +27,11 @@ function isFunction (f) {
   return 'function' === typeof f
 }
 
+var isBuffer = Buffer.isBuffer
+
+function isHash(h) {
+  return isBuffer(h) && h.length == 32
+}
 
 module.exports = function (db, opts) {
 
@@ -27,6 +39,7 @@ module.exports = function (db, opts) {
   var feedDB  = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
   var lastDB  = db.sublevel('lst')
+  var indexDB = db.sublevel('idx', {valueEncoding: msgpack})
   var appsDB  = db.sublevel('app')
 
   function get (db, key) {
@@ -39,15 +52,16 @@ module.exports = function (db, opts) {
 
   db.pre(function (op, add, _batch) {
     var msg = op.value
+    var id = op.key
     // index by sequence number
     add({
-      key: [msg.author, msg.sequence], value: op.key,
+      key: [msg.author, msg.sequence], value: id,
       type: 'put', prefix: clockDB
     })
 
     // index my timestamp, used to generate feed.
     add({
-      key: [msg.timestamp, msg.author], value: op.key,
+      key: [msg.timestamp, msg.author], value: id,
       type: 'put', prefix: feedDB
     })
 
@@ -61,8 +75,37 @@ module.exports = function (db, opts) {
     // this will be used to pass to plugins which
     // must create their indexes asyncly.
     add({
-      key: timestamp(), value: op.key,
+      key: timestamp(), value: id,
       type: 'put', prefix: logDB
+    })
+
+    u.indexLinks(msg.message, function (link) {
+      console.log('LINK', link)
+      if(isHash(link.$feed)) {
+        add({
+          key: ['feed', msg.author, link.$rel, link.$feed, msg.sequence, id],
+          value: link,
+          type: 'put', prefix: indexDB
+        })
+        add({
+          key: ['_feed', link.$feed, link.$rel, msg.author, msg.sequence, id],
+          value: link,
+          type: 'put', prefix: indexDB
+        })
+      }
+
+      if(isHash(link.$msg)) {
+        // do not need forward index here, because
+        // it's cheap to just read the message.
+
+        add({
+          key: ['_msg', link.$msg, link.$rel, id], value: link,
+          type: 'put', prefix: indexDB
+        })
+      }
+
+      //TODO, add $ext links
+
     })
 
   })
@@ -197,6 +240,54 @@ module.exports = function (db, opts) {
     )
   }
 
+  db.messagesLinkedTo = function (hash, rel) {
+    return pull(
+      pl.read(indexDB, {
+        gte: ['_msg', hash, rel || null, null],
+        lte: ['_msg', hash, rel || undefined, undefined],
+      }),
+      paramap(function (op, cb) {
+        if(!op.key[3]) return cb()
+        db.get(op.key[3], function (err, msg) {
+          cb(null, msg)
+        })
+      }),
+      pull.filter(Boolean)
+    )
+  }
+
+  db.feedsLinkedTo = function (id, rel) {
+    return pull(
+      pl.read(indexDB, {
+        gte: ['_feed', id, rel || null, null],
+        lte: ['_feed', id, rel || undefined, undefined]
+      }),
+      pull.through(console.log),
+      pull.map(function (op) {
+        return {
+          source: op.key[3], dest: op.key[1],
+          rel: op.key[2], message: op.key[5]
+        }
+      })
+    )
+  }
+
+  db.feedsLinkedFrom = function (id, rel) {
+    return pull(
+      pl.read(indexDB, {
+        gte: ['feed', id, rel || null, null],
+        lte: ['feed', id, rel || undefined, undefined]
+      }),
+      pull.map(function (op) {
+        return {
+          source: op.key[1], dest: op.key[3],
+          rel: op.key[2], message: op.key[5]
+        }
+      })
+    )
+  }
+
+
   db.app = function (name) {
     return db.apps[name]
   }
@@ -206,7 +297,9 @@ module.exports = function (db, opts) {
     assert.equal('string', typeof opts.name)
     assert.equal('function', typeof opts.init)
     //TODO, remove and restart the app... (this will require running it in child process)
-    if(db.apps[opts.name]) throw new Error('app:' + opts.name + ' is already installed')
+    if(db.apps[opts.name])
+      throw new Error('app:' + opts.name + ' is already installed')
+
     return db.apps[opts.name] =
       opts.init(db, appsDB.sublevel(opts.name, opts.options || {}))
   }
