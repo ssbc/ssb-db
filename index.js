@@ -80,7 +80,7 @@ module.exports = function (db, opts) {
     })
 
     u.indexLinks(msg.message, function (link) {
-      console.log('LINK', link)
+
       if(isHash(link.$feed)) {
         add({
           key: ['feed', msg.author, link.$rel, link.$feed, msg.sequence, id],
@@ -240,11 +240,13 @@ module.exports = function (db, opts) {
     )
   }
 
+  var HI = undefined, LO = null
+
   db.messagesLinkedTo = function (hash, rel) {
     return pull(
       pl.read(indexDB, {
-        gte: ['_msg', hash, rel || null, null],
-        lte: ['_msg', hash, rel || undefined, undefined],
+        gte: ['_msg', hash, rel || LO, LO],
+        lte: ['_msg', hash, rel || LO, HI],
       }),
       paramap(function (op, cb) {
         if(!op.key[3]) return cb()
@@ -259,10 +261,9 @@ module.exports = function (db, opts) {
   db.feedsLinkedTo = function (id, rel) {
     return pull(
       pl.read(indexDB, {
-        gte: ['_feed', id, rel || null, null],
-        lte: ['_feed', id, rel || undefined, undefined]
+        gte: ['_feed', id, rel || LO, LO],
+        lte: ['_feed', id, rel || HI, HI]
       }),
-      pull.through(console.log),
       pull.map(function (op) {
         return {
           source: op.key[3], dest: op.key[1],
@@ -275,8 +276,8 @@ module.exports = function (db, opts) {
   db.feedsLinkedFrom = function (id, rel) {
     return pull(
       pl.read(indexDB, {
-        gte: ['feed', id, rel || null, null],
-        lte: ['feed', id, rel || undefined, undefined]
+        gte: ['feed', id, rel || LO, LO],
+        lte: ['feed', id, rel || HI, HI]
       }),
       pull.map(function (op) {
         return {
@@ -286,7 +287,6 @@ module.exports = function (db, opts) {
       })
     )
   }
-
 
   db.app = function (name) {
     return db.apps[name]
