@@ -24,7 +24,7 @@ module.exports = function (opts) {
       timestamp: Date.now(),
       timezone: new Date().getTimezoneOffset(),
       type: toBuffer(type),
-      message: toBuffer(content),
+      message: content,
     }, keys)
   }
 
