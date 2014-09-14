@@ -6,6 +6,8 @@ var b2s       = varstruct.buffer(32)
 var signature = varstruct.buffer(64)
 var type      = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
 
+var msgpack   = require('msgpack-js')
+
 var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
 
 //TODO, make a thing so that the total length of the
@@ -35,6 +37,45 @@ var Message = varstruct({
   message   : content,
   signature : signature
 })
+function clone (v) {
+  var o = {}
+  for(var k in v)
+    o[k] = v[k]
+  return o
+}
+
+function msgpackify (codec) {
+
+  var _encode = codec.encode
+  var _decode = codec.decode
+  function encode (value, b, o) {
+    value = clone(value)
+    value.message = msgpack.encode(value.message)
+    var r = _encode(value, b, o)
+    encode.bytes = _encode.bytes
+    return r
+  }
+
+  return {
+    encode: encode,
+
+    decode: function decode (b, o) {
+      var value = _decode(b, o)
+      value.message = msgpack.decode(value.message)
+      decode.bytes = _decode.bytes
+      return value
+    },
+    encodingLength: function (value) {
+      return encode(value).length
+    }
+  }
+  return codec
+}
+
+
+Message = msgpackify(Message)
+UnsignedMessage = msgpackify(UnsignedMessage)
+
 
 function fixed(codec, encodeAs, decodeAs) {
   function encode (v,b,o) {
