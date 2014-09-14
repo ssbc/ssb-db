@@ -1,3 +1,4 @@
+var cont = require('cont')
 var Message = require('./message')
 
 module.exports = function (ssb, keys, opts) {
@@ -19,7 +20,7 @@ module.exports = function (ssb, keys, opts) {
     init: function (cb) {
       this.add('init', keys.public, cb)
     },
-    add: function (type, message, cb) {
+    add: cont(function (type, message, cb) {
       if(!queue) {
         queue = []
         getPrev(function (err, _prev) {
@@ -42,7 +43,7 @@ module.exports = function (ssb, keys, opts) {
         }
       }
       return this
-    },
+    }),
     keys: keys
   }
 }
