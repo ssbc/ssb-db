@@ -34,3 +34,23 @@ exports.isInteger = function (v) {
   return !isNaN(v) && Math.round(v)===v
 }
 
+var isBuffer = Buffer.isBuffer
+var isArray = Array.isArray
+function isObject (o) { return o && 'object' === typeof o }
+
+function isHash(h) { return isBuffer(h) && h.length == 32 }
+
+var traverse = exports.traverse = function (obj, each) {
+  if(Buffer.isBuffer(obj) || !isObject(obj)) return
+  if(!isArray(obj)) each(obj)
+  for(var k in obj) {
+    console.log(isObject(obj[k]), k, obj[k])
+    if(isObject(obj[k])) traverse(obj[k], each)
+  }
+}
+
+exports.indexLinks = function (msg, each) {
+  traverse(msg, function (obj) {
+    if(obj.$rel && (obj.$msg || obj.$ext || obj.$feed)) each(obj)
+  })
+}
