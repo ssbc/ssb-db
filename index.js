@@ -162,6 +162,7 @@ module.exports = function (db, opts) {
   }
 
   db.follow = function (other, cb) {
+    if(!isHash(other)) return cb(new Error('follow *must* be called with id'))
     lastDB.put(other, 0, cb)
   }
 
@@ -211,6 +212,14 @@ module.exports = function (db, opts) {
     if(!keys)
       keys = opts.keys.generate()
     return Feed(db, keys, opts)
+  }
+
+  db.createLatestLookupStream = function () {
+    return paramap(function (id, cb) {
+      return lastDB.get(id, function (err, seq) {
+        cb(null, {id: id, sequence: err ? 0 : seq})
+      })
+    })
   }
 
   db.getLatest = function (id, cb) {

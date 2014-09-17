@@ -10,14 +10,23 @@ function ratio(a, b) {
   return a / b
 }
 
-module.exports = function (sbs, opts, cb) {
+module.exports = function (ssb, opts, cb) {
   if('function' === typeof opts)
     cb = opts, opts = {}
+
+  var sbs = ssb
 
   var progress = opts.progress || function () {}
   opts = opts || {}
   var expected = {}
   var source = many()
+
+  var latestStream = opts.latest
+    ? pull(
+        opts.latest(),
+        ssb.createLatestLookupStream()
+      )
+    : ssb.latest()
 
   //source: stream {id: hash(pubkey), sequence: latest}
   //pairs, then {okay: true} to show you are at the end.
@@ -31,8 +40,7 @@ module.exports = function (sbs, opts, cb) {
     var needRecv = 0, needSend = 0, sent = 0, recv = 0
     for(var k in expected) {
       var item = expected[k]
-        //if one of us does not need this author, ignore.
-        //console.log(item)
+      //if one of us does not need this author, ignore.
 
       if(!(item.me === -1 || item.you === -1)) {
         // we are already in sync.
@@ -74,7 +82,7 @@ module.exports = function (sbs, opts, cb) {
 
   source.add(cat([
     pull(
-      sbs.latest(),
+      latestStream,
       pull.through(function (data) {
         get(data.id).me = data.sequence
       })
