@@ -79,8 +79,8 @@ module.exports = function (opts, duplexPipe, name) {
         if(err) throw err
         var cb2 = u.groups(done2)
 
-        var a = createReplicationStream (ssb1, alice.id, 'A', cb2())
-        var b = createReplicationStream (ssb2, bob.id, 'B', cb2())
+        var a = alice.createReplicationStream ({progress: log('A')}, cb2())
+        var b = bob.createReplicationStream ({progress: log('B')}, cb2())
 
         duplexPipe(a, b)
 
@@ -112,8 +112,8 @@ module.exports = function (opts, duplexPipe, name) {
 
     var cb2 = u.groups(done2)
 
-    var a = createReplicationStream(ssb1, alice, 'A', cb2())
-    var b = createReplicationStream(ssb2, bob, 'B', cb2())
+    var a = alice.createReplicationStream ({progress: log('A')}, cb2())
+    var b = bob.createReplicationStream ({progress: log('B')}, cb2())
 
     duplexPipe(a, b)
 
@@ -149,12 +149,12 @@ module.exports = function (opts, duplexPipe, name) {
     function next (err) {
       if(err) throw err
 
-      runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
+      runReplication(ssbA, ssbB, alice, bob, function (err, ary) {
         t.deepEqual(ary[0].map(hash), ary[1].map(hash))
         //*******************************************
 
         console.log('replicate when already in sync!')
-        runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
+        runReplication(ssbA, ssbB, alice, bob, function (err, ary) {
 
           t.deepEqual(ary[0].map(hash), ary[1].map(hash))
           console.log('replicated!!!')
@@ -183,7 +183,7 @@ module.exports = function (opts, duplexPipe, name) {
     function next (err) {
       if(err) throw err
 
-      runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
+      runReplication(ssbA, ssbB, alice, bob, function (err, ary) {
         t.deepEqual(ary[0].map(hash), ary[1].map(hash))
         //*******************************************
         var cb2 = u.groups(next)
@@ -194,7 +194,7 @@ module.exports = function (opts, duplexPipe, name) {
         function next () {
 
           console.log('replicate after updating')
-          runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
+          runReplication(ssbA, ssbB, alice, bob, function (err, ary) {
 
             t.deepEqual(ary[0].map(hash), ary[1].map(hash))
             console.log('replicated!!!')
@@ -232,8 +232,8 @@ module.exports = function (opts, duplexPipe, name) {
       if(err) throw err
       var cb2 = u.groups(done2)
 
-      var a = createReplicationStream(ssbA, alice.id, 'A', cb2())
-      var b = createReplicationStream(ssbB, bob.id, 'B', cb2())
+      var a = alice.createReplicationStream ({progress: log('A')}, cb2())
+      var b = bob.createReplicationStream ({progress: log('B')}, cb2())
 
       duplexPipe(a, b)
 
@@ -243,10 +243,10 @@ module.exports = function (opts, duplexPipe, name) {
 
         var cb3 = u.groups(done3)
 
-        var c = createReplicationStream(ssbC, carol.id, 'C', cb3())
-        var d = createReplicationStream(ssbB, bob.id, 'B', cb3())
+        var c = carol.createReplicationStream ({progress: log('C')}, cb3())
+        var b2 = bob.createReplicationStream ({progress: log('B')}, cb3())
 
-        duplexPipe(c, d)
+        duplexPipe(c, b2)
 
         function done3 (err) {
           if(err) throw err
