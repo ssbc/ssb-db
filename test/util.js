@@ -65,6 +65,23 @@ module.exports = function (opts) {
       return keys
   }
 
+  function init2 (ssb, n, cb) {
+    var feed = ssb.createFeed()
+    var prev
+
+    pull(
+      pull.values(rand(n)),
+      pull.asyncMap(function (r, cb) {
+        feed.add('msg', ''+r, cb)
+      }),
+      pull.drain(null, cb)
+    )
+
+    return feed
+  }
+
+
+
   function compareDbs (a, b, cb) {
 
     var cbs = u.groups(next)
@@ -78,7 +95,7 @@ module.exports = function (opts) {
   }
 
   return {
-    createDB: createDB, init: init, compareDbs: compareDbs, load: load
+    createDB: createDB, init: init, init2: init2, compareDbs: compareDbs, load: load
   }
 
 }

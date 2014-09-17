@@ -87,7 +87,7 @@ module.exports = function (opts) {
       null         //previous
     )
 
-    var msg2 = create(keys, b('msg'), b('hello', 'utf8'), msg)
+    var msg2 = create(keys, b('msg'), 'hello', msg)
 
     console.log(msg)
     console.log(msg2)

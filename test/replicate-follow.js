@@ -6,6 +6,7 @@ var net       = require('net')
 
 var u         = require('../util')
 var replicate = require('../replicate')
+var cat       = require('pull-cat')
 
 //create a instance with a feed
 //then have another instance follow it.
@@ -33,31 +34,53 @@ module.exports = function (opts, duplexPipe, name) {
     }
   }
 
+  function follow(me, other, cb) {
+    me.add('flw', {follow: {$feed: other, $rel: 'follow'}}, cb)
+  }
+
+  function followers(ssb, id) {
+    return cat([
+      pull.values([id]),
+      pull(
+        ssb.feedsLinkedFrom(id, 'follow'),
+        pull.map(function (link) {
+          return link.dest
+        })
+      )
+    ])
+  }
+
+  function createReplicationStream (ssb, id, name, cb) {
+    return replicate(ssb, {
+          progress: log(name),
+          latest: function () { return followers(ssb, id) }
+        }, cb)
+  }
+
   function createSimple(n,m) {
     tape(name + ': simple replicate ' + JSON.stringify([n,m]), function (t) {
       var s = ''+ z++
 
-      var sbs1 = w.createDB('sbs-replicate1_' + name + s)
-      var sbs2 = w.createDB('sbs-replicate2_' + name + s)
+      var ssb1 = w.createDB('sbs-replicate1_' + name + s)
+      var ssb2 = w.createDB('sbs-replicate2_' + name + s)
 
       var cb1 = u.groups(done)
 
-      var f1 = w.init(sbs1, n, cb1())
-      var f2 = w.init(sbs2, m, cb1())
+      var alice = w.init2(ssb1, n, cb1())
+      var bob = w.init2(ssb2, m, cb1())
 
-      sbs2.follow(opts.hash(f1.public), cb1())
-      sbs1.follow(opts.hash(f2.public), cb1())
+      follow(alice, bob.id, cb1())
+      follow(bob, alice.id, cb1())
 
       var ary = [], n = 1
 
       function done (err) {
-        console.log('initialized')
 
         if(err) throw err
         var cb2 = u.groups(done2)
 
-        var a = replicate(sbs1, {progress: log('A')}, cb2())
-        var b = replicate(sbs2, {progress: log('B')}, cb2())
+        var a = createReplicationStream (ssb1, alice.id, 'A', cb2())
+        var b = createReplicationStream (ssb2, bob.id, 'B', cb2())
 
         duplexPipe(a, b)
 
@@ -65,12 +88,12 @@ module.exports = function (opts, duplexPipe, name) {
           if(err) throw err
           //now check that the databases have really been updated.
 
-          var cbs = u.groups(next)
+          var cbs = u.groups(done3)
 
-          pull(sbs1.createFeedStream(), pull.collect(cbs()))
-          pull(sbs2.createFeedStream(), pull.collect(cbs()))
+          pull(ssb1.createFeedStream(), pull.collect(cbs()))
+          pull(ssb2.createFeedStream(), pull.collect(cbs()))
 
-          function next (err, ary) {
+          function done3 (err, ary) {
             if(err) throw err
             t.deepEqual(ary[0].map(hash), ary[1].map(hash))
             t.end()
@@ -85,12 +108,12 @@ module.exports = function (opts, duplexPipe, name) {
   createSimple(1, 2)
   createSimple(3, 2)
 
-  function createReplicate(ssb1, ssb2, cb) {
+  function runReplication (ssb1, ssb2, alice, bob, cb) {
 
     var cb2 = u.groups(done2)
 
-    var a = replicate(ssb1, {progress: log('A')}, cb2())
-    var b = replicate(ssb2, {progress: log('B')}, cb2())
+    var a = createReplicationStream(ssb1, alice, 'A', cb2())
+    var b = createReplicationStream(ssb2, bob, 'B', cb2())
 
     duplexPipe(a, b)
 
@@ -112,26 +135,26 @@ module.exports = function (opts, duplexPipe, name) {
   tape(name + ': replicate when already in sync', function (t) {
     var s = ''+ z++
 
-    var ssb1 = w.createDB('sbs-replicate1_' + name + s)
-    var ssb2 = w.createDB('sbs-replicate2_' + name + s)
+    var ssbA = w.createDB('sbs-replicate1_' + name + s)
+    var ssbB = w.createDB('sbs-replicate2_' + name + s)
 
     var cb1 = u.groups(next)
 
-    var f1 = w.init(ssb1, 5, cb1())
-    var f2 = w.init(ssb2, 4, cb1())
+    var alice = w.init2(ssbA, 5, cb1())
+    var bob = w.init2(ssbB, 4, cb1())
 
-    ssb2.follow(opts.hash(f1.public), cb1())
-    ssb1.follow(opts.hash(f2.public), cb1())
+    follow(bob, alice.id, cb1())
+    follow(alice, bob.id, cb1())
 
     function next (err) {
       if(err) throw err
 
-      createReplicate(ssb1, ssb2, function (err, ary) {
+      runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
         t.deepEqual(ary[0].map(hash), ary[1].map(hash))
         //*******************************************
 
         console.log('replicate when already in sync!')
-        createReplicate(ssb1, ssb2, function (err, ary) {
+        runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
 
           t.deepEqual(ary[0].map(hash), ary[1].map(hash))
           console.log('replicated!!!')
@@ -146,32 +169,32 @@ module.exports = function (opts, duplexPipe, name) {
 
     var s = ''+ z++
 
-    var ssb1 = w.createDB('sbs-replicate1_' + name + s)
-    var ssb2 = w.createDB('sbs-replicate2_' + name + s)
+    var ssbA = w.createDB('sbs-replicate1_' + name + s)
+    var ssbB = w.createDB('sbs-replicate2_' + name + s)
 
     var cb1 = u.groups(next)
 
-    var f1 = w.init(ssb1, 5, cb1())
-    var f2 = w.init(ssb2, 4, cb1())
+    var alice = w.init2(ssbA, 5, cb1())
+    var bob = w.init2(ssbB, 4, cb1())
 
-    ssb2.follow(opts.hash(f1.public), cb1())
-    ssb1.follow(opts.hash(f2.public), cb1())
+    follow(alice, bob.id, cb1())
+    follow(bob, alice.id, cb1())
 
     function next (err) {
       if(err) throw err
 
-      createReplicate(ssb1, ssb2, function (err, ary) {
+      runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
         t.deepEqual(ary[0].map(hash), ary[1].map(hash))
         //*******************************************
         var cb2 = u.groups(next)
 
-        w.load(ssb1, f1, 3, cb2())
-        w.load(ssb2, f2, 2, cb2())
+        w.load(ssbA, alice.keys, 3, cb2())
+        w.load(ssbA, bob.keys, 2, cb2())
 
         function next () {
 
           console.log('replicate after updating')
-          createReplicate(ssb1, ssb2, function (err, ary) {
+          runReplication(ssbA, ssbB, alice.id, bob.id, function (err, ary) {
 
             t.deepEqual(ary[0].map(hash), ary[1].map(hash))
             console.log('replicated!!!')
@@ -182,27 +205,26 @@ module.exports = function (opts, duplexPipe, name) {
     }
   })
 
-
   tape(name + ': 3-way replicate', function (t) {
 
-    var sbs1 = w.createDB('sbs-3replicate1_' + name + s)
-    var sbs2 = w.createDB('sbs-3replicate2_' + name + s)
-    var sbs3 = w.createDB('sbs-3replicate3_' + name + s)
+    var ssbA = w.createDB('sbs-3replicate1_' + name + s)
+    var ssbB = w.createDB('sbs-3replicate2_' + name + s)
+    var ssbC = w.createDB('sbs-3replicate3_' + name + s)
 
     var cb1 = u.groups(done)
 
-    var f1 = w.init(sbs1, 10, cb1())
-    var f2 = w.init(sbs2, 15, cb1())
-    var f3 = w.init(sbs3, 20, cb1())
+    var alice = w.init2(ssbA, 10, cb1())
+    var bob   = w.init2(ssbB, 15, cb1())
+    var carol = w.init2(ssbC, 20, cb1())
 
-    sbs1.follow(opts.hash(f2.public), cb1())
-    sbs1.follow(opts.hash(f3.public), cb1())
+    follow(alice, bob.id, cb1())
+    follow(alice, carol.id, cb1())
 
-    sbs2.follow(opts.hash(f1.public), cb1())
-    sbs2.follow(opts.hash(f3.public), cb1())
+    follow(bob, alice.id, cb1())
+    follow(bob, carol.id, cb1())
 
-    sbs3.follow(opts.hash(f1.public), cb1())
-    sbs3.follow(opts.hash(f2.public), cb1())
+    follow(carol, alice.id, cb1())
+    follow(carol, bob.id, cb1())
 
     var ary = []
 
@@ -210,8 +232,8 @@ module.exports = function (opts, duplexPipe, name) {
       if(err) throw err
       var cb2 = u.groups(done2)
 
-      var a = replicate(sbs1, {progress: log('A')}, cb2())
-      var b = replicate(sbs2, {progress: log('B')}, cb2())
+      var a = createReplicationStream(ssbA, alice.id, 'A', cb2())
+      var b = createReplicationStream(ssbB, bob.id, 'B', cb2())
 
       duplexPipe(a, b)
 
@@ -221,20 +243,20 @@ module.exports = function (opts, duplexPipe, name) {
 
         var cb3 = u.groups(done3)
 
-        var c = sbs3.createReplicationStream({progress: log('C')}, cb3())
-        var d = sbs2.createReplicationStream({progress: log('B')}, cb3())
+        var c = createReplicationStream(ssbC, carol.id, 'C', cb3())
+        var d = createReplicationStream(ssbB, bob.id, 'B', cb3())
 
         duplexPipe(c, d)
 
         function done3 (err) {
           if(err) throw err
 
-          var cbs = u.groups(next)
+          var cbs = u.groups(done4)
 
-          pull(sbs2.createFeedStream(), pull.collect(cbs()))
-          pull(sbs3.createFeedStream(), pull.collect(cbs()))
+          pull(ssbB.createFeedStream(), pull.collect(cbs()))
+          pull(ssbC.createFeedStream(), pull.collect(cbs()))
 
-          function next (err, ary) {
+          function done4 (err, ary) {
             if(err) throw err
 
             t.deepEqual(ary[0].map(hash), ary[1].map(hash))
