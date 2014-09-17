@@ -3,6 +3,7 @@ var Blake2s = require('blake2s')
 
 exports.groups = function (done) {
   var n = 0, error = null, values = []
+  var finished = false
   return function () {
     var i = n++
     var j = 1
@@ -11,8 +12,12 @@ exports.groups = function (done) {
       if(--j) return n = -1, done(new Error('cb triggered twice'))
       if(err) return n = -1, done(error = err)
       values[i] = value
-      if(--n) return
-      done(null, values)
+      setImmediate(function () {
+        if(--n) return
+        if(finished) throw new Error('finished twice!!!')
+        finished = true
+        done(null, values)
+      })
     }
   }
 }
@@ -44,7 +49,6 @@ var traverse = exports.traverse = function (obj, each) {
   if(Buffer.isBuffer(obj) || !isObject(obj)) return
   if(!isArray(obj)) each(obj)
   for(var k in obj) {
-    console.log(isObject(obj[k]), k, obj[k])
     if(isObject(obj[k])) traverse(obj[k], each)
   }
 }
