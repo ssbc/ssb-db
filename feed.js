@@ -1,5 +1,7 @@
 var cont = require('cont')
 var Message = require('./message')
+var pull = require('pull-stream')
+var cat = require('pull-cat')
 
 module.exports = function (ssb, keys, opts) {
 
@@ -44,6 +46,22 @@ module.exports = function (ssb, keys, opts) {
       }
       return this
     }),
-    keys: keys
+    keys: keys,
+    createReplicationStream: function (opts, cb) {
+      opts = opts || {}
+      if(!opts.latest)
+        opts.latest = function () {
+          return cat([
+            pull.values([id]),
+            pull(
+              ssb.feedsLinkedFrom(id, opts.rel || 'follow'),
+              pull.map(function (link) {
+                return link.dest
+              })
+            )
+          ])
+        }
+      return ssb.createReplicationStream(opts, cb)
+    }
   }
 }
