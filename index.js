@@ -297,21 +297,5 @@ module.exports = function (db, opts) {
     )
   }
 
-  db.app = function (name) {
-    return db.apps[name]
-  }
-
-  db.use =
-  db.addApp = function (opts) {
-    assert.equal('string', typeof opts.name)
-    assert.equal('function', typeof opts.init)
-    //TODO, remove and restart the app... (this will require running it in child process)
-    if(db.apps[opts.name])
-      throw new Error('app:' + opts.name + ' is already installed')
-
-    return db.apps[opts.name] =
-      opts.init(db, appsDB.sublevel(opts.name, opts.options || {}))
-  }
-
   return db
 }
