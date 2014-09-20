@@ -7,7 +7,6 @@ var ecc       = require('eccjs')
 var tape      = require('tape')
 
 var SSB       = require('../')
-var u         = require('../util')
 var replicate = require('../replicate')
 
 var codec     = require('../codec')

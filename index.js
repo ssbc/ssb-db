@@ -13,7 +13,7 @@ var msgpack   = require('msgpack-js')
 //this makes msgpack a valid level codec.
 msgpack.buffer = true
 
-var u         = require('./util')
+//var u         = require('./util')
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
@@ -28,9 +28,22 @@ function isFunction (f) {
 }
 
 var isBuffer = Buffer.isBuffer
+var isArray = Array.isArray
+function isObject (o) { return o && 'object' === typeof o }
 
-function isHash(h) {
-  return isBuffer(h) && h.length == 32
+
+function traverse (obj, each) {
+  if(Buffer.isBuffer(obj) || !isObject(obj)) return
+  if(!isArray(obj)) each(obj)
+  for(var k in obj) {
+    if(isObject(obj[k])) traverse(obj[k], each)
+  }
+}
+
+function indexLinks (msg, each) {
+  traverse(msg, function (obj) {
+    if(obj.$rel && (obj.$msg || obj.$ext || obj.$feed)) each(obj)
+  })
 }
 
 module.exports = function (db, opts) {
@@ -46,7 +59,9 @@ module.exports = function (db, opts) {
     return function (cb) { db.get(encode(key), cb) }
   }
 
-  db.apps = {}
+  db.opts = opts
+
+  var isHash = opts.isHash
 
   var validation = require('./validation')(db, opts)
 
@@ -79,7 +94,7 @@ module.exports = function (db, opts) {
       type: 'put', prefix: logDB
     })
 
-    u.indexLinks(msg.message, function (link) {
+    indexLinks(msg.message, function (link) {
 
       if(isHash(link.$feed)) {
         add({
@@ -140,7 +155,6 @@ module.exports = function (db, opts) {
   }
 
   db.createFeedStream = function (opts) {
-
     opts = opts || {}
     opts.keys = false
     return pull(

@@ -1,7 +1,6 @@
 var pull = require('pull-stream')
 var many = require('pull-many')
 var cat  = require('pull-cat')
-var u    = require('./util')
 var codec = require('./codec')
 var pvstruct = require('pull-varstruct')
 
@@ -10,11 +9,19 @@ function ratio(a, b) {
   return a / b
 }
 
+
+function isInteger (v) {
+  return !isNaN(v) && Math.round(v)===v
+}
+
+
 module.exports = function (ssb, opts, cb) {
   if('function' === typeof opts)
     cb = opts, opts = {}
 
   var sbs = ssb
+
+  isHash = ssb.opts.isHash
 
   var progress = opts.progress || function () {}
   opts = opts || {}
@@ -98,7 +105,7 @@ module.exports = function (ssb, opts, cb) {
   var sink = pull(
     pull.filter(function (data) {
       if(data.author) return true
-      else if(u.isHash(data.id) && u.isInteger(data.sequence)) {
+      else if(isHash(data.id) && isInteger(data.sequence)) {
         get(data.id).you = data.sequence
         source.add(
           pull(

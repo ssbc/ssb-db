@@ -4,7 +4,7 @@ var pull      = require('pull-stream')
 var tape      = require('tape')
 var net       = require('net')
 
-var u         = require('../util')
+var u         = {groups: require('./group')}
 var replicate = require('../replicate')
 var cat       = require('pull-cat')
 

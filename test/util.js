@@ -5,8 +5,9 @@ var ecc       = require('eccjs')
 var tape      = require('tape')
 
 var SSB       = require('../')
-var u         = require('../util')
+//var u         = require('../util')
 var w         = require('./util')
+var u = w
 var replicate = require('../replicate')
 
 var codec     = require('../codec')
@@ -95,7 +96,8 @@ module.exports = function (opts) {
   }
 
   return {
-    createDB: createDB, init: init, init2: init2, compareDbs: compareDbs, load: load
+    createDB: createDB, init: init, init2: init2,
+    compareDbs: compareDbs, load: load
   }
 
 }

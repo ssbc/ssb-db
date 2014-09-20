@@ -20,6 +20,10 @@ module.exports = {
     return new Blake2s().update(data, enc).digest()
   },
 
+  isHash: function (data) {
+    return Buffer.isBuffer(data) && data.length == 32
+  },
+
   keys: {
     //this should return a key pair:
     // {public: Buffer, private: Buffer}
