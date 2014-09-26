@@ -94,6 +94,12 @@ module.exports = function (db, opts) {
       type: 'put', prefix: logDB
     })
 
+    if(isString(msg.type))
+      add({
+        key: ['type', msg.type.substring(0, 32), msg.timestamp],
+        value: id, type: 'put', prefix: indexDB
+      })
+
     indexLinks(msg.message, function (link) {
 
       if(isHash(link.$feed)) {
@@ -278,6 +284,21 @@ module.exports = function (db, opts) {
         })
       }),
       pull.filter(Boolean)
+    )
+  }
+
+  db.messagesByType = function (type) {
+    return pull(
+      pl.read(indexDB, {
+        gte: ['type', type, LO, LO]
+        lte: ['type', type, LO, LO]
+      }),
+      paramap(function (id, cb) {
+        ssb.get(id, function (err, msg) {
+          cb(null, msg)
+        })
+      }),
+      pull.filter()
     )
   }
 
