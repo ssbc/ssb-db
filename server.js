@@ -17,18 +17,15 @@ function getRelays (ssb, id, cb) {
           pull.values([{dest: id}]),
           ssb.feedsLinkedFrom(id, 'follow')
         ]),
-        pull.map(function (link) { return {key: link.dest}}),
-        pull.through(console.log)
+        pull.map(function (link) { return {key: link.dest}})
       ),
       pull(
         ssb.messagesByType('relay'),
         pull.map(function (msg) {
           return {key: msg.author, value: msg.message.address}
-        }),
-        pull.through(console.log)
+        })
       ),
       function (id, _, address) {
-        console.log(_, address, id)
         return {id: id, address: address}
       }
     )
