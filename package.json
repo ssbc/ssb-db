@@ -37,7 +37,8 @@
     "deep-equal": "~0.2.1",
     "level-sublevel": "~6.3.8",
     "cont": "~1.0.0",
-    "msgpack-js": "~0.3.0"
+    "msgpack-js": "~0.3.0",
+    "pull-join": "~1.0.0"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
