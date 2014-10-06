@@ -9,7 +9,6 @@ var join = require('pull-join')
 //{relay: host:port}
 //so this means we need to index keys/values/strings?
 
-//TODO test this.
 function getRelays (ssb, id, cb) {
   return join(
       pull(
@@ -38,33 +37,47 @@ function all(stream, cb) {
   }
 }
 
-exports = module.exports = function (ssb, me, opts) {
-  //  select * from messages
-  //  where !!messages.relay
-  //  join messages as m2 
-  //  where m2.author = me and m2.follow = messages.author
+function addr (opts) {
+  return opts.host + ':' + opts.port
+}
 
-  // get every one that I follow
-  // and join that set to relays
+var net = require('net')
 
-  // what is the best replication strategy?
+exports = module.exports = function (ssb, feed, opts) {
 
-  all(getRelays(ssb, me), function (err, ary) {
+  all(cat([
+    pull.values((opts.seeds || []).map(function (e) {
+      return {address: e, id: null}
+    })),
+    getRelays(ssb, feed.id)
+  ]), function (err, ary) {
+
+    console.log(addr(opts), ary)
 
     //now replicate with a random relay.
     var a = ary[~~(Math.random()*ary.length)]
-    stream = net.connect(a.address)
+    if(!a || !a.address) return console.error('no one to replicate with')
+    var address = a.address
+    console.log(addr(opts), 'to:', addr(a.address))
+    stream = net.connect(a.address.port, a.address.host)
 
     stream
-      .pipe(toStream(feed.createReplicationStream()))
+      .pipe(toStream(feed.createReplicationStream({
+          progress: function (a, b) {
+            console.log(addr(opts), addr(address), a, b)
+          }
+        }, function (err) {
+          console.log('DONE', addr(opts))
+        })))
       .pipe(stream)
 
   })
 
   return net.createServer(function (stream) {
-    var feed = ssb.createFeed(me)
     stream
-      .pipe(toStream(feed.createReplicationStream()))
+      .pipe(toStream(feed.createReplicationStream(function (err) {
+        console.log('replicated with client')
+      })))
       .pipe(stream)
   }).listen(opts.port)
 
