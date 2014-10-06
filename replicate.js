@@ -19,6 +19,9 @@ module.exports = function (ssb, opts, cb) {
   if('function' === typeof opts)
     cb = opts, opts = {}
 
+  if('function' !== typeof cb)
+    throw new Error('cb must be function')
+
   var sbs = ssb
 
   isHash = ssb.opts.isHash
