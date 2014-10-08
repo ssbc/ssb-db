@@ -46,8 +46,10 @@ module.exports = function (ssb, opts, cb) {
     return expected[id] = expected[id] || {me: -1, you: -1, recv: 0, sent: 0}
   }
 
+  var needRecv = 0, needSend = 0, sent = 0, recv = 0
+
   function complete() {
-    var needRecv = 0, needSend = 0, sent = 0, recv = 0
+    needRecv = 0, needSend = 0, sent = 0, recv = 0
     for(var k in expected) {
       var item = expected[k]
       //if one of us does not need this author, ignore.
@@ -128,7 +130,9 @@ module.exports = function (ssb, opts, cb) {
         get(msg.author).recv ++
         if(complete()) source.cap()
       }),
-      sbs.createWriteStream(cb)
+      sbs.createWriteStream(function (err) {
+        cb(err, sent, recv, expected)
+      })
     )
   )
 
