@@ -41,11 +41,9 @@ module.exports = function (opts) {
   zeros.fill(0)
 
   tape('encode/decode', function (t) {
-
     var keys = opts.keys.generate()
 
     var msg = create(keys, b('init'), new Buffer([0,1,2,3,4,5,6,7,8]))
-    console.log(msg)
     var encoded = opts.codec.encode(msg)
     var _msg = opts.codec.decode(encoded)
     t.deepEqual(_msg, msg)
@@ -75,9 +73,27 @@ module.exports = function (opts) {
     t.end()
   })
 
-  // validate a message
+  tape('validate 1 message', function (t) {
 
-  tape('validate message', function (t) {
+    var keys = opts.keys.generate()
+
+    var msg = create(keys,
+      b('init'),   //type
+      keys.public, //message
+      null         //previous
+    )
+
+    var msg2 = create(keys, b('msg'), 'hello', msg)
+
+    console.log(msg)
+    console.log(msg2)
+
+    //should this throw?
+    t.ok(validation.validateSync(msg, null, keys), 'initial message')
+    t.end()
+  })
+
+  tape('validate multiple messages', function (t) {
 
     var keys = opts.keys.generate()
 
