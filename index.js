@@ -175,23 +175,6 @@ module.exports = function (db, opts) {
     )
   }
 
-  db.follow = function (other, cb) {
-    if(!isHash(other)) return cb(new Error('follow *must* be called with id'))
-    lastDB.put(other, 0, cb)
-  }
-
-  db.unfollow = function (other, cb) {
-    lastDB.del(other, cb)
-  }
-
-  db.isFollowing = function (other, cb) {
-    lastDB.get(other, cb)
-  }
-
-  db.following = function () {
-    return pl.read(lastDB)
-  }
-
   db.createHistoryStream = function (id, seq, live) {
     return pull(
       pl.read(clockDB, {
@@ -206,6 +189,7 @@ module.exports = function (db, opts) {
     )
   }
 
+  //writeStream - used in replication.
   db.createWriteStream = function (cb) {
     return pull(
       paramap(function (data, cb) {
