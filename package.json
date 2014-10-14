@@ -48,7 +48,8 @@
     "tape": "~2.12.3",
     "typewiselite": "~1.0.0",
     "rimraf": "~2.2.8",
-    "multicb": "~0.0.2"
+    "multicb": "~0.0.2",
+    "hexpp": "~1.1.1"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
