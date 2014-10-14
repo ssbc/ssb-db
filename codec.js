@@ -13,11 +13,15 @@ var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
 //TODO, make a thing so that the total length of the
 //message + the references is <= 1024
 
+var codec = exports = module.exports =
+  varmatch(varstruct.varint)
+//matches added at bottom of this file.
+
 var References = varstruct.vararray(
                     varstruct.bound(varstruct.varint, 0, 1024),
                   varstruct.buffer(32))
 
-var UnsignedMessage = varstruct({
+var Message = varstruct({
   previous  : b2s,
   author    : b2s,
   timestamp : varstruct.varint,
@@ -27,16 +31,72 @@ var UnsignedMessage = varstruct({
   message   : content
 })
 
-var Message = varstruct({
-  previous  : b2s,
+var Ephemeral = varstruct({
   author    : b2s,
   sequence  : varstruct.varint,
+  ephemseq  : varstruct.varint,
   timestamp : varstruct.varint,
   timezone  : svarint,
   type      : type,
-  message   : content,
-  signature : signature
+  message   : content
 })
+
+var _Signed = varstruct({
+  value: codec,
+  signature: signature
+})
+
+function clone (a) {
+  var b = {}
+  for(var k in a)
+    b[k] = a[k]
+  return b
+}
+
+var Signed = {
+  encode: function encode (value, b, o) {
+    var _value = clone(value)
+    var sig = value.signature
+    delete _value.signature
+    var r = _Signed.encode({value: _value, signature: sig}, b, o)
+    encode.bytes = _Signed.encode.bytes
+    return r
+  },
+  decode: function decode (b, o) {
+    var v = _Signed.decode(b, o)
+    v.value.signature = v.signature
+    decode.bytes = _Signed.decode.bytes
+    return v.value
+  },
+  encodingLength: function (value) {
+    value = clone(value)
+    var len = value.signature.length
+    delete value.signature
+    return codec.encodingLength(value) + len
+  }
+}
+
+//var Signed = varstruct({
+//  value: codec,
+//  signature: signature
+//})
+//
+//{
+//  encode: function (value, buffer, offset) {
+//    var signature = value.signature
+//    value.signature = null
+//    return _Signed.encode({
+//      value:
+//        exports.encode(value, buffer, offset),
+//      signature: signature
+//    }, buffer, offset)
+//  },
+//  decode: function (buffer, offset) {
+//
+//    return _Signed
+//  }
+//}
+
 function clone (v) {
   var o = {}
   for(var k in v)
@@ -74,7 +134,8 @@ function msgpackify (codec) {
 
 
 Message = msgpackify(Message)
-UnsignedMessage = msgpackify(UnsignedMessage)
+Ephemeral = msgpackify(Ephemeral)
+//UnsignedMessage = msgpackify(Message)
 
 
 function fixed(codec, encodeAs, decodeAs) {
@@ -153,31 +214,36 @@ var ReferencedIndex = varstruct({
 var Okay =
   fixed(varstruct.buffer(4), new Buffer('okay'), {okay: true})
 
-exports = module.exports =
-  varmatch(varstruct.varint)
-  .type(0, Message, function (t) {
-    return isHash(t.previous) && isHash(t.author) && t.signature
+codec
+  .type(0, Signed, function (t) {
+    return t.signature
   })
-  .type(0, UnsignedMessage, function (t) {
-    return isHash(t.previous) && isHash(t.author) && !t.signature
+  .type(10, Message, function (t) {
+    return isHash(t.previous) && isHash(t.author)// && t.signature
   })
-  .type(1, Key, function (t) {
+//  .type(0, UnsignedMessage, function (t) {
+//    return isHash(t.previous) && isHash(t.author) && !t.signature
+//  })
+  .type(100, Key, function (t) {
     return isHash(t.id) && isInteger(t.sequence) && !Buffer.isBuffer(t.type)
   })
-  .type(2, FeedKey, function (t) {
+  .type(110, FeedKey, function (t) {
     return isHash(t.id) && isInteger(t.timestamp)
   })
-  .type(3, LatestKey, isHash)
-  .type(4, varstruct.varint, isInteger)
-  .type(5, Okay, function (b) {
+  .type(120, LatestKey, isHash)
+  .type(130, varstruct.varint, isInteger)
+  .type(140, Okay, function (b) {
     return b && b.okay
   })
 
-exports.UnsignedMessage = UnsignedMessage
+//exports.UnsignedMessage = UnsignedMessage
 exports.Message = Message
+exports.Ephemeral = Ephemeral
+exports.Signed = Signed
+exports.Broadcast = Broadcast
+
 exports.Key = Key
 exports.FeedKey = FeedKey
-exports.Broadcast = Broadcast
 exports.TypeIndex = TypeIndex
 exports.ReferenceIndex = ReferenceIndex
 exports.ReferencedIndex = ReferencedIndex

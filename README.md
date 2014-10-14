@@ -79,14 +79,15 @@ and it's infeasible for anyone to forge your identity.
 
 ### Secure Data Structures
 
-SecureScuttlebutt uses a signed block-chain,
-where each block points to the previous block,
+SecureScuttlebutt uses a signed block-chain per identity.
+Each block points to the previous block,
 the signing key, and contains a short message
-and a signature.
+and a signature. Every identity has their own block-chain.
 
-This creates an append-only data structure that
+Each block-chain is an append-only data structure that
 can be written to exclusively by the keys' owner.
-Also, the append-only structure can be efficiently replicated.
+Since the chains are append only, replication is simple,
+request the chain for that id, since the latest item you know about.
 
 ### Replication
 
@@ -110,6 +111,14 @@ B's messages offline (i.e, when A is out of contact with B)
 However, no networking is provided by this module, so that it's
 useful as a replicatable database - however, a gossip based networking
 layer is in development.
+
+### References
+
+There are 3 types of objects - messages, feeds, and attachments.
+messages and attachments are refered to by their hashes,
+but feeds (block-chains) are refered to by the hash of their
+signing public key. Thus, chains can both refer to other chains,
+and also to particular points _within_ other chains.
 
 ## API
 

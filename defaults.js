@@ -33,8 +33,8 @@ module.exports = {
     },
     //takes a public key and a hash and returns a signature.
     //(a signature must be a node buffer)
-    sign: function (pub, hash) {
-      return ecc.sign(curve, pub, hash)
+    sign: function (keys, hash) {
+      return ecc.sign(curve, keys, hash)
     },
 
     //takes a public key, signature, and a hash
