@@ -25,25 +25,25 @@ module.exports = function (opts) {
     var ssb = w.createDB('get-relays')
 
     var alice = ssb.createFeed()
-    var bob = ssb.createFeed()
+    var bob   = ssb.createFeed()
     var carol = ssb.createFeed()
 
     cont.series([
-      alice.add('relay', {type: 'relay', address: 'localhost:65000'}),
-      bob.add('relay', {type: 'relay', address: 'localhost:65001'}),
-      carol.add('relay', {type: 'relay', address: 'localhost:65002'}),
-      alice.add('flw', {$feed: bob.id, $rel: 'follow'}),
+      alice.add('pub', {address:{host: 'localhost', port:65000}}),
+      bob  .add('pub', {address:{host: 'localhost', port:65001}}),
+      carol.add('pub', {address:{host: 'localhost', port:65002}}),
+      alice.add('flw', {$feed: bob.id,   $rel: 'follow'}),
       alice.add('flw', {$feed: carol.id, $rel: 'follow'}),
-      bob.add('flw', {$feed: alice.id, $rel: 'follow'})
+      bob  .add('flw', {$feed: alice.id, $rel: 'follow'})
     ]) (function () {
 
     cont.para([
       function (cb) {
         all(server.getRelays(ssb, alice.id), function (err, ary) {
           t.deepEqual(sort(ary), sort([
-            {id: alice.id, address: 'localhost:65000'},
-            {id: bob.id, address: 'localhost:65001'},
-            {id: carol.id, address: 'localhost:65002'},
+    //        {id: alice.id, address: {host: 'localhost', port: 65000}},
+            {id: bob.id, address:   {host: 'localhost', port: 65001}},
+            {id: carol.id, address: {host: 'localhost', port: 65002}},
           ]))
           cb()
         })
@@ -51,8 +51,8 @@ module.exports = function (opts) {
       function (cb) {
         all(server.getRelays(ssb, bob.id), function (err, ary) {
           t.deepEqual(sort(ary), sort([
-            {id: alice.id, address: 'localhost:65000'},
-            {id: bob.id, address: 'localhost:65001'},
+            {id: alice.id, address: {host: 'localhost', port: 65000}},
+  //          {id: bob.id, address: {host: 'localhost', port:65001}},
           ]))
           cb()
         })
@@ -60,7 +60,7 @@ module.exports = function (opts) {
       function (cb) {
         all(server.getRelays(ssb, carol.id), function (err, ary) {
           t.deepEqual(sort(ary), sort([
-            {id: carol.id, address: 'localhost:65002'},
+//            {id: carol.id, address: {host:'localhost', port:65002}},
           ]))
           cb()
         })
