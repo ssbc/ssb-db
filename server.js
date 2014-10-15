@@ -9,7 +9,7 @@ var join = require('pull-join')
 //{relay: host:port}
 //so this means we need to index keys/values/strings?
 
-function getRelays (ssb, id, cb) {
+function getRelays (ssb, id) {
   return join(
     pull(
       ssb.feedsLinkedFrom(id, 'follow'),
@@ -22,7 +22,6 @@ function getRelays (ssb, id, cb) {
       })
     ),
     function (id, _, address) {
-      console.log('JON?', id, _, address)
       return {id: id, address: address}
     }
   )
