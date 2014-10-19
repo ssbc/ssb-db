@@ -38,7 +38,9 @@
     "level-sublevel": "~6.3.8",
     "cont": "~1.0.0",
     "msgpack-js": "~0.3.0",
-    "pull-join": "~1.0.0"
+    "pull-join": "~1.0.0",
+    "stream-to-pull-stream": "~1.4.1",
+    "muxrpc": "~0.3.0"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",

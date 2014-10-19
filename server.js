@@ -1,8 +1,13 @@
 
 var toStream = require('pull-stream-to-stream')
+var toPull = require('stream-to-pull-stream')
 var pull = require('pull-stream')
 var cat = require('pull-cat')
 var join = require('pull-join')
+var api = require('./api')
+
+var rpcServer = require('./rpc-server')
+
 //search the feed for relays, connect to them and replicate.
 
 //but how is a relay stored?
@@ -101,7 +106,9 @@ exports = module.exports = function (ssb, feed, opts) {
 
   }
 
-  return server = net.createServer(function (stream) {
+  var rpc = rpcServer(ssb, feed, opts)
+
+  server = net.createServer(function (stream) {
     stream
       .pipe(toStream(feed.createReplicationStream({},
         function (err, sent, recv, expected) {
@@ -112,10 +119,22 @@ exports = module.exports = function (ssb, feed, opts) {
     setTimeout(connect, 1000 + Math.random() * 3000)
   })
   .on('close', function () {
+    rpcServer.close()
     server.closed = true
   })
 
+  server.rpcServer = rpc
+
+  return server
+
 }
 
-
 exports.getRelays = getRelays
+
+if(!module.parent) {
+  var create = require('./create')
+  var path = require('path')
+  var ssb = create(path.join(process.env.HOME, '.ssb/db'))
+  var feed = ssb.createFeed()
+  exports(ssb, feed, {port: 5656, rpcPort: 5657})
+}
