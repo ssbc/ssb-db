@@ -182,6 +182,11 @@ module.exports = function (db, opts) {
   }
 
   db.createHistoryStream = function (id, seq, live) {
+    if(!Buffer.isBuffer(id)) {
+      live = !!id.live
+      seq = id.seq
+      id = id.id
+    }
     return pull(
       pl.read(clockDB, {
         gte:  [id, seq],
@@ -255,22 +260,6 @@ module.exports = function (db, opts) {
 
   var HI = undefined, LO = null
 
-  db.messagesLinkedTo = function (hash, rel) {
-    return pull(
-      pl.read(indexDB, {
-        gte: ['_msg', hash, rel || LO, LO],
-        lte: ['_msg', hash, rel || LO, HI],
-      }),
-      paramap(function (op, cb) {
-        if(!op.key[3]) return cb()
-        db.get(op.key[3], function (err, msg) {
-          cb(null, msg)
-        })
-      }),
-      pull.filter(Boolean)
-    )
-  }
-
   db.messagesByType = function (type) {
     return pull(
       pl.read(indexDB, {
@@ -287,7 +276,35 @@ module.exports = function (db, opts) {
     )
   }
 
-  db.feedsLinkedTo = function (id, rel) {
+  function idOpts (fn) {
+    return function (opts, rel) {
+      if(!opts) throw new Error('must have opts')
+      //legacy interface.
+      if(Buffer.isBuffer(opts))
+        return fn(opts, rel)
+
+      return fn(opts.id, opts.rel)
+    }
+  }
+
+  db.messagesLinkedTo = idOpts(function (hash, rel) {
+    return pull(
+      pl.read(indexDB, {
+        gte: ['_msg', hash, rel || LO, LO],
+        lte: ['_msg', hash, rel || LO, HI],
+      }),
+      paramap(function (op, cb) {
+        if(!op.key[3]) return cb()
+        db.get(op.key[3], function (err, msg) {
+          cb(null, msg)
+        })
+      }),
+      pull.filter(Boolean)
+    )
+  })
+
+  db.feedsLinkedTo = idOpts(function (id, rel) {
+
     return pull(
       pl.read(indexDB, {
         gte: ['_feed', id, rel || LO, LO],
@@ -300,9 +317,9 @@ module.exports = function (db, opts) {
         }
       })
     )
-  }
+  })
 
-  db.feedsLinkedFrom = function (id, rel) {
+  db.feedsLinkedFrom = idOpts(function (id, rel) {
     return pull(
       pl.read(indexDB, {
         gte: ['feed', id, rel || LO, LO],
@@ -315,7 +332,7 @@ module.exports = function (db, opts) {
         }
       })
     )
-  }
+  })
 
   return db
 }
