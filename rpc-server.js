@@ -9,7 +9,7 @@ var api = require('./api')
 exports = module.exports = function (ssb, feed, opts) {
   var rpc = api.server(ssb, feed)
 
-  var rpcServer = net.createServer(function (stream) {
+  return net.createServer(function (stream) {
     stream = toPull.duplex(stream)
     pull(stream, rpc.createStream(), stream)
   })

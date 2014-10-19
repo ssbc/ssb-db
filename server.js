@@ -119,7 +119,7 @@ exports = module.exports = function (ssb, feed, opts) {
     setTimeout(connect, 1000 + Math.random() * 3000)
   })
   .on('close', function () {
-    rpcServer.close()
+    rpc.close()
     server.closed = true
   })
 
