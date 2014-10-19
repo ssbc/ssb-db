@@ -1,42 +1,76 @@
+var Serializer = require('pull-serializer')
+var JSONB = require('json-buffer')
+var muxrpc = require('muxrpc')
+var toPull = require('stream-to-pull-stream')
+var pull = require('pull-stream')
 
-//these are the async functions.
-var async = [
-  'add',
-  'getPublicKey',
-  'getLatest'
-]
+function serialize (stream) {
+  return Serializer(stream, JSONB)
+}
 
-//these are the readable streams.
-var readable = [
-  'createFeedStream',
-  'createHistoryStream',
-  'createLogStream',
-  'messagesLinkedTo',
-  'feedsLinkedTo',
-  'feedsLinkedFrom'
-]
 
+var manifest = {
+  async: [
+    'add',
+    'getPublicKey',
+    'getLatest'
+  ],
+
+  source: [
+    'createFeedStream',
+    'createHistoryStream',
+    'createLogStream',
+    'messagesLinkedTo',
+    'feedsLinkedTo',
+    'feedsLinkedFrom'
+  ]
+}
 
 //connect to server, and expose this api.
-module.exports = function (opts) {
-  if(!opts.id)
-    throw new Error('must provide the local feed id')
+exports = module.exports = function (ssb, feed) {
+
+  if(!ssb) throw new Error('ssb is required')
+  if(!feed) throw new Error('feed is required')
+
 
   var api = {}
-  async.forEach(function (name) {
-    api[name] = function () {
-      var args = [].slice.call(arguments)
-      var cb = args.pop()
-      if(!isFunction(cb))
-        throw new Error('cb *must* be provided')
-      //send request to backend.
-    }
-  })
-  streams.forEach(function (name) {
-    api[name] = function () {
-      //connect this stream to the backend.
-      return stream(name)
-    }
-  })
+  for(var key in manifest) {
+    manifest[key].forEach(function (name) {
+      api[name] = function () {
+        console.log('CALL', name)
+        var args = [].slice.call(arguments)
+        var f = ssb[name].apply(ssb, args)
+        if(f)
+          return pull(f, function (read) {
+            return function (abort, cb) {
+              read(abort, function (err, data) {
+                console.log('>>>', err, data)
+                cb(err, data)
+              })
+            }
+          })
+      }
+    })
+  }
 
+  // initialize the feed to always be with respect to
+  // a given id. or would it be better to allow access to multiple feeds?
+
+  api.add = function (type, message, cb) {
+    console.log('ADD', type, message)
+    feed.add(type, message, cb)
+  }
+
+  return api
 }
+
+exports.client = function () {
+      // muxrpc(remote, local, serialization)
+  return muxrpc(manifest, null, serialize) ()
+}
+
+exports.server = function (ssb, feed) {
+  return muxrpc(null, manifest, serialize) (exports(ssb, feed))
+}
+
+
