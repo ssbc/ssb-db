@@ -1,11 +1,11 @@
 var Serializer = require('pull-serializer')
-var JSONB = require('json-buffer')
+var JSONH = require('json-human-buffer')
 var muxrpc = require('muxrpc')
 var toPull = require('stream-to-pull-stream')
 var pull = require('pull-stream')
 
 function serialize (stream) {
-  return Serializer(stream, JSONB)
+  return Serializer(stream, JSONH, {split: '\n\n'})
 }
 
 
@@ -37,14 +37,12 @@ exports = module.exports = function (ssb, feed) {
   for(var key in manifest) {
     manifest[key].forEach(function (name) {
       api[name] = function () {
-        console.log('CALL', name)
         var args = [].slice.call(arguments)
         var f = ssb[name].apply(ssb, args)
         if(f)
           return pull(f, function (read) {
             return function (abort, cb) {
               read(abort, function (err, data) {
-                console.log('>>>', err, data)
                 cb(err, data)
               })
             }
@@ -57,7 +55,6 @@ exports = module.exports = function (ssb, feed) {
   // a given id. or would it be better to allow access to multiple feeds?
 
   api.add = function (type, message, cb) {
-    console.log('ADD', type, message)
     feed.add(type, message, cb)
   }
 

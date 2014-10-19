@@ -11,11 +11,7 @@ exports = module.exports = function (ssb, feed, opts) {
 
   var rpcServer = net.createServer(function (stream) {
     stream = toPull.duplex(stream)
-    pull(stream, pull.map(String), 
-      pull.through(console.log),
-      rpc.createStream(),
-      pull.through(console.log),
-      stream)
+    pull(stream, rpc.createStream(), stream)
   })
   .listen(opts.rpcPort)
 
