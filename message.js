@@ -13,6 +13,7 @@ module.exports = function (opts) {
   }
 
   function toBuffer (b) {
+    return b.toString('utf8')
     return 'string' !== typeof b ? b : new Buffer(b, 'utf8')
   }
 
@@ -23,7 +24,7 @@ module.exports = function (opts) {
       sequence: prev ? prev.sequence + 1 : 1,
       timestamp: Date.now(),
       timezone: new Date().getTimezoneOffset(),
-      type: toBuffer(type),
+      type: String(type),
       message: content,
     }, keys)
   }

@@ -10,16 +10,9 @@ var msgpack   = require('msgpack-js')
 
 var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
 
-//TODO, make a thing so that the total length of the
-//message + the references is <= 1024
-
 var codec = exports = module.exports =
   varmatch(varstruct.varint)
 //matches added at bottom of this file.
-
-var References = varstruct.vararray(
-                    varstruct.bound(varstruct.varint, 0, 1024),
-                  varstruct.buffer(32))
 
 var Message = varstruct({
   previous  : b2s,
@@ -89,6 +82,7 @@ function msgpackify (codec) {
   var _decode = codec.decode
   function encode (value, b, o) {
     value = clone(value)
+    value.type = new Buffer(value.type, 'utf8')
     value.message = msgpack.encode(value.message)
     var r = _encode(value, b, o)
     encode.bytes = _encode.bytes
@@ -100,6 +94,7 @@ function msgpackify (codec) {
 
     decode: function decode (b, o) {
       var value = _decode(b, o)
+      value.type = value.type.toString('utf8')
       value.message = msgpack.decode(value.message)
       decode.bytes = _decode.bytes
       return value
@@ -133,26 +128,12 @@ function fixed(codec, encodeAs, decodeAs) {
   }
 }
 
-function prefix (value) {
-  return fixed(varstruct.byte, value)
-}
-
-
 var Key = varstruct({
   id: b2s,
   sequence: varstruct.UInt64
 })
 
 var LatestKey = b2s
-
-var Broadcast = varstruct({
-  magic: fixed(varstruct.buffer(4), new Buffer('SCBT')),
-  id: b2s,
-  //don't use varints, so that the same buffer can be reused over and over.
-  port: varstruct.UInt32,
-  timestamp: varstruct.UInt64
-
-})
 
 function isInteger (n) {
   return 'number' === typeof n && Math.round(n) === n
@@ -170,10 +151,10 @@ codec
     return t.signature
   })
   .type(10, Message, function (t) {
-    return isHash(t.previous) && isHash(t.author)// && t.signature
+    return isHash(t.previous) && isHash(t.author)
   })
   .type(100, Key, function (t) {
-    return isHash(t.id) && isInteger(t.sequence)// && !Buffer.isBuffer(t.type)
+    return isHash(t.id) && isInteger(t.sequence)
   })
   .type(120, LatestKey, isHash)
   .type(130, varstruct.varint, isInteger)
