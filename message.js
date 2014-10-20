@@ -34,7 +34,6 @@ module.exports = function (opts) {
       author: opts.hash(keys.public),
       sequence: prev ? prev.sequence + 1 : 1,
       timestamp: Date.now(),
-      timezone: new Date().getTimezoneOffset(),
       message: content,
     }, keys)
   }

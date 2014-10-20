@@ -18,7 +18,6 @@ var Message = varstruct({
   previous  : b2s,
   author    : b2s,
   timestamp : varstruct.varint,
-  timezone  : svarint,
   sequence  : varstruct.varint,
   message   : content
 })
@@ -28,7 +27,6 @@ var Ephemeral = varstruct({
   sequence  : varstruct.varint,
   ephemseq  : varstruct.varint,
   timestamp : varstruct.varint,
-  timezone  : svarint,
   message   : content
 })
 
