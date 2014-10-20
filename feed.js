@@ -11,6 +11,14 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isObject (o) {
+  return (
+    o && 'object' === typeof o
+    && !Buffer.isBuffer(o)
+    && !Array.isArray(o)
+  )
+}
+
 module.exports = function (ssb, keys, opts) {
 
   var create = Message(opts)
@@ -33,8 +41,11 @@ module.exports = function (ssb, keys, opts) {
     add: cont(function (type, message, cb) {
       if(isFunction(message))
         cb = message, message = type
+      else if(isObject(message))
+        message.type = type
       else
         message = {type: type, value: message}
+
     type = message.type
 
     if(!(isString(type) && type.length <= 32 && type.length >= 3))
