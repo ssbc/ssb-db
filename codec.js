@@ -20,7 +20,6 @@ var Message = varstruct({
   timestamp : varstruct.varint,
   timezone  : svarint,
   sequence  : varstruct.varint,
-  type      : type,
   message   : content
 })
 
@@ -30,7 +29,6 @@ var Ephemeral = varstruct({
   ephemseq  : varstruct.varint,
   timestamp : varstruct.varint,
   timezone  : svarint,
-  type      : type,
   message   : content
 })
 
@@ -82,7 +80,6 @@ function msgpackify (codec) {
   var _decode = codec.decode
   function encode (value, b, o) {
     value = clone(value)
-    value.type = new Buffer(value.type, 'utf8')
     value.message = msgpack.encode(value.message)
     var r = _encode(value, b, o)
     encode.bytes = _encode.bytes
@@ -94,7 +91,6 @@ function msgpackify (codec) {
 
     decode: function decode (b, o) {
       var value = _decode(b, o)
-      value.type = value.type.toString('utf8')
       value.message = msgpack.decode(value.message)
       decode.bytes = _decode.bytes
       return value

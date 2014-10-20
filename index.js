@@ -94,11 +94,10 @@ module.exports = function (db, opts) {
       type: 'put', prefix: logDB
     })
 
-//    if(isString(msg.type))
-      add({
-        key: ['type', msg.type.toString().substring(0, 32), msg.timestamp],
-        value: id, type: 'put', prefix: indexDB
-      })
+    add({
+      key: ['type', msg.message.type.toString().substring(0, 32), msg.timestamp],
+      value: id, type: 'put', prefix: indexDB
+    })
 
     indexLinks(msg.message, function (link) {
 
@@ -137,7 +136,7 @@ module.exports = function (db, opts) {
       if(err) return cb(err)
         db.get(hash, function (err, msg) {
           if(err) return cb(err)
-          cb(null, msg.message)
+          cb(null, msg.message.value)
         })
       })
     }

@@ -1,4 +1,12 @@
 
+function isObject (o) {
+  return o && 'object' === typeof o
+}
+
+function isString (s) {
+  return 'string' === typeof s
+}
+
 module.exports = function (opts) {
 
   var zeros = opts.hash(new Buffer(0))
@@ -12,19 +20,21 @@ module.exports = function (opts) {
     return msg
   }
 
-  function toBuffer (b) {
-    return b.toString('utf8')
-    return 'string' !== typeof b ? b : new Buffer(b, 'utf8')
-  }
-
   function create (keys, type, content, prev) {
+
+    //this noise is to handle things calling this with legacy api.
+    if(Buffer.isBuffer(content) || isString(content))
+      content = {type: type, value: content}
+    if(isObject(content))
+      content.type = content.type || type
+    //noise end
+
     return sign({
       previous: prev ? opts.hash(opts.codec.encode(prev)) : zeros,
       author: opts.hash(keys.public),
       sequence: prev ? prev.sequence + 1 : 1,
       timestamp: Date.now(),
       timezone: new Date().getTimezoneOffset(),
-      type: String(type),
       message: content,
     }, keys)
   }

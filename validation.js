@@ -20,6 +20,10 @@ function get (db, key) {
   }
 }
 
+function isString (s) {
+  return 'string' === typeof s
+}
+
 module.exports = function (ssb, opts) {
 
   var lastDB = ssb.sublevel('lst')
@@ -33,6 +37,17 @@ module.exports = function (ssb, opts) {
   var validators = {}
 
   function validateSync (msg, prev, pub) {
+    var type = msg.message.type
+    if(!isString(type)) {
+      validateSync.reason = 'type property must be string'
+      return false
+    }
+
+    if(32 < type.length || type.length < 3) {
+      validateSync.reason = 'type must be 3 < length <= 32, but was:' + type.length
+      return false
+    }
+
     if(prev) {
       if(!deepEqual(msg.previous, hash(encode(prev)))) {
 
@@ -105,7 +120,7 @@ module.exports = function (ssb, opts) {
         )(function (err, results) {
           prev = err ? null : results[0]
           //get PUBLIC KEY out of FIRST MESSAGE.
-          pub = err ? msg.message : results[1]
+          pub = err ? msg.message.value : results[1]
 
           var expected = err ? 1 : results[2] + 1
           if(expected != msg.sequence) {

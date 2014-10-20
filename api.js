@@ -54,8 +54,8 @@ exports = module.exports = function (ssb, feed) {
   // initialize the feed to always be with respect to
   // a given id. or would it be better to allow access to multiple feeds?
 
-  api.add = function (type, message, cb) {
-    feed.add(type, message, cb)
+  api.add = function (data, cb) {
+    feed.add(data, cb)
   }
 
   return api
@@ -70,4 +70,4 @@ exports.server = function (ssb, feed) {
   return muxrpc(null, manifest, serialize) (exports(ssb, feed))
 }
 
-
+exports.manifest = manifest
