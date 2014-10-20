@@ -28,7 +28,7 @@ function clone (obj) {
 function noop () {}
 
 function b(s) {
-  return new Buffer(s, 'utf8')
+  return s
 }
 
 module.exports = function (opts) {
