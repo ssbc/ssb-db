@@ -43,7 +43,8 @@
     "muxrpc": "~0.3.0",
     "pull-stringify": "~1.1.1",
     "json-human-buffer": "~1.0.0",
-    "minimist": "~1.1.0"
+    "minimist": "~1.1.0",
+    "pull-serializer": "~0.3.1"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
