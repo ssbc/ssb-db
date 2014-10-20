@@ -76,27 +76,6 @@ var Signed = {
   }
 }
 
-//var Signed = varstruct({
-//  value: codec,
-//  signature: signature
-//})
-//
-//{
-//  encode: function (value, buffer, offset) {
-//    var signature = value.signature
-//    value.signature = null
-//    return _Signed.encode({
-//      value:
-//        exports.encode(value, buffer, offset),
-//      signature: signature
-//    }, buffer, offset)
-//  },
-//  decode: function (buffer, offset) {
-//
-//    return _Signed
-//  }
-//}
-
 function clone (v) {
   var o = {}
   for(var k in v)
@@ -132,11 +111,8 @@ function msgpackify (codec) {
   return codec
 }
 
-
 Message = msgpackify(Message)
 Ephemeral = msgpackify(Ephemeral)
-//UnsignedMessage = msgpackify(Message)
-
 
 function fixed(codec, encodeAs, decodeAs) {
   function encode (v,b,o) {
@@ -167,11 +143,6 @@ var Key = varstruct({
   sequence: varstruct.UInt64
 })
 
-var FeedKey = varstruct({
-  timestamp: varstruct.UInt64,
-  id: b2s
-})
-
 var LatestKey = b2s
 
 var Broadcast = varstruct({
@@ -191,26 +162,6 @@ function isHash(b) {
   return Buffer.isBuffer(b) && b.length == 32
 }
 
-var TypeIndex = varstruct({
-  type: varstruct.buffer(32),
-  id: b2s,
-  sequence: varstruct.UInt64
-})
-
-var ReferenceIndex = varstruct({
-  type: varstruct.buffer(32),
-  id: b2s,
-  reference: varstruct.buffer(32),
-  sequence: varstruct.UInt64
-})
-
-var ReferencedIndex = varstruct({
-  referenced: varstruct.buffer(32),
-  type: varstruct.buffer(32),
-  id: b2s,
-  sequence: varstruct.UInt64
-})
-
 var Okay =
   fixed(varstruct.buffer(4), new Buffer('okay'), {okay: true})
 
@@ -221,14 +172,8 @@ codec
   .type(10, Message, function (t) {
     return isHash(t.previous) && isHash(t.author)// && t.signature
   })
-//  .type(0, UnsignedMessage, function (t) {
-//    return isHash(t.previous) && isHash(t.author) && !t.signature
-//  })
   .type(100, Key, function (t) {
-    return isHash(t.id) && isInteger(t.sequence) && !Buffer.isBuffer(t.type)
-  })
-  .type(110, FeedKey, function (t) {
-    return isHash(t.id) && isInteger(t.timestamp)
+    return isHash(t.id) && isInteger(t.sequence)// && !Buffer.isBuffer(t.type)
   })
   .type(120, LatestKey, isHash)
   .type(130, varstruct.varint, isInteger)
@@ -236,17 +181,11 @@ codec
     return b && b.okay
   })
 
-//exports.UnsignedMessage = UnsignedMessage
 exports.Message = Message
 exports.Ephemeral = Ephemeral
 exports.Signed = Signed
-exports.Broadcast = Broadcast
 
 exports.Key = Key
-exports.FeedKey = FeedKey
-exports.TypeIndex = TypeIndex
-exports.ReferenceIndex = ReferenceIndex
-exports.ReferencedIndex = ReferencedIndex
 
 exports.buffer = true
 exports.type = 'secure-scuttlebutt-codec'
