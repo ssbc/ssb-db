@@ -1,10 +1,11 @@
 'use strict';
 
-var pull     = require('pull-stream')
-var tape     = require('tape')
-var server   = require('../server')
-var cont     = require('cont')
+var pull    = require('pull-stream')
+var tape    = require('tape')
+var server  = require('../server')
+var cont    = require('cont')
 var compare = require('typewiselite')
+var pl      = require('pull-level')
 
 function sort (ary) {
   return ary.sort(function (a, b) {
@@ -20,9 +21,30 @@ function all(stream, cb) {
 module.exports = function (opts) {
   var w = require('./util')(opts)
 
+  tape('create an ssb retrive, relays for another feed', function (t) {
+    var ssb = w.createDB('get-relays')
+
+    var alice = ssb.createFeed()
+    var bob   = ssb.createFeed()
+
+    cont.series([
+      bob  .add('pub', {address:{host: 'localhost', port:65001}}),
+      alice.add('flw', {$feed: bob.id,   $rel: 'follow'}),
+    ]) (function (err) {
+
+        all(server.getRelays(ssb, alice.id), function (err, ary) {
+          t.deepEqual(sort(ary), sort([
+    //        {id: alice.id, address: {host: 'localhost', port: 65000}},
+            {id: bob.id, address:   {host: 'localhost', port: 65001}},
+          ]))
+          t.end()
+        })
+    })
+  })
+
   tape('create a ssb and retrive the relays for a given feed', function (t) {
 
-    var ssb = w.createDB('get-relays')
+    var ssb = w.createDB('get-relays2')
 
     var alice = ssb.createFeed()
     var bob   = ssb.createFeed()
@@ -35,7 +57,11 @@ module.exports = function (opts) {
       alice.add('flw', {$feed: bob.id,   $rel: 'follow'}),
       alice.add('flw', {$feed: carol.id, $rel: 'follow'}),
       bob  .add('flw', {$feed: alice.id, $rel: 'follow'})
-    ]) (function () {
+    ]) (function (err) {
+      if(err) throw err
+
+//    return pull(pl.read(ssb), pull.drain(console.log))
+//    return pull(pl.read(ssb.sublevel('idx')), pull.drain(console.log))
 
     cont.para([
       function (cb) {
