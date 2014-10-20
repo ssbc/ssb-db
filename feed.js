@@ -36,7 +36,7 @@ module.exports = function (ssb, keys, opts) {
   return {
     id: id,
     init: function (cb) {
-      this.add({type: 'init', value: keys.public}, cb)
+      this.add({type: 'init', public: keys.public}, cb)
     },
     add: cont(function (type, message, cb) {
       if(isFunction(message))
@@ -59,7 +59,7 @@ module.exports = function (ssb, keys, opts) {
         getPrev(function (err, _prev) {
           prev = _prev
           if(!prev && type !== 'init')
-            queue.unshift({message: {type: 'init', value: keys.public}, cb: noop})
+            queue.unshift({message: {type: 'init', public: keys.public}, cb: noop})
           write()
         })
       }

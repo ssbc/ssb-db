@@ -95,11 +95,11 @@ module.exports = function (db, opts) {
     })
 
     add({
-      key: ['type', msg.message.type.toString().substring(0, 32), msg.timestamp],
+      key: ['type', msg.value.type.toString().substring(0, 32), msg.timestamp],
       value: id, type: 'put', prefix: indexDB
     })
 
-    indexLinks(msg.message, function (link) {
+    indexLinks(msg.value, function (link) {
 
       if(isHash(link.$feed)) {
         add({
@@ -136,7 +136,7 @@ module.exports = function (db, opts) {
       if(err) return cb(err)
         db.get(hash, function (err, msg) {
           if(err) return cb(err)
-          cb(null, msg.message.value)
+          cb(null, msg.value.public)
         })
       })
     }

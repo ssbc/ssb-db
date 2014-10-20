@@ -37,7 +37,7 @@ module.exports = function (ssb, opts) {
   var validators = {}
 
   function validateSync (msg, prev, pub) {
-    var type = msg.message.type
+    var type = msg.value.type
     if(!isString(type)) {
       validateSync.reason = 'type property must be string'
       return false
@@ -120,7 +120,7 @@ module.exports = function (ssb, opts) {
         )(function (err, results) {
           prev = err ? null : results[0]
           //get PUBLIC KEY out of FIRST MESSAGE.
-          pub = err ? msg.message.value : results[1]
+          pub = err ? msg.value.public : results[1]
 
           var expected = err ? 1 : results[2] + 1
           if(expected != msg.sequence) {
