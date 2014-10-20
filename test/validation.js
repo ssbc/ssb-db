@@ -22,7 +22,7 @@ module.exports = function (opts) {
 
     var prev
     var messages = [
-      prev = create(keys, 'init', keys.public),
+      prev = create(keys, null, {type: 'init', public: keys.public}),
       prev = create(keys, 'msg', 'hello', prev),
       prev = create(keys, 'msg', 'hello2', prev)
     ]
@@ -45,7 +45,7 @@ module.exports = function (opts) {
     var id = opts.hash(keys.public)
     var prev
     ssb.add(
-      prev = create(keys, 'init', keys.public),
+      prev = create(keys, null, {type: 'init', public: keys.public}),
       function (err) {
         if(err) throw err
 
@@ -79,7 +79,7 @@ module.exports = function (opts) {
     var id = opts.hash(keys.public)
     var prev, calls = 0
     ssb.add(
-      prev = create(keys, 'init', keys.public),
+      prev = create(keys,null, {type:  'init', public: keys.public}),
       function (err) {
         if(err) throw err
         calls ++

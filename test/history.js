@@ -53,7 +53,7 @@ module.exports = function (opts) {
     var keys = opts.keys.generate()
     var prev
 
-    ssb.add(prev = create(keys, 'init', keys.public), function () {
+    ssb.add(prev = create(keys, null, {type: 'init', public: keys.public}), function () {
       pull(
         pull.values(rand(n)),
         pull.asyncMap(function (r, cb) {
