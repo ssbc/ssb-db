@@ -2,6 +2,16 @@
 
 A secure database with replication that is guaranteed to work.
 
+## stability: level 1, experimental - expect breaking changes.
+
+Following the [node.js stability index](https://github.com/dominictarr/stability#levels-of-stability),
+and the good parts of [semver](http://semver-ftw.org)
+v1 does not mean stability, it just means there has been a breaking change
+since v0.
+
+## example
+
+
 ``` js
 // create a scuttlebutt instance and add a message to it.
 
@@ -56,8 +66,16 @@ net.createServer(function (stream) {
 //create another database to replicate with:
 
 var ssb2 = require('secure-scuttlebutt/create')(path2)
+var feed2 = ssb2.createFeed()
 //follow the key we created before.
-ssb2.follow(feed.id)
+feed.add({
+  type: 'pub', address: {host: HOST, port: 1234}
+}, function () { ... })
+
+feed2.add({
+  type: 'follow',
+  follows: {$feed: feed.id, $rel: 'follows'}
+})
 
 // replicate from the server.
 // this will pull the messages by feed1 into this database.
