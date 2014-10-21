@@ -9,6 +9,7 @@ var timestamp = require('monotonic-timestamp')
 var Feed      = require('./feed')
 var assert    = require('assert')
 var msgpack   = require('msgpack-js')
+var ltgt      = require('ltgt')
 
 //this makes msgpack a valid level codec.
 msgpack.buffer = true
@@ -86,16 +87,18 @@ module.exports = function (db, opts) {
       type: 'put', prefix: lastDB
     })
 
+    var localtime = timestamp()
+
     // index messages in the order _received_
     // this will be used to pass to plugins which
     // must create their indexes asyncly.
     add({
-      key: timestamp(), value: id,
+      key: localtime, value: id,
       type: 'put', prefix: logDB
     })
 
     add({
-      key: ['type', msg.value.type.toString().substring(0, 32), msg.timestamp],
+      key: ['type', msg.value.type.toString().substring(0, 32), localtime],
       value: id, type: 'put', prefix: indexDB
     })
 
@@ -259,16 +262,23 @@ module.exports = function (db, opts) {
 
   var HI = undefined, LO = null
 
-  db.messagesByType = function (type) {
+  db.messagesByType = function (opts) {
+    if(!opts)
+      throw new Error('must provide {type: string} to messagesByType')
+    if(isString(opts))
+      opts = {type: opts}
+
+    ltgt.toLtgt(opts, opts, function (value) {
+      return ['type', opts.type, value]
+    }, LO, HI)
+    //default keys to false
+    var keys = opts.keys = opts.keys === true
     return pull(
-      pl.read(indexDB, {
-        gte: ['type', type, LO, LO],
-        lte: ['type', type, HI, HI],
-        keys: false
-      }),
-      paramap(function (id, cb) {
+      pl.read(indexDB, opts),
+      paramap(function (data, cb) {
+        var id = keys ? data.value : data
         db.get(id, function (err, msg) {
-          cb(null, msg)
+          cb(null, keys ? {key: id, ts: data.key[2], value: msg} : msg)
         })
       }),
       pull.filter()
