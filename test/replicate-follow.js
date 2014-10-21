@@ -42,7 +42,7 @@ module.exports = function (opts, duplexPipe, name) {
     return cat([
       pull.values([id]),
       pull(
-        ssb.feedsLinkedFrom(id, 'follow'),
+        ssb.feedsLinkedFromFeed(id, 'follow'),
         pull.map(function (link) {
           return link.dest
         })

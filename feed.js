@@ -85,7 +85,7 @@ module.exports = function (ssb, keys, opts) {
           return cat([
             pull.values([id]),
             pull(
-              ssb.feedsLinkedFrom(id, opts.rel || 'follow'),
+              ssb.feedsLinkedFromFeed(id, opts.rel || 'follow'),
               pull.map(function (link) {
                 return link.dest
               })

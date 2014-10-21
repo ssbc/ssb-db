@@ -17,7 +17,7 @@ var rpcServer = require('./rpc-server')
 function getRelays (ssb, id) {
   return join(
     pull(
-      ssb.feedsLinkedFrom(id, 'follow'),
+      ssb.feedsLinkedFromFeed(id, 'follow'),
       pull.map(function (link) { return {key: link.dest}})
     ),
     pull(
