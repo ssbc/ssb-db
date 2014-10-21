@@ -26,9 +26,11 @@ var manifest = {
     'createFeedStream',
     'createHistoryStream',
     'createLogStream',
-    'messagesLinkedTo',
-    'feedsLinkedTo',
-    'feedsLinkedFrom'
+    'messagesLinkedToMessage',
+    'messagesLinkedToFeed',
+    'messagesLinkedFromFeed',
+    'feedsLinkedToFeed',
+    'feedsLinkedFromFeed'
   ]
 }
 
