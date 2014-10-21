@@ -286,7 +286,7 @@ module.exports = function (db, opts) {
     }
   }
 
-  db.messagesLinkedTo = idOpts(function (hash, rel) {
+  db.messagesLinkedToMessage = idOpts(function (hash, rel) {
     return pull(
       pl.read(indexDB, {
         gte: ['_msg', hash, rel || LO, LO],
@@ -302,7 +302,8 @@ module.exports = function (db, opts) {
     )
   })
 
-  db.feedsLinkedTo = idOpts(function (id, rel) {
+  db.messagesLinkedToFeed =
+  db.feedsLinkedToFeed = idOpts(function (id, rel) {
 
     return pull(
       pl.read(indexDB, {
@@ -318,7 +319,8 @@ module.exports = function (db, opts) {
     )
   })
 
-  db.feedsLinkedFrom = idOpts(function (id, rel) {
+  db.messagesLinkedFromFeed =
+  db.feedsLinkedFromFeed = idOpts(function (id, rel) {
     return pull(
       pl.read(indexDB, {
         gte: ['feed', id, rel || LO, LO],

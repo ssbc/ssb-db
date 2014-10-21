@@ -47,7 +47,7 @@ module.exports = function (opts) {
             content: 'whatever'
           }, function (err, reply2) {
             pull(
-              ssb.messagesLinkedTo(msg_hash, 'reply'),
+              ssb.messagesLinkedToMessage(msg_hash, 'reply'),
               pull.collect(function (err, ary) {
                 ary.sort(function (a, b) { return a.timestamp - b.timestamp })
 
@@ -89,10 +89,10 @@ module.exports = function (opts) {
     }) (function (err, f) {
 
       cont.para({
-        alice:  all(ssb.feedsLinkedFrom(alice.id, 'follow')),
-        bob:    all(ssb.feedsLinkedFrom(bob.id, 'follow')),
-        _alice: all(ssb.feedsLinkedTo(alice.id, 'follow')),
-        _carol: all(ssb.feedsLinkedTo(carol.id, 'follow'))
+        alice:  all(ssb.feedsLinkedFromFeed(alice.id, 'follow')),
+        bob:    all(ssb.feedsLinkedFromFeed(bob.id, 'follow')),
+        _alice: all(ssb.feedsLinkedToFeed(alice.id, 'follow')),
+        _carol: all(ssb.feedsLinkedToFeed(carol.id, 'follow'))
       }) (function (err, r) {
 
         console.log(r)
