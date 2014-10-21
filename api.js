@@ -16,6 +16,7 @@ function isFunction (f) {
 var manifest = {
   async: [
     'add',
+    'get',
     'getPublicKey',
     'getLatest',
     'whoami'
