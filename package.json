@@ -45,7 +45,8 @@
     "pull-stringify": "~1.1.1",
     "json-human-buffer": "~1.0.0",
     "minimist": "~1.1.0",
-    "pull-serializer": "~0.3.1"
+    "pull-serializer": "~0.3.1",
+    "ltgt": "~2.0.0"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
