@@ -8,12 +8,17 @@ function serialize (stream) {
   return Serializer(stream, JSONH, {split: '\n\n'})
 }
 
+function isFunction (f) {
+  return 'function' === typeof f
+}
+
 
 var manifest = {
   async: [
     'add',
     'getPublicKey',
-    'getLatest'
+    'getLatest',
+    'whoami'
   ],
 
   source: [
@@ -56,6 +61,11 @@ exports = module.exports = function (ssb, feed) {
 
   api.add = function (data, cb) {
     feed.add(data, cb)
+  }
+
+  api.whoami = function (_, cb) {
+    if(isFunction(_)) cb = _
+    cb(null, {id: feed.id, public: feed.keys.public})
   }
 
   return api

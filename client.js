@@ -10,7 +10,7 @@ var rpc = api.client()
 
 function contains (s, a) {
   if(!a) return false
-  return ~a.indexOf(s)
+  return !!~a.indexOf(s)
 }
 
 function usage () {
@@ -22,8 +22,9 @@ var opts = require('minimist')(process.argv.slice(2))
 var cmd = opts._[0]
 delete opts._
 
-var async  = !~contains(cmd, api.manifest.async)
-var source = !~contains(cmd, api.manifest.source)
+var async  = contains(cmd, api.manifest.async)
+var source = contains(cmd, api.manifest.source)
+console.log(cmd, async, source, api.manifest.async)
 if(!async && !source)
   return usage()
 
