@@ -36,6 +36,7 @@
     "varstruct-match": "~2.0.0",
     "deep-equal": "~0.2.1",
     "level-sublevel": "~6.3.8",
+    "level": "~0.18.0",
     "cont": "~1.0.0",
     "msgpack-js": "~0.3.0",
     "pull-join": "~1.0.0",
@@ -49,7 +50,6 @@
   "devDependencies": {
     "deep-equal": "^0.2.1",
     "json-buffer": "^2.0.9",
-    "level-sublevel": "~6.3.7",
     "level-test": "~1.6.2",
     "ltgt": "~1.0.2",
     "tape": "~2.12.3",
