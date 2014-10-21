@@ -42,8 +42,8 @@
     "pull-join": "~1.0.0",
     "stream-to-pull-stream": "~1.6.0",
     "muxrpc": "~0.3.0",
-    "pull-stringify": "~1.1.1",
-    "json-human-buffer": "~1.0.0",
+    "pull-stringify": "~1.2.2",
+    "json-human-buffer": "~1.0.2",
     "minimist": "~1.1.0",
     "pull-serializer": "~0.3.1",
     "ltgt": "~2.0.0"
