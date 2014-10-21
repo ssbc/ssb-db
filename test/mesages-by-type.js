@@ -29,7 +29,7 @@ module.exports = function (opts) {
         if(err) throw err
         t.equal(ary.length, 2)
         t.deepEqual(ary.map(function (e) {
-          return e.value.value
+          return e.value.content
         }), [
           {type: 'foo', foo: 1},
           {type: 'foo', foo: 3}
@@ -44,7 +44,7 @@ module.exports = function (opts) {
             gt: since
           }), function (err, ary) {
             t.equal(ary.length, 1)
-            t.deepEqual(ary[0].value.value, {type: 'foo', foo: 6})
+            t.deepEqual(ary[0].value.content, {type: 'foo', foo: 6})
             t.end()
           })
         })
