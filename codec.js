@@ -19,7 +19,7 @@ var Message = varstruct({
   author    : b2s,
   timestamp : varstruct.varint,
   sequence  : varstruct.varint,
-  value     : content
+  content   : content
 })
 
 var Ephemeral = varstruct({
@@ -27,7 +27,7 @@ var Ephemeral = varstruct({
   sequence  : varstruct.varint,
   ephemseq  : varstruct.varint,
   timestamp : varstruct.varint,
-  value     : content
+  content   : content
 })
 
 var _Signed = varstruct({
@@ -78,7 +78,7 @@ function msgpackify (codec) {
   var _decode = codec.decode
   function encode (value, b, o) {
     value = clone(value)
-    value.value = msgpack.encode(value.value)
+    value.content = msgpack.encode(value.content)
     var r = _encode(value, b, o)
     encode.bytes = _encode.bytes
     return r
@@ -89,7 +89,7 @@ function msgpackify (codec) {
 
     decode: function decode (b, o) {
       var value = _decode(b, o)
-      value.value = msgpack.decode(value.value)
+      value.content = msgpack.decode(value.content)
       decode.bytes = _decode.bytes
       return value
     },

@@ -23,7 +23,7 @@ function getRelays (ssb, id) {
     pull(
       ssb.messagesByType('pub'),
       pull.map(function (msg) {
-        return {key: msg.author, value: msg.value.address}
+        return {key: msg.author, value: msg.content.address}
       })
     ),
     function (id, _, address) {
