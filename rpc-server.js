@@ -7,11 +7,10 @@ var api = require('./api')
 
 
 exports = module.exports = function (ssb, feed, opts) {
-  var rpc = api.server(ssb, feed)
 
   return net.createServer(function (stream) {
     stream = toPull.duplex(stream)
-    pull(stream, rpc.createStream(), stream)
+    pull(stream, api.server(ssb, feed).createStream(), stream)
   })
   .listen(opts.rpcPort)
 
