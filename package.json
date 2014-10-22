@@ -52,7 +52,6 @@
     "deep-equal": "^0.2.1",
     "json-buffer": "^2.0.9",
     "level-test": "~1.6.2",
-    "ltgt": "~1.0.2",
     "tape": "~2.12.3",
     "typewiselite": "~1.0.0",
     "rimraf": "~2.2.8",
