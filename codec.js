@@ -7,11 +7,12 @@ var signature = varstruct.buffer(64)
 var type      = varstruct.varbuf(varstruct.bound(varstruct.byte, 0, 32))
 
 var msgpack   = require('msgpack-js')
+var hexpp     = require('hexpp')
 
 var content = varstruct.varbuf(varstruct.bound(varstruct.varint, 0, 1024))
 
 var codec = exports = module.exports =
-  varmatch(varstruct.varint)
+  varmatch(varstruct.byte)
 //matches added at bottom of this file.
 
 var Message = varstruct({
@@ -43,11 +44,11 @@ function clone (a) {
 }
 
 var Signed = {
-  encode: function encode (value, b, o) {
-    var _value = clone(value)
+  encode: function encode (_value, b, o) {
+    var value = clone(_value)
     var sig = value.signature
-    delete _value.signature
-    var r = _Signed.encode({value: _value, signature: sig}, b, o)
+    delete value.signature
+    var r = _Signed.encode({value: value, signature: sig}, b, o)
     encode.bytes = _Signed.encode.bytes
     return r
   },
@@ -113,7 +114,6 @@ function fixed(codec, encodeAs, decodeAs) {
     return decodeAs || v
   }
   var length = codec.length || codec.encodingLength(value)
-  encode.bytesWritten = decode.bytesRead = length
   encode.bytes = decode.bytes = length
   return {
     encode: encode,
