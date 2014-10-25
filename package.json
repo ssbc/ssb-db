@@ -32,7 +32,7 @@
     "level-worklog": "~0.0.0",
     "monotonic-timestamp": "~0.0.8",
     "varint": "~3.0.1",
-    "varstruct": "~4.1.0",
+    "varstruct": "~4.1.1",
     "varstruct-match": "~2.0.0",
     "deep-equal": "~0.2.1",
     "level-sublevel": "~6.3.8",
