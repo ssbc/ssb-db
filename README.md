@@ -15,7 +15,16 @@ since v0.
 ``` js
 // create a scuttlebutt instance and add a message to it.
 
+var keys = null;
+var HOST = '127.0.0.1';
+
+// data directories
+// mkdir /tmp/ssb1 /tmp/ssb2
+var path = '/tmp/ssb1';
+var path2 = '/tmp/ssb2';
+
 var ssb = require('secure-scuttlebutt/create')(path)
+var pull = require('pull-stream')
 
 //create a feed.
 //this represents a write access / user.
@@ -70,7 +79,7 @@ var feed2 = ssb2.createFeed()
 //follow the key we created before.
 feed.add({
   type: 'pub', address: {host: HOST, port: 1234}
-}, function () { ... })
+}, console.log.bind(console,'feed.add') )
 
 feed2.add({
   type: 'follow',
