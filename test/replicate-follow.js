@@ -7,6 +7,7 @@ var net       = require('net')
 var u         = {groups: require('./group')}
 var replicate = require('../replicate')
 var cat       = require('pull-cat')
+var random    = require('pull-randomly-split')
 
 //create a instance with a feed
 //then have another instance follow it.
@@ -277,6 +278,10 @@ if(!module.parent) {
   module.exports(opts, function (a, b) {
     pull(a, b, a)
   }, 'pull-stream')
+
+  module.exports(opts, function (a, b) {
+    pull(a, random(), b, random(), a)
+  }, 'pull-stream, random splits')
 
   var toStream = require('pull-stream-to-stream')
   module.exports(opts, function (a, b) {
