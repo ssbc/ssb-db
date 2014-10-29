@@ -54,6 +54,10 @@ var Signed = {
   },
   decode: function decode (b, o) {
     var v = _Signed.decode(b, o)
+    if(!v) {
+      decode.bytes = 0
+      return
+    }
     v.value.signature = v.signature
     decode.bytes = _Signed.decode.bytes
     return v.value
@@ -90,6 +94,10 @@ function msgpackify (codec) {
 
     decode: function decode (b, o) {
       var value = _decode(b, o)
+      if(!value) {
+        decode.bytes = 0
+        return
+      }
       value.content = msgpack.decode(value.content)
       decode.bytes = _decode.bytes
       return value
@@ -110,7 +118,9 @@ function fixed(codec, encodeAs, decodeAs) {
   }
   function decode (b,o) {
     var v = codec.decode(b,o)
+    if(!v) {decode.bytes = 0; return}
     assert.deepEqual(v, encodeAs)
+    decode.bytes = encodeAs.length
     return decodeAs || v
   }
   var length = codec.length || codec.encodingLength(value)
