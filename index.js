@@ -106,7 +106,6 @@ module.exports = function (db, opts) {
 
       if (link.$rel == 'withdraws' && isHash(link.$msg)) {
         // remove from indexes
-        // :TODO: add to a 'withdrawn' index so that messages that arrive after the 'withdraw' are not indexed
         db.get(link.$msg, function(err, targetMsg) {
           if (!targetMsg) return
           if (msg.author.toString('hex') != targetMsg.author.toString('hex')) return // only allow for the author
