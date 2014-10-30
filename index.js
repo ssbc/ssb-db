@@ -104,27 +104,46 @@ module.exports = function (db, opts) {
 
     indexLinks(msg.content, function (link) {
 
-      if(isHash(link.$feed)) {
-        add({
-          key: ['feed', msg.author, link.$rel, link.$feed, msg.sequence, id],
-          value: link,
-          type: 'put', prefix: indexDB
+      if (link.$rel == 'withdraws' && isHash(link.$msg)) {
+        // remove from indexes
+        // :TODO: add to a 'withdrawn' index so that messages that arrive after the 'withdraw' are not indexed
+        db.get(link.$msg, function(err, targetMsg) {
+          if (!targetMsg) return
+          if (msg.author.toString('hex') != targetMsg.author.toString('hex')) return // only allow for the author
+          indexLinks(targetMsg.content, function(targetLink) {
+            if(isHash(targetLink.$feed)) {
+              indexDB.del(['feed', targetMsg.author, targetLink.$rel, targetLink.$feed, targetMsg.sequence, link.$msg])
+              indexDB.del(['_feed', targetLink.$feed, targetLink.$rel, targetMsg.author, targetMsg.sequence, link.$msg])
+            }
+            if(isHash(targetLink.$msg)) {
+              indexDB.del(['_msg', targetLink.$msg, targetLink.$rel, link.$msg])
+            }
+          })
         })
-        add({
-          key: ['_feed', link.$feed, link.$rel, msg.author, msg.sequence, id],
-          value: link,
-          type: 'put', prefix: indexDB
-        })
-      }
+      } else {
+        // add to indexes
+        if(isHash(link.$feed)) {
+          add({
+            key: ['feed', msg.author, link.$rel, link.$feed, msg.sequence, id],
+            value: link,
+            type: 'put', prefix: indexDB
+          })
+          add({
+            key: ['_feed', link.$feed, link.$rel, msg.author, msg.sequence, id],
+            value: link,
+            type: 'put', prefix: indexDB
+          })
+        }
 
-      if(isHash(link.$msg)) {
-        // do not need forward index here, because
-        // it's cheap to just read the message.
+        if(isHash(link.$msg)) {
+          // do not need forward index here, because
+          // it's cheap to just read the message.
 
-        add({
-          key: ['_msg', link.$msg, link.$rel, id], value: link,
-          type: 'put', prefix: indexDB
-        })
+          add({
+            key: ['_msg', link.$msg, link.$rel, id], value: link,
+            type: 'put', prefix: indexDB
+          })
+        }
       }
 
       //TODO, add $ext links
