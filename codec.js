@@ -147,8 +147,14 @@ function isHash(b) {
   return Buffer.isBuffer(b) && b.length == 32
 }
 
+function isString(s) {
+  return 'string' === typeof s
+}
+
 var Okay =
   fixed(varstruct.buffer(4), new Buffer('okay'), {okay: true})
+
+var VBuffer = varstruct.varstring(varstruct.byte)
 
 codec
   .type(0, Signed, function (t) {
@@ -165,6 +171,7 @@ codec
   .type(140, Okay, function (b) {
     return b && b.okay
   })
+  .type(150, VBuffer, isString)
 
 exports.Message = Message
 exports.Ephemeral = Ephemeral
