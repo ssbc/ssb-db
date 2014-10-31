@@ -1,19 +1,40 @@
+'use strict';
 var pull = require('pull-stream')
 var many = require('pull-many')
 var cat  = require('pull-cat')
 var codec = require('./codec')
 var pvstruct = require('pull-varstruct')
+var pushable = require('pull-pushable')
+var goodbye = require('pull-goodbye')
 
 function ratio(a, b) {
   if(a === 0 && b === 0) return 1
   return a / b
 }
 
-
 function isInteger (v) {
   return !isNaN(v) && Math.round(v)===v
 }
 
+/*
+
+  c:{ID,Seq}*
+  c:okay
+  S:msg*
+  S:done
+  
+{
+  //entering a state... send something
+  //receive 
+  START: {req: START, okay: OKAY}
+  OKAY: {recv: OKAY, done: DONE}
+  DONE: {}
+}
+
+{
+  START: function (data) { ... }, //send all requests... then OKAY.
+}
+*/
 
 module.exports = function (ssb, opts, cb) {
   if('function' === typeof opts)
@@ -24,12 +45,13 @@ module.exports = function (ssb, opts, cb) {
 
   var sbs = ssb
 
-  isHash = ssb.opts.isHash
+  var isHash = ssb.opts.isHash
 
   var progress = opts.progress || function () {}
   opts = opts || {}
   var expected = {}
   var source = many()
+//  var goodbye = pull.values(['DONE'])
 
   var latestStream = opts.latest
     ? pull(
@@ -40,6 +62,8 @@ module.exports = function (ssb, opts, cb) {
 
   //source: stream {id: hash(pubkey), sequence: latest}
   //pairs, then {okay: true} to show you are at the end.
+
+  var n = 2
 
   function get (id) {
     var id = id.toString('base64')
@@ -76,19 +100,23 @@ module.exports = function (ssb, opts, cb) {
     }
   }
 
-  var n = 2
   function checkEmpty () {
+    console.log('CHECK EMPTY', n)
     if(--n) return
-    if(complete()) source.cap()
+    if(complete()) { source.cap() }
   }
 
   function once () {
     var done = false
     return function (abort, cb) {
-      if(done) return cb(true)
+      if(done) {
+        cb(true)
+        checkEmpty()
+        return
+      }
       done = true
-      checkEmpty()
-      cb(abort, {okay: true})
+      cb(abort, "OKAY")
+      console.log("**************************")
     }
   }
 
@@ -117,18 +145,18 @@ module.exports = function (ssb, opts, cb) {
             sbs.createHistoryStream(data.id, data.sequence + 1, opts.live),
             pull.through(function (data) {
               get(data.author).sent ++
-              if(complete()) source.cap()
+              if(complete()) { source.cap() }
             })
           )
         )
       }
-      else if(data.okay) checkEmpty()
+      else if(data === 'OKAY') checkEmpty()
 
     }),
     pull(
       pull.through(function (msg) {
         get(msg.author).recv ++
-        if(complete()) source.cap()
+        if(complete()) { source.cap() }
       }),
       sbs.createWriteStream(function (err) {
         cb(err, sent, recv, expected)
@@ -136,9 +164,6 @@ module.exports = function (ssb, opts, cb) {
     )
   )
 
-  return {
-    source: pull(source, pvstruct.encode(codec)),
-    sink: pull(pvstruct.decode(codec), sink)
-  }
+  return pvstruct(goodbye({source: source, sink: sink}, 'goodbye'), codec)
 }
 
