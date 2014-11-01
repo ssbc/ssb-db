@@ -51,7 +51,6 @@ module.exports = function (ssb, opts, cb) {
   opts = opts || {}
   var expected = {}
   var source = many()
-//  var goodbye = pull.values(['DONE'])
 
   var latestStream = opts.latest
     ? pull(
@@ -101,7 +100,6 @@ module.exports = function (ssb, opts, cb) {
   }
 
   function checkEmpty () {
-    console.log('CHECK EMPTY', n)
     if(--n) return
     if(complete()) { source.cap() }
   }
@@ -115,8 +113,7 @@ module.exports = function (ssb, opts, cb) {
         return
       }
       done = true
-      cb(abort, "OKAY")
-      console.log("**************************")
+      cb(abort, {okay: true})
     }
   }
 
@@ -150,7 +147,7 @@ module.exports = function (ssb, opts, cb) {
           )
         )
       }
-      else if(data === 'OKAY') checkEmpty()
+      else if(data.okay) checkEmpty()
 
     }),
     pull(
@@ -164,6 +161,6 @@ module.exports = function (ssb, opts, cb) {
     )
   )
 
-  return pvstruct(goodbye({source: source, sink: sink}, 'goodbye'), codec)
+  return pvstruct({source: source, sink: sink}, codec)
 }
 
