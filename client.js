@@ -8,6 +8,16 @@ var toPull = require('stream-to-pull-stream')
 
 var rpc = api.client()
 
+var aliases = {
+  feed: 'createFeedStream',
+  history: 'createHistoryStream',
+  hist: 'createHistoryStream',
+  public: 'getPublicKey',
+  pub: 'getPublicKey',
+  log: 'createLogStream',
+  conf: 'config'
+}
+
 function contains (s, a) {
   if(!a) return false
   return !!~a.indexOf(s)
@@ -20,15 +30,28 @@ function usage () {
 
 var opts = require('minimist')(process.argv.slice(2))
 var cmd = opts._[0]
+var arg = opts._[1]
 delete opts._
+
+cmd = aliases[cmd] || cmd
+
+if(arg && Object.keys(opts).length === 0)
+  opts = arg
+
+var config = require('./config')
+if(cmd === 'config') {
+  console.log(JSON.stringify(config, null, 2))
+  process.exit()
+}
+
 
 var async  = contains(cmd, api.manifest.async)
 var source = contains(cmd, api.manifest.source)
-console.log(cmd, async, source, api.manifest.async)
+
 if(!async && !source)
   return usage()
 
-var stream = duplex(net.connect(5657))
+var stream = duplex(net.connect(config.rpcPort))
 
 pull(
   stream,
@@ -43,13 +66,15 @@ if(!process.stdin.isTTY) {
     toPull.source(process.stdin),
     pull.collect(function (err, ary) {
       var str = Buffer.concat(ary).toString('utf8')
+      console.log(str)
       var data = JSONH.parse(str)
+      console.log(data)
       next(data)
     })
   )
 }
 else
-  next(opts)
+  next(JSONH.fromHuman(opts))
 
 function next (data) {
   if(async) {
