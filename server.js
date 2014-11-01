@@ -14,6 +14,10 @@ var rpcServer = require('./rpc-server')
 //{relay: host:port}
 //so this means we need to index keys/values/strings?
 
+function isObject (o) {
+  return o && 'object' === typeof o
+}
+
 function getRelays (ssb, id) {
   return join(
     pull(
@@ -57,6 +61,15 @@ exports = module.exports = function (ssb, feed, opts) {
 
   var connecting = false, server
 
+  var seeds = opts.seeds
+  seeds =
+    ( Array.isArray(seeds) ? seeds
+    : isObject(seeds)      ? [seeds]
+    : [])
+    .map(function (e) {
+      return {address: e, id: feed.id}
+    })
+
   function connect () {
     if(connecting) return
     connecting = true
@@ -66,9 +79,7 @@ exports = module.exports = function (ssb, feed, opts) {
     //keep track of how much data you have received
     //from them and when you last replicated.
     all(cat([
-      pull.values((opts.seeds || []).map(function (e) {
-        return {address: e, id: feed.id}
-      })),
+      pull.values(seeds),
       getRelays(ssb, feed.id)
     ]), function (err, ary) {
 
@@ -132,9 +143,13 @@ exports = module.exports = function (ssb, feed, opts) {
 exports.getRelays = getRelays
 
 if(!module.parent) {
-  var create = require('./create')
+  var config = require('./config')
+  var ssbKeys = require('ssb-keys')
+
   var path = require('path')
-  var ssb = create(path.join(process.env.HOME, '.ssb/db'))
-  var feed = ssb.createFeed()
-  exports(ssb, feed, {port: 5656, rpcPort: 5657})
+  var keys = ssbKeys.loadOrCreateSync(path.join(config.path, 'secret'))
+  var create = require('./create', path.join(config.path, 'db'))
+  var ssb = create(config.path)
+  var feed = ssb.createFeed(keys)
+  exports(ssb, feed, config)
 }
