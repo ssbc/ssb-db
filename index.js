@@ -186,7 +186,7 @@ module.exports = function (db, opts) {
   db.createHistoryStream = function (id, seq, live) {
     if(!Buffer.isBuffer(id)) {
       live = !!id.live
-      seq = id.seq
+      seq = id.seq || 0
       id = id.id
     }
     return pull(
