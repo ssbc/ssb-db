@@ -48,7 +48,7 @@
     "pull-varstruct": "~2.1.1",
     "rc": "~0.5.3",
     "signed-varint": "~2.0.0",
-    "ssb-keys": "git://github.com/dominictarr/ssb-keys#0644061d62c451cf63f1489c1b7e8c5bab16b76b",
+    "ssb-keys": "~0.2.0",
     "stream-to-pull-stream": "~1.6.0",
     "varint": "~3.0.1",
     "varstruct": "~4.1.5",
