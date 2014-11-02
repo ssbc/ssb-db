@@ -84,4 +84,9 @@ exports.server = function (ssb, feed) {
   return muxrpc(null, manifest, serialize) (exports(ssb, feed))
 }
 
+exports.peer = function (ssb, feed, _serialize) {
+  //this is terribly dangerous until we have authorization on the rpc stream
+  return muxrpc(manifest, manifest, _serialize || serialize) (exports(ssb, feed))
+}
+
 exports.manifest = manifest
