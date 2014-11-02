@@ -18,6 +18,24 @@ var aliases = {
   conf: 'config'
 }
 
+function isObject (o) {
+  return o && 'object' === typeof o && !Buffer.isBuffer(o)
+}
+
+function defaultRel (o, r) {
+  if(!isObject(o)) return o
+  for(var k in o) {
+    console.log(k)
+    if(isObject(o[k]))
+      defaultRel(o[k], k)
+    else if(k[0] === '$' && ~['$msg', '$ext', '$feed'].indexOf(k)) {
+      if(!o.$rel)
+        o.$rel = r ? r : o.type
+    }
+  }
+  return o
+}
+
 function contains (s, a) {
   if(!a) return false
   return !!~a.indexOf(s)
@@ -77,6 +95,8 @@ else
   next(JSONH.fromHuman(opts))
 
 function next (data) {
+  //set $rel as key name if it's missing.
+  defaultRel(data)
   if(async) {
     rpc[cmd](data, function (err, ret) {
       if(err) throw err
