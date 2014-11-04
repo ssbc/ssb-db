@@ -2,6 +2,7 @@ var cont = require('cont')
 var Message = require('./message')
 var pull = require('pull-stream')
 var cat = require('pull-cat')
+var replicate = require('./replicate2')
 
 function isFunction (f) {
   return 'function' === typeof f
@@ -78,6 +79,22 @@ module.exports = function (ssb, keys, opts) {
       return this
     }),
     keys: keys,
+//    createReplicationStream: function (opts, cb) {
+//      opts = opts || {}
+//      if(!opts.latest)
+//        opts.latest = function () {
+//          return cat([
+//            pull.values([id]),
+//            pull(
+//              ssb.feedsLinkedFromFeed(id, opts.rel || 'follow'),
+//              pull.map(function (link) {
+//                return link.dest
+//              })
+//            )
+//          ])
+//        }
+//      return ssb.createReplicationStream(opts, cb)
+//    },
     createReplicationStream: function (opts, cb) {
       opts = opts || {}
       if(!opts.latest)
@@ -85,14 +102,17 @@ module.exports = function (ssb, keys, opts) {
           return cat([
             pull.values([id]),
             pull(
-              ssb.feedsLinkedFromFeed(id, opts.rel || 'follow'),
+              ssb.feedsLinkedFromFeed(id, opts.$rel || 'follow'),
               pull.map(function (link) {
                 return link.dest
               })
             )
           ])
         }
-      return ssb.createReplicationStream(opts, cb)
+      return replicate(
+        ssb, opts, cb || function (err) {
+          if(err) throw err
+        })
     }
   }
 }
