@@ -63,7 +63,7 @@
     "rimraf": "~2.2.8",
     "multicb": "~0.0.2",
     "hexpp": "~1.1.3",
-    "pull-randomly-split": "~1.0.3"
+    "pull-randomly-split": "~1.0.4"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
