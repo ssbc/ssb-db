@@ -47,9 +47,7 @@ module.exports = function (ssb, opts, cb) {
       console.log(data)
     }),
     ssb.createWriteStream(function (err) {
-      console.log('ENDED', err)
       rpcStream.close(function (err2) {
-        console.log('CLOSED')
         cb(err || err2, sent)
       })
     })
