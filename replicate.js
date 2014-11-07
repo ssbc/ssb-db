@@ -1,56 +1,23 @@
-'use strict';
+var api = require('./api')
+var manifest = api.manifest
+var goodbye = require('pull-goodbye')
+var Serializer = require('pull-serializer')
+var JSONH = require('json-human-buffer')
 var pull = require('pull-stream')
 var many = require('pull-many')
-var cat  = require('pull-cat')
-var codec = require('./codec')
-var pvstruct = require('pull-varstruct')
-var pushable = require('pull-pushable')
-var goodbye = require('pull-goodbye')
 
-function ratio(a, b) {
-  if(a === 0 && b === 0) return 1
-  return a / b
+function serialize (stream) {
+  return Serializer(stream, JSONH, {split: '\n\n'})
 }
 
-function isInteger (v) {
-  return !isNaN(v) && Math.round(v)===v
+function id (e) {
+  return e
 }
-
-/*
-
-  c:{ID,Seq}*
-  c:okay
-  S:msg*
-  S:done
-  
-{
-  //entering a state... send something
-  //receive 
-  START: {req: START, okay: OKAY}
-  OKAY: {recv: OKAY, done: DONE}
-  DONE: {}
-}
-
-{
-  START: function (data) { ... }, //send all requests... then OKAY.
-}
-*/
 
 module.exports = function (ssb, opts, cb) {
-  if('function' === typeof opts)
-    cb = opts, opts = {}
-
-  if('function' !== typeof cb)
-    throw new Error('cb must be function')
-
-  var sbs = ssb
-
-  var isHash = ssb.opts.isHash
-
-  var progress = opts.progress || function () {}
   opts = opts || {}
-  var expected = {}
-  var source = many()
+  var rpc = api.peer(ssb, {}, id)
+  var progress = opts.progress || function () {}
 
   var latestStream = opts.latest
     ? pull(
@@ -59,108 +26,35 @@ module.exports = function (ssb, opts, cb) {
       )
     : ssb.latest()
 
-  //source: stream {id: hash(pubkey), sequence: latest}
-  //pairs, then {okay: true} to show you are at the end.
-
-  var n = 2
-
-  function get (id) {
-    var id = id.toString('base64')
-    return expected[id] = expected[id] || {me: -1, you: -1, recv: 0, sent: 0}
-  }
-
-  var needRecv = 0, needSend = 0, sent = 0, recv = 0
-
-  function complete() {
-    needRecv = 0, needSend = 0, sent = 0, recv = 0
-    for(var k in expected) {
-      var item = expected[k]
-      //if one of us does not need this author, ignore.
-
-      if(!(item.me === -1 || item.you === -1)) {
-        // we are already in sync.
-        if(item.me === item.you)
-          ;
-        else if (item.me > item.you) {
-          needSend += item.me - item.you
-          sent += item.sent
-        }
-        else if (item.you > item.me) {
-          needRecv += item.you - item.me
-          recv += item.recv
-        }
-      }
-    }
-
-    progress(ratio(sent, needSend), ratio(recv, needRecv))
-
-    if(needRecv - recv === 0 && needSend - sent === 0) {
-      return true
-    }
-  }
-
-  function checkEmpty () {
-    if(--n) return
-    if(complete()) { source.cap() }
-  }
-
-  function once () {
-    var done = false
-    return function (abort, cb) {
-      if(done) {
-        cb(true)
-        checkEmpty()
-        return
-      }
-      done = true
-      cb(abort, {okay: true})
-    }
-  }
-
-  source.add(cat([
-    pull(
-      latestStream,
-      pull.through(function (data) {
-        get(data.id).me = data.sequence
-      })
-    ),
-    //when all the requests are sent, send a marker,
-    //so we can detect if the instances are already in sync.
-    once()
-  ]))
-
-  //track how many more messages we expect to see.
-  //TODO: expose progress information, to send and to receive.
-
-  var sink = pull(
-    pull.filter(function (data) {
-      if(data.author) return true
-      else if(isHash(data.id) && isInteger(data.sequence)) {
-        get(data.id).you = data.sequence
-        source.add(
-          pull(
-            sbs.createHistoryStream(data.id, data.sequence + 1, opts.live),
-            pull.through(function (data) {
-              get(data.author).sent ++
-              if(complete()) { source.cap() }
-            })
-          )
-        )
-      }
-      else if(data.okay) checkEmpty()
-
-    }),
-    pull(
-      pull.through(function (msg) {
-        get(msg.author).recv ++
-        if(complete()) { source.cap() }
-      }),
-      sbs.createWriteStream(function (err) {
-        cb(err, sent, recv, expected)
-      })
-    )
+  var sources = many()
+  var sent = 0
+  pull(
+    latestStream,
+    pull.drain(function (upto) {
+      sources.add(rpc.createHistoryStream(upto.id, upto.sequence + 1))
+    }, function () {
+      sources.cap()
+    })
   )
 
-  return pvstruct({source: source, sink: sink}, codec)
-}
+  var rpcStream = rpc.createStream()
 
+  pull(
+    sources,
+    pull.through(function (data) {
+      sent ++
+      console.log(sent)
+      console.log(data)
+    }),
+    ssb.createWriteStream(function (err) {
+      console.log('ENDED', err)
+      rpcStream.close(function (err2) {
+        console.log('CLOSED')
+        cb(err || err2, sent)
+      })
+    })
+  )
+
+  return serialize(goodbye(rpcStream))
+
+}

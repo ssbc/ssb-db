@@ -4,12 +4,12 @@ var contpara  = require('continuable-para')
 var pull      = require('pull-stream')
 var pl        = require('pull-level')
 var paramap   = require('pull-paramap')
-var replicate = require('./replicate')
 var timestamp = require('monotonic-timestamp')
 var Feed      = require('./feed')
 var assert    = require('assert')
 var msgpack   = require('msgpack-js')
 var ltgt      = require('ltgt')
+var replicate = require('./replicate')
 
 //this makes msgpack a valid level codec.
 msgpack.buffer = true
