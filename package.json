@@ -36,7 +36,7 @@
     "pull-goodbye": "~0.0.1",
     "pull-handshake": "~0.0.2",
     "pull-join": "~1.0.0",
-    "pull-level": "~1.1.12",
+    "pull-level": "~1.2.0",
     "pull-many": "~1.0.1",
     "pull-paramap": "~1.1.1",
     "pull-pushable": "~1.1.4",
