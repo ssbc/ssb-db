@@ -47,13 +47,6 @@ function addr (opts) {
   return opts.host + ':' + opts.port
 }
 
-function upto (expected) {
-  var o = {}
-  for(var k in expected)
-    o[k] = expected[k].me + expected[k].recv
-  return o
-}
-
 
 var net = require('net')
 
@@ -69,6 +62,22 @@ exports = module.exports = function (ssb, feed, opts) {
     .map(function (e) {
       return {address: e, id: feed.id}
     })
+
+  function replicated () {
+    pull(
+      ssb.latest(),
+      pull.collect(function (err, ary) {
+        if(err) return server.emit('error', err)
+        var o = {}
+        ary.forEach(function (e) {
+          o[e.id.toString('base64')] = e.sequence
+        })
+        server.emit('replicated', o)
+      })
+    )
+  }
+
+
 
   function connect () {
     if(connecting) return
@@ -105,11 +114,12 @@ exports = module.exports = function (ssb, feed, opts) {
         })
         .pipe(toStream(feed.createReplicationStream({
             //we probably want a progress bar to show how in sync we are.
-          }, function (err, sent, recv, expected) {
+          }, function (err) {
             connecting = false
-            server.emit('replicated', upto(expected))
             //TODO: something smarter than randomly waiting
             setTimeout(connect, 1000 + Math.random() * 3000)
+            if(err) return server.emit('error', err)
+            replicated()
           })))
         .pipe(stream)
 
@@ -122,8 +132,9 @@ exports = module.exports = function (ssb, feed, opts) {
   server = net.createServer(function (stream) {
     stream
       .pipe(toStream(feed.createReplicationStream({},
-        function (err, sent, recv, expected) {
-          server.emit('replicated', upto(expected))
+        function (err) {
+          if(err) return server.emit('error', err)
+          replicated()
         })))
       .pipe(stream)
   }).listen(opts.port, function () {
