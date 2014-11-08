@@ -39,25 +39,6 @@ module.exports = function (opts, duplexPipe, name) {
     me.add('flw', {follow: {$feed: other, $rel: 'follow'}}, cb)
   }
 
-  function followers(ssb, id) {
-    return cat([
-      pull.values([id]),
-      pull(
-        ssb.feedsLinkedFromFeed(id, 'follow'),
-        pull.map(function (link) {
-          return link.dest
-        })
-      )
-    ])
-  }
-
-  function createReplicationStream (ssb, id, name, cb) {
-    return replicate(ssb, {
-          progress: log(name),
-          latest: function () { return followers(ssb, id) }
-        }, cb)
-  }
-
   function createSimple(n,m) {
     tape(name + ': simple replicate ' + JSON.stringify([n,m]), function (t) {
       var s = ''+ z++
