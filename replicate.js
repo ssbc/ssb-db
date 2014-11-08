@@ -41,14 +41,9 @@ module.exports = function (ssb, opts, cb) {
 
   pull(
     sources,
-    pull.through(function (data) {
-      sent ++
-      console.log(sent)
-      console.log(data)
-    }),
     ssb.createWriteStream(function (err) {
       rpcStream.close(function (err2) {
-        cb(err || err2, sent)
+        cb(err || err2)
       })
     })
   )
