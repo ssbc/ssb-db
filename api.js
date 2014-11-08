@@ -76,7 +76,6 @@ exports = module.exports = function (ssb, feed) {
 }
 
 exports.client = function () {
-      // muxrpc(remote, local, serialization)
   return muxrpc(manifest, null, serialize) ()
 }
 
@@ -87,6 +86,7 @@ exports.server = function (ssb, feed) {
 exports.peer = function (ssb, feed, _serialize) {
   //this is terribly dangerous until we have authorization on the rpc stream
   return muxrpc(manifest, manifest, _serialize || serialize) (exports(ssb, feed))
+      .permissions({allow: ['createHistoryStream']})
 }
 
 exports.manifest = manifest
