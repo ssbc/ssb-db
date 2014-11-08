@@ -175,7 +175,7 @@ module.exports = function (db, opts) {
 
   db.latest = function (opts) {
     return pull(
-      pl.read(lastDB),
+      pl.read(lastDB, opts),
       pull.map(function (data) {
         var d = {id: data.key, sequence: data.value}
         return d
@@ -193,7 +193,7 @@ module.exports = function (db, opts) {
       pl.read(clockDB, {
         gte:  [id, seq],
         lte:  [id, MAX_INT],
-        tail: live, live: live,
+        live: live,
         keys: false
       }),
       paramap(function (key, cb) {
@@ -245,8 +245,9 @@ module.exports = function (db, opts) {
 
   db.createLogStream = function (opts) {
     opts = opts || {}
+    var live = opts.live || opts.tail
     var _opts = {
-      gt : opts.gt || 0, tail: opts.tail || false
+      gt : opts.gt || 0, live: live || false
     }
     return pull(
       pl.read(logDB, _opts),
