@@ -10,6 +10,7 @@ var Feed      = require('./feed')
 var assert    = require('assert')
 var msgpack   = require('msgpack-js')
 var ltgt      = require('ltgt')
+var mlib      = require('ssb-msgs')
 
 //this makes msgpack a valid level codec.
 msgpack.buffer = true
@@ -31,21 +32,6 @@ function isFunction (f) {
 var isBuffer = Buffer.isBuffer
 var isArray = Array.isArray
 function isObject (o) { return o && 'object' === typeof o }
-
-
-function traverse (obj, each) {
-  if(Buffer.isBuffer(obj) || !isObject(obj)) return
-  if(!isArray(obj)) each(obj)
-  for(var k in obj) {
-    if(isObject(obj[k])) traverse(obj[k], each)
-  }
-}
-
-function indexLinks (msg, each) {
-  traverse(msg, function (obj) {
-    if(obj.$rel && (obj.$msg || obj.$ext || obj.$feed)) each(obj)
-  })
-}
 
 module.exports = function (db, opts) {
 
@@ -102,7 +88,7 @@ module.exports = function (db, opts) {
       value: id, type: 'put', prefix: indexDB
     })
 
-    indexLinks(msg.content, function (link) {
+    mlib.indexLinks(msg.content, function (link) {
 
       if(isHash(link.$feed)) {
         add({
