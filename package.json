@@ -49,6 +49,7 @@
     "rc": "~0.5.3",
     "signed-varint": "~2.0.0",
     "ssb-keys": "~0.2.0",
+    "ssb-msgs": "~0.1.1",
     "stream-to-pull-stream": "~1.6.0",
     "varint": "~3.0.1",
     "varstruct": "~4.1.5",
