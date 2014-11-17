@@ -32,14 +32,15 @@ var isBuffer = Buffer.isBuffer
 var isArray = Array.isArray
 function isObject (o) { return o && 'object' === typeof o }
 
-
 module.exports = function (db, opts) {
+
+  var isHash = opts.isHash
 
   var logDB   = db.sublevel('log')
   var feedDB  = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
   var lastDB  = db.sublevel('lst')
-  var indexDB = db.sublevel('idx', {valueEncoding: msgpack})
+  var indexDB = db.sublevel('idx')
   var appsDB  = db.sublevel('app')
 
   function get (db, key) {
@@ -48,14 +49,13 @@ module.exports = function (db, opts) {
 
   db.opts = opts
 
-  var isHash = opts.isHash
-
   var validation = require('./validation')(db, opts)
 
   db.pre(function (op, add, _batch) {
     var msg = op.value
     var id = op.key
     // index by sequence number
+
     add({
       key: [msg.author, msg.sequence], value: id,
       type: 'put', prefix: clockDB
@@ -89,7 +89,6 @@ module.exports = function (db, opts) {
     })
 
     mlib.indexLinks(msg.content, function (link) {
-
       if(isHash(link.$feed)) {
         add({
           key: ['feed', msg.author, link.$rel, link.$feed, msg.sequence, id],
@@ -106,7 +105,6 @@ module.exports = function (db, opts) {
       if(isHash(link.$msg)) {
         // do not need forward index here, because
         // it's cheap to just read the message.
-
         add({
           key: ['_msg', link.$msg, link.$rel, id], value: link,
           type: 'put', prefix: indexDB
@@ -170,7 +168,7 @@ module.exports = function (db, opts) {
   }
 
   db.createHistoryStream = function (id, seq, live) {
-    if(!Buffer.isBuffer(id)) {
+    if(!isHash(id)) {
       live = !!id.live
       seq = id.sequence || id.seq || 0
       id = id.id
@@ -198,13 +196,6 @@ module.exports = function (db, opts) {
     )
   }
 
-//  db.createReplicationStream = function (opts, cb) {
-//    if(!cb) cb = opts, opts = {}
-//    return replicate(db, opts, cb || function (err) {
-//      if(err) throw err
-//    })
-//  }
-//
   db.createFeed = function (keys) {
     if(!keys)
       keys = opts.keys.generate()
@@ -276,7 +267,7 @@ module.exports = function (db, opts) {
     return function (opts, rel) {
       if(!opts) throw new Error('must have opts')
       //legacy interface.
-      if(Buffer.isBuffer(opts))
+      if(isHash(opts))
         return fn(opts, rel)
 
       return fn(opts.id, opts.rel)
