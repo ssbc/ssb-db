@@ -7,7 +7,6 @@ var ecc       = require('eccjs')
 var tape      = require('tape')
 
 var SSB       = require('../')
-var replicate = require('../replicate')
 
 var JSONB     = require('json-human-buffer')
 

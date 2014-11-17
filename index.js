@@ -9,7 +9,6 @@ var Feed      = require('./feed')
 var assert    = require('assert')
 var msgpack   = require('msgpack-js')
 var ltgt      = require('ltgt')
-var replicate = require('./replicate')
 var mlib      = require('ssb-msgs')
 
 //this makes msgpack a valid level codec.
@@ -199,13 +198,13 @@ module.exports = function (db, opts) {
     )
   }
 
-  db.createReplicationStream = function (opts, cb) {
-    if(!cb) cb = opts, opts = {}
-    return replicate(db, opts, cb || function (err) {
-      if(err) throw err
-    })
-  }
-
+//  db.createReplicationStream = function (opts, cb) {
+//    if(!cb) cb = opts, opts = {}
+//    return replicate(db, opts, cb || function (err) {
+//      if(err) throw err
+//    })
+//  }
+//
   db.createFeed = function (keys) {
     if(!keys)
       keys = opts.keys.generate()

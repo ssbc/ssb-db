@@ -8,7 +8,6 @@ var SSB       = require('../')
 //var u         = require('../util')
 var w         = require('./util')
 var u = w
-var replicate = require('../replicate')
 
 var JSONB     = require('json-buffer')
 
