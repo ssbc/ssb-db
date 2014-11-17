@@ -28,8 +28,9 @@ module.exports = function (ssb, opts) {
 
   var lastDB = ssb.sublevel('lst')
   var hash = opts.hash
-  var zeros = opts.hash(new Buffer(0))
-      zeros.fill(0)
+  var zeros = undefined
+      //opts.hash(new Buffer(0))
+      //zeros.fill(0)
 
   var verify = opts.keys.verify
   var encode = opts.codec.encode
@@ -65,8 +66,8 @@ module.exports = function (ssb, opts) {
       }
     }
     else {
-      if(!deepEqual(msg.previous, zeros)
-        && msg.sequence === 1 && msg.timestamp > 0) {
+      if(!(msg.previous == null
+        && msg.sequence === 1 && msg.timestamp > 0)) {
 
           validateSync.reason = 'expected initial message'
 
@@ -91,6 +92,7 @@ module.exports = function (ssb, opts) {
 
       return false
     }
+    validateSync.reason = ''
     return true
   }
 
