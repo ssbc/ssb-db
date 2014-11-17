@@ -5,10 +5,11 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var jhb      = require('json-human-buffer')
 
-var codec    = require('../defaults').codec
 var hexpp    = require('hexpp')
 
 module.exports = function (opts) {
+
+  var codec = opts.codec
 
   var content = {
       "type":"post",
@@ -63,7 +64,7 @@ module.exports = function (opts) {
   tape('known error case 1', function (t) {
 
     var db = sublevel(level('test-ssb-encoding', {
-      valueEncoding: require('../codec')
+      valueEncoding: codec
     }))
     var ssb = require('../')(db, opts)
     var feed = ssb.createFeed(opts.keys.generate())

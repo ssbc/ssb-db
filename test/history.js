@@ -9,8 +9,7 @@ var tape      = require('tape')
 var SSB       = require('../')
 var replicate = require('../replicate')
 
-var codec     = require('../codec')
-var JSONB     = require('json-buffer')
+var JSONB     = require('json-human-buffer')
 
 var compare   = require('ltgt').compare
 
@@ -37,13 +36,7 @@ module.exports = function (opts) {
 
   function createDB(name) {
     return SSB(sublevel(level(name, {
-      valueEncoding:
-        require('../codec')
-//      {
-//        encode: JSONB.stringify,
-//        decode: JSONB.parse,
-//        buffer: false
-//      }
+      valueEncoding: opts.codec
     })), opts)
   }
 

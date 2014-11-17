@@ -7,7 +7,7 @@ var pull     = require('pull-stream')
 module.exports = function (opts) {
 
   var db = sublevel(level('test-ssb-validate', {
-    valueEncoding: require('../codec')
+    valueEncoding: opts.codec
   }))
 
   var create = require('../message')(opts)
