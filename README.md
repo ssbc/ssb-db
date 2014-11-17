@@ -15,16 +15,10 @@ since v0.
 ``` js
 // create a scuttlebutt instance and add a message to it.
 
-var keys = null;
-var HOST = '127.0.0.1';
-
-// data directories
-// mkdir /tmp/ssb1 /tmp/ssb2
-var path = '/tmp/ssb1';
-var path2 = '/tmp/ssb2';
-
-var ssb = require('secure-scuttlebutt/create')(path)
 var pull = require('pull-stream')
+var keys = require('ssb-keys').loadOrCreateSync(pathToSecret)
+
+var ssb = require('secure-scuttlebutt/create')('/tmp/ssb1')
 
 //create a feed.
 //this represents a write access / user.
@@ -60,36 +54,6 @@ pull(
     console.log(ary)
   })
 )
-
-// create a server for replication.
-
-var net = require('net')
-var toStream = require('pull-stream-to-stream')
-
-net.createServer(function (stream) {
-  // secure-scuttlebutt uses pull-streams so
-  // convert it into a node stream before piping.
-  stream.pipe(toStream(ssb.createReplicationStream())).pipe(stream)
-}).listen(1234)
-
-//create another database to replicate with:
-
-var ssb2 = require('secure-scuttlebutt/create')(path2)
-var feed2 = ssb2.createFeed()
-//follow the key we created before.
-feed.add({
-  type: 'pub', address: {host: HOST, port: 1234}
-}, console.log.bind(console,'feed.add') )
-
-feed2.add({
-  type: 'follow',
-  follows: {$feed: feed.id, $rel: 'follows'}
-})
-
-// replicate from the server.
-// this will pull the messages by feed1 into this database.
-var stream = net.connect(1234)
-stream.pipe(toStream(ssb2.createReplicationStream())).pipe(stream)
 ```
 
 ## Concepts
@@ -118,26 +82,8 @@ request the chain for that id, since the latest item you know about.
 
 ### Replication
 
-secure-scuttlebutt is based on [Scuttlebutt](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf)
-Except that there is no way for old messages to be obsoleted by new message.
-All messages are eventually replicated - secure-scuttlebutt is eventually consistent.
-
-Perhaps the simplest way to look at it is as many simultaneous
-master-slave replications. The master appends to a log,
-giving each message a monotonically increasing sequence number.
-When the slave connects to the master and requests the messages
-that came after the sequence number they received last time.
-
-Now, each node is the master of their own feed, so scuttlebutt
-replication is just like doing many simultanious master-slave replications.
-
-Since messages are signed, and replication is eventually consistent,
-it does not matter if A receives B's messages via C, they can verify
-B's messages offline (i.e, when A is out of contact with B)
-
-However, no networking is provided by this module, so that it's
-useful as a replicatable database - however, a gossip based networking
-layer is in development.
+replication has been moved into the networking layer:
+[scuttlebot](https://github.com/pfraze/scuttlebot)
 
 ### References
 
@@ -186,13 +132,6 @@ the id of the feed (which is the hash of the feeds public key)
 
 the key pair for this feed.
 
-### SecureScuttlebutt#follow (id)
-
-Mark `id`'s feed as replicated. this instance will request
-data created by `id` when replicating.
-see [createReplicationStream](#createReplicationStream)
-The id must be the hash of id's public key.
-
 ### SecureScuttlebutt#getPublicKey(id, cb)
 
 Retrive the public key for `id`, if it is in the database.
@@ -226,14 +165,6 @@ Create a stream of the history of `id`. If `seq > 0`, then
 only stream messages with sequence numbers greater than `seq`.
 if `live` is true, the stream will be a
 [live mode](https://github.com/dominictarr/pull-level#example---reading)
-
-### SecureScuttlebutt#createReplicationStream()
-
-Create a duplex pull-stream that speak's secure-scuttlebutt's replication protocol.
-this will be a pull-stream so you will need to use it with 
-[pull-stream-to-stream](https://github.com/dominictarr/pull-stream-to-stream)
-
-This should be in the duplex style, when connecting as either a server or a client.
 
 ## License
 
