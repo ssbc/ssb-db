@@ -9,8 +9,8 @@ function isString (s) {
 
 module.exports = function (opts) {
 
-  var zeros = opts.hash(new Buffer(0))
-  zeros.fill(0)
+//  var zeros = opts.hash(new Buffer(0))
+//  zeros.fill(0)
 
   function sign (msg, keys) {
 
@@ -30,10 +30,11 @@ module.exports = function (opts) {
     //noise end
 
     return sign({
-      previous: prev ? opts.hash(opts.codec.encode(prev)) : zeros,
+      previous: prev ? opts.hash(opts.codec.encode(prev)) : null,
       author: opts.hash(keys.public),
       sequence: prev ? prev.sequence + 1 : 1,
       timestamp: Date.now(),
+      hash: 'blake2s',
       content: content,
     }, keys)
   }
