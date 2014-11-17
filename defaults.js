@@ -11,16 +11,27 @@ var curve   = ecc.curves.k256
 // be handy for forks to be able to use different
 // crypto or encodings etc.
 
+function isString(s) {
+  return 'string' === typeof s
+}
+function isHash (data) {
+  return isString(data) && /^[A-Za-z0-9\/+]{43}=\.blake2s$/.test(data)
+  //return Buffer.isBuffer(data) && data.length == 32
+}
+
+function toBuffer(hash) {
+  if(!isHash(hash)) throw new Error('sign expects a hash')
+  return new Buffer(hash.substring(0, 44), 'base64')
+}
+
 module.exports = {
 
   //this must return a buffer digest.
   hash: function (data, enc) {
-    return new Blake2s().update(data, enc).digest()
+    return new Blake2s().update(data, enc).digest('base64') + '.blake2s'
   },
 
-  isHash: function (data) {
-    return Buffer.isBuffer(data) && data.length == 32
-  },
+  isHash: isHash,
 
   keys: {
     //this should return a key pair:
@@ -33,13 +44,13 @@ module.exports = {
     //takes a public key and a hash and returns a signature.
     //(a signature must be a node buffer)
     sign: function (keys, hash) {
-      return ecc.sign(curve, keys, hash)
+      return ecc.sign(curve, keys, toBuffer(hash))
     },
 
     //takes a public key, signature, and a hash
     //and returns true if the signature was valid.
     verify: function (pub, sig, hash) {
-      return ecc.verify(curve, pub, sig, hash)
+      return ecc.verify(curve, pub, sig, toBuffer(hash))
     },
   },
 
