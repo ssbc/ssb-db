@@ -2,7 +2,7 @@
 
 var pull      = require('pull-stream')
 var tape      = require('tape')
-var net       = require('net')
+//var net       = require('net')
 
 var u         = {groups: require('./group')}
 var replicate = require('../replicate')
@@ -264,17 +264,17 @@ if(!module.parent) {
     pull(a, random(), b, random(), a)
   }, 'pull-stream, random splits')
 
-  var toStream = require('pull-stream-to-stream')
-  module.exports(opts, function (a, b) {
-    var server = net.createServer(function (stream) {
-      stream.pipe(toStream(a)).pipe(stream)
-    }).listen(function () {
-      var stream = net.connect(server.address().port)
-      stream.pipe(toStream(b)).pipe(stream)
-      stream.on('close', function () {
-        server.close()
-      })
-    })
-  }, 'net')
-
+//  var toStream = require('pull-stream-to-stream')
+//  module.exports(opts, function (a, b) {
+//    var server = net.createServer(function (stream) {
+//      stream.pipe(toStream(a)).pipe(stream)
+//    }).listen(function () {
+//      var stream = net.connect(server.address().port)
+//      stream.pipe(toStream(b)).pipe(stream)
+//      stream.on('close', function () {
+//        server.close()
+//      })
+//    })
+//  }, 'net')
+//
 }

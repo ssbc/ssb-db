@@ -9,7 +9,7 @@ module.exports = function (opts) {
   tape('simple', function (t) {
 
     var db = sublevel(level('test-ssb-feed', {
-      valueEncoding: require('../codec')
+      valueEncoding: opts.codec
     }))
 
     var ssb = require('../')(db, opts)
@@ -36,7 +36,7 @@ module.exports = function (opts) {
   tape('tail', function (t) {
 
     var db = sublevel(level('test-ssb-feed2', {
-      valueEncoding: require('../codec')
+      valueEncoding: opts.codec
     }))
 
     var ssb = require('../')(db, opts)

@@ -5,7 +5,7 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var jhb      = require('json-human-buffer')
 
-var codec    = require('../codec')
+var codec    = require('../defaults').codec
 var hexpp    = require('hexpp')
 
 module.exports = function (opts) {

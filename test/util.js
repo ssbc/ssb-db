@@ -10,7 +10,6 @@ var w         = require('./util')
 var u = w
 var replicate = require('../replicate')
 
-var codec     = require('../codec')
 var JSONB     = require('json-buffer')
 
 
@@ -28,7 +27,7 @@ module.exports = function (opts) {
 
   function createDB(name) {
     return SSB(sublevel(level(name, {
-      valueEncoding: require('../codec')
+      valueEncoding: opts.codec
     })), opts)
   }
 
