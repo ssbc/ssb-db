@@ -1,9 +1,7 @@
-
 var Blake2s = require('blake2s')
 var crypto  = require('crypto')
 var ecc     = require('eccjs')
-
-var codec   = require('./codec')
+var JSONH   = require('json-human-buffer')
 
 var curve   = ecc.curves.k256
 
@@ -31,6 +29,7 @@ module.exports = {
     generate: function () {
       return ecc.restore(curve, crypto.randomBytes(32))
     },
+
     //takes a public key and a hash and returns a signature.
     //(a signature must be a node buffer)
     sign: function (keys, hash) {
@@ -42,32 +41,19 @@ module.exports = {
     verify: function (pub, sig, hash) {
       return ecc.verify(curve, pub, sig, hash)
     },
-
-    //codec for keys. this handles serializing
-    //and deserializing keys for storage.
-    //in elliptic curves, the public key can be
-    //regenerated from the private key, so you only
-    //need to serialize the private key.
-    //in RSA, you need to remember both public and private keys.
-
-    //maybe it's a good idea to add checksums and stuff
-    //so that you can tell that this is a valid key when
-    //read off the disk?
-    codec: {
-      decode: function (buffer) {
-        return ecc.restore(curve, buffer)
-      },
-      encode: function (keys) {
-        return keys.private
-      },
-      //this makes this a valid level codec.
-      buffer: true
-    }
   },
 
   // the codec that is used to persist into leveldb.
   // this is the codec that will be passed to levelup.
   // https://github.com/rvagg/node-levelup#custom_encodings
-  codec: codec
+  codec: {
+    decode: function (string) {
+      return JSONH.parse(string)
+    },
+    encode: function (obj) {
+      return JSONH.stringify(obj, null, 2)
+    },
+    buffer: false
+  }
 }
 
