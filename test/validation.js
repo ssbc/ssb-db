@@ -3,6 +3,7 @@ var tape     = require('tape')
 var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
+var explain  = require('explain-error')
 
 module.exports = function (opts) {
 
@@ -47,21 +48,21 @@ module.exports = function (opts) {
     ssb.add(
       prev = create(keys, null, {type: 'init', public: keys.public}),
       function (err) {
-        if(err) throw err
+        if(err) throw explain(err, 'init failed')
 
         ssb.add(
           prev = create(keys, 'msg', 'hello', prev),
           function (err) {
-            if(err) throw err
+            if(err) throw explain(err, 'hello failed')
 
             ssb.add(
               prev = create(keys, 'msg', 'hello2', prev),
               function (err) {
-                if(err) throw err
+                if(err) throw explain(err, 'hello2 failed')
                 pull(
-                  db.createFeedStream(id),
+                  db.createFeedStream(),
                   pull.collect(function (err, ary) {
-                    if(err) throw err
+                    if(err) throw explain(err, 'createFeedStream failed')
                     t.deepEqual(ary.pop(), prev)
                     t.end()
                   })
