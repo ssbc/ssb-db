@@ -60,7 +60,13 @@ module.exports = function (ssb, keys, opts) {
         getPrev(function (err, _prev) {
           prev = _prev
           if(!prev && type !== 'init')
-            queue.unshift({message: {type: 'init', public: keys.public}, cb: noop})
+            queue.unshift({
+              message: {
+                type: 'init',
+                public: keys.public
+              },
+              cb: noop
+            })
           write()
         })
       }
