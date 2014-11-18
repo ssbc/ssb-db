@@ -7,11 +7,31 @@ function copy (buf) {
   return _buf
 }
 
+function isString(s) {
+  return 'string' === typeof s
+}
+
+function isHash (data) {
+  return isString(data) && /^[A-Za-z0-9\/+]{43}=\.blake2s$/.test(data)
+  //return Buffer.isBuffer(data) && data.length == 32
+}
+
 function randint (n) {
   return ~~(Math.random()*n)
 }
 
+function decodeHash(hash) {
+  if(!isHash(hash)) throw new Error('sign expects a hash')
+  return new Buffer(hash.substring(0, 44), 'base64')
+}
+
+function encodeHash (buf) {
+  return buf.toString('base64') +'.blake2s'
+}
+
 function flipRandomBit(buf) {
+    if(isHash(buf))
+      return encodeHash(flipRandomBit(decodeHash(buf)))
     buf = copy(buf)
     var r = randint(buf.length)
     //change one bit
@@ -90,6 +110,7 @@ module.exports = function (opts) {
 
     //should this throw?
     t.ok(validation.validateSync(msg, null, keys), 'initial message')
+    t.equal(validation.validateSync.reason, '')
     t.end()
   })
 
