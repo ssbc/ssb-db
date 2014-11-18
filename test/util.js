@@ -9,8 +9,6 @@ var SSB       = require('../')
 var w         = require('./util')
 var u = w
 
-var JSONB     = require('json-buffer')
-
 
 function rand (n) {
   var a = []
