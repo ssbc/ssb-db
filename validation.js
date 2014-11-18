@@ -2,7 +2,7 @@
 
 var deepEqual = require('deep-equal')
 var pull = require('pull-stream')
-var contpara = require('continuable-para')
+var contpara = require('cont').para
 // make a validation stream?
 // read the latest record in the database
 // check it against the incoming data,
@@ -74,6 +74,7 @@ module.exports = function (ssb, opts) {
           return false
       }
     }
+
     if(!deepEqual(msg.author, hash(pub.public || pub))) {
 
       validateSync.reason = 'expected different author:'+
@@ -110,11 +111,9 @@ module.exports = function (ssb, opts) {
       // goto DRAIN
 
       var msghash = hash(encode(msg))
-
       if(!queue.length && !batch.length) {
 
         queue.push({hash: msghash, msg: msg, cb: cb})
-
         contpara(
           get(ssb, msg.previous),
           ssb.getPublicKey(msg.author),
@@ -123,8 +122,8 @@ module.exports = function (ssb, opts) {
           prev = err ? null : results[0]
           //get PUBLIC KEY out of FIRST MESSAGE.
           pub = err ? msg.content.public : results[1]
-
           var expected = err ? 1 : results[2] + 1
+
           if(expected != msg.sequence) {
             queue.shift()
             return cb(
@@ -151,8 +150,12 @@ module.exports = function (ssb, opts) {
           })
           prev = e.msg
         }
-        else
-          e.cb(new Error(validateSync.reason))
+        else {
+          e.cb(new Error(validateSync.reason
+            + ' when attempting to validate: '
+            + JSON.stringify(e.msg, null, 2)
+          ))
+        }
       }
 
       ssb.batch(batch, function (err) {

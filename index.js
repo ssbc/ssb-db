@@ -1,18 +1,16 @@
 'use strict';
 
-var contpara  = require('continuable-para')
+var contpara  = require('cont').para
 var pull      = require('pull-stream')
 var pl        = require('pull-level')
 var paramap   = require('pull-paramap')
 var timestamp = require('monotonic-timestamp')
 var Feed      = require('./feed')
 var assert    = require('assert')
-var msgpack   = require('msgpack-js')
 var ltgt      = require('ltgt')
 var mlib      = require('ssb-msgs')
-
+var explain   = require('explain-error')
 //this makes msgpack a valid level codec.
-msgpack.buffer = true
 
 //var u         = require('./util')
 
@@ -120,7 +118,8 @@ module.exports = function (db, opts) {
   db.getPublicKey = function (id, cb) {
     function cont (cb) {
       clockDB.get([id, 1], function (err, hash) {
-      if(err) return cb(err)
+        if(err) return cb(explain(err, 'do not have first message in feed:' + id))
+
         db.get(hash, function (err, msg) {
           if(err) return cb(err)
           cb(null, msg.content.public)
