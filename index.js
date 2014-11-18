@@ -146,6 +146,7 @@ module.exports = function (db, opts) {
     })
   }
 
+  //TODO: eventually, this should filter out authors you do not follow.
   db.createFeedStream = function (opts) {
     opts = opts || {}
     opts.keys = false
