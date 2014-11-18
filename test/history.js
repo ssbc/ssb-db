@@ -8,8 +8,6 @@ var tape      = require('tape')
 
 var SSB       = require('../')
 
-var JSONB     = require('json-human-buffer')
-
 var compare   = require('ltgt').compare
 
 //create a instance with a feed
@@ -93,7 +91,6 @@ module.exports = function (opts) {
     keys2 = init(ssb, 4, function (err) {
       pull(ssb.latest(), pull.collect(function (err, ary) {
         if(err) throw err
-        console.log(ary)
         t.deepEqual(sort(ary), sort([
           {id: id, sequence: 8},
           {id: id2, sequence: 5}
