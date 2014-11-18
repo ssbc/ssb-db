@@ -14,8 +14,8 @@ module.exports = function (opts) {
       sequence: 5,
       timestamp: 1239435349,
       timezone: 120,
-      type: new Buffer('test'),
-      message: {
+      content: {
+        type: 'test',
         foo: {bar: {baz: true}}
       }
     }
