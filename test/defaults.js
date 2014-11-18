@@ -1,42 +1,27 @@
 var tape = require('tape')
 var defaults = require('../defaults')
 
-function copy (buf) {
-  var _buf = new Buffer(buf.length)
-  buf.copy(_buf)
-  return _buf
-}
-
 function isString(s) {
   return 'string' === typeof s
 }
 
 function isHash (data) {
   return isString(data) && /^[A-Za-z0-9\/+]{43}=\.blake2s$/.test(data)
-  //return Buffer.isBuffer(data) && data.length == 32
 }
 
 function randint (n) {
   return ~~(Math.random()*n)
 }
 
-function decodeHash(hash) {
-  if(!isHash(hash)) throw new Error('sign expects a hash')
-  return new Buffer(hash.substring(0, 44), 'base64')
-}
-
-function encodeHash (buf) {
-  return buf.toString('base64') +'.blake2s'
-}
-
 function flipRandomBit(buf) {
-    if(isHash(buf))
-      return encodeHash(flipRandomBit(decodeHash(buf)))
-    buf = copy(buf)
-    var r = randint(buf.length)
+    var i = buf.indexOf('.')
+
+    var _buf = new Buffer(buf.substring(0, i), 'base64')
+    var r = randint(_buf.length)
     //change one bit
-    buf[r] = buf[r] ^ (1 << randint(7))
-    return buf
+    _buf[r] = _buf[r] ^ (1 << randint(7))
+
+    return _buf.toString('base64') + buf.substring(i)
 }
 
 function clone (obj) {
@@ -57,13 +42,11 @@ module.exports = function (opts) {
   var create = require('../message')(opts)
 
   var empty = opts.hash(new Buffer(0))
-  var zeros = new Buffer(empty.length)
-  zeros.fill(0)
 
   tape('encode/decode', function (t) {
     var keys = opts.keys.generate()
 
-    var msg = create(keys, b('init'), new Buffer([0,1,2,3,4,5,6,7,8]))
+    var msg = create(keys, b('init'), 'hello there!')
     var encoded = opts.codec.encode(msg)
     var _msg = opts.codec.decode(encoded)
     t.deepEqual(_msg, msg)

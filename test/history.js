@@ -59,10 +59,10 @@ module.exports = function (opts) {
 
   var ssb = createDB('ssb-history')
   var keys, id, keys2, id2
-
   tape('history', function (t) {
 
     keys = init(ssb, 7, function (err) {
+      if(err) throw err
       pull(ssb.latest(), pull.collect(function (err, ary) {
         if(err) throw err
         console.log(ary)

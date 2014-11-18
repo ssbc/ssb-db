@@ -3,7 +3,6 @@ var tape     = require('tape')
 var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
-var jhb      = require('json-human-buffer')
 
 var hexpp    = require('hexpp')
 
@@ -19,17 +18,17 @@ module.exports = function (opts) {
       "rebroadcasts":{
         "$rel":"rebroadcasts",
         "$msg":
-          new Buffer("1BHEHMwZlikXB3o1mg+fP3GVo/+Xb7p46u3rqt/hHkA=", 'base64'),
+          '1BHEHMwZlikXB3o1mg+fP3GVo/+Xb7p46u3rqt/hHkA=.blake2s',
         "$feed":
-          new Buffer("rbU6CvdwBXxO/fDyoKuRyKxmZYyeb5+l87R9XVkN8bs=", 'base64'),
+          "rbU6CvdwBXxO/fDyoKuRyKxmZYyeb5+l87R9XVkN8bs=.blake2s",
         "timestamp":1414078805677,
         "timezone":300
       }
     }
 
   var msg = {
-    author: new Buffer(32),
-    previous: new Buffer(32),
+    author: opts.hash('TEST_AUTHOR'),
+    previous: opts.hash('TEST_PREVIOUS'),
     timestamp: Date.now(),
     sequence: 10,
     content: content
@@ -40,8 +39,7 @@ module.exports = function (opts) {
   for(var k in msg)
     signed[k] = msg[k]
 
-  signed.signature = new Buffer(64)
-  signed.signature.fill(0xab)
+  signed.signature = new Buffer(64).toString('base64')
 
   tape('Message', function (t) {
     var enc = codec.encode(msg)
