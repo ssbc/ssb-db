@@ -22,7 +22,8 @@
     "pull-paramap": "~1.1.1",
     "pull-stream": "~2.24.1",
     "pull-switch": "~2.0.0",
-    "ssb-msgs": "~0.1.1"
+    "ssb-msgs": "~0.1.1",
+    "explain-error": "~1.0.1"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
