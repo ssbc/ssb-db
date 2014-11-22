@@ -142,8 +142,8 @@ module.exports = function (ssb, opts) {
     function drain () {
       while(queue.length) {
         var e = queue.shift()
-        cbs.push(e)
         if(validateSync(e.msg, prev, pub)) {
+          cbs.push(e)
           batch.push({
             key: e.hash, value: e.msg, type: 'put'
           })
