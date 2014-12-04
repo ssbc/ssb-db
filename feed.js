@@ -85,24 +85,5 @@ module.exports = function (ssb, keys, opts) {
       return this
     }),
     keys: keys,
-//    createReplicationStream: function (opts, cb) {
-//      opts = opts || {}
-//      if(!opts.latest)
-//        opts.latest = function () {
-//          return cat([
-//            pull.values([id]),
-//            pull(
-//              ssb.feedsLinkedFromFeed(id, opts.$rel || 'follow'),
-//              pull.map(function (link) {
-//                return link.dest
-//              })
-//            )
-//          ])
-//        }
-//      return replicate(
-//        ssb, opts, cb || function (err) {
-//          if(err) throw err
-//        })
-//    }
   }
 }

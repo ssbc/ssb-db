@@ -22,14 +22,6 @@ function isString (s) {
   return 'string' === typeof s
 }
 
-function isFunction (f) {
-  return 'function' === typeof f
-}
-
-var isBuffer = Buffer.isBuffer
-var isArray = Array.isArray
-function isObject (o) { return o && 'object' === typeof o }
-
 module.exports = function (db, opts) {
 
   var isHash = opts.isHash
