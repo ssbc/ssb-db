@@ -23,7 +23,8 @@
     "pull-stream": "~2.24.1",
     "pull-switch": "~2.0.0",
     "ssb-msgs": "~0.1.1",
-    "explain-error": "~1.0.1"
+    "explain-error": "~1.0.1",
+    "ssb-keys": "~0.4.1"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
