@@ -44,8 +44,8 @@ module.exports = function (ssb, opts) {
       return false
     }
 
-    if(32 < type.length || type.length < 3) {
-      validateSync.reason = 'type must be 3 < length <= 32, but was:' + type.length
+    if(52 < type.length || type.length < 3) {
+      validateSync.reason = 'type must be 3 < length <= 52, but was:' + type.length
       return false
     }
 

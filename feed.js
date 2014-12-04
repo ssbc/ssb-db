@@ -49,10 +49,10 @@ module.exports = function (ssb, keys, opts) {
 
     type = message.type
 
-    if(!(isString(type) && type.length <= 32 && type.length >= 3))
+    if(!(isString(type) && type.length <= 52 && type.length >= 3))
       return cb(new Error(
         'type must be a string' +
-        '3 <= type.length < 32, was:' + type
+        '3 <= type.length < 52, was:' + type
       ))
 
       if(!queue) {
