@@ -79,29 +79,29 @@ module.exports = function (db, opts) {
     })
 
     mlib.indexLinks(msg.content, function (link) {
-      if(isHash(link.$feed)) {
+      if(isHash(link.feed)) {
         add({
-          key: ['feed', msg.author, link.$rel, link.$feed, msg.sequence, id],
+          key: ['feed', msg.author, link.rel, link.feed, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
         add({
-          key: ['_feed', link.$feed, link.$rel, msg.author, msg.sequence, id],
+          key: ['_feed', link.feed, link.rel, msg.author, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
       }
 
-      if(isHash(link.$msg)) {
+      if(isHash(link.msg)) {
         // do not need forward index here, because
         // it's cheap to just read the message.
         add({
-          key: ['_msg', link.$msg, link.$rel, id], value: link,
+          key: ['_msg', link.msg, link.rel, id], value: link,
           type: 'put', prefix: indexDB
         })
       }
 
-      //TODO, add $ext links
+      //TODO, add ext links
 
     })
 

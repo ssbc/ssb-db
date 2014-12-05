@@ -38,12 +38,12 @@ module.exports = function (opts) {
         console.log(msg, msg_hash)
 
         bob.add('msg', {
-          reply: {$msg: msg_hash, $rel: 'reply'},
+          reply: {msg: msg_hash, rel: 'reply'},
           content: 'okay then'
         }, function (err, reply1, reply_hash) {
           console.log(reply1, reply_hash)
           carol.add('msg', {
-            reply: {$msg: msg_hash, $rel: 'reply'},
+            reply: {msg: msg_hash, rel: 'reply'},
             content: 'whatever'
           }, function (err, reply2) {
             pull(
@@ -73,7 +73,7 @@ module.exports = function (opts) {
 
     function follow (a, b) {
       return function (cb) {
-        a.add('flw', {$feed: b.id, $rel: 'follow'}, function (err, _, hash) {
+        a.add('flw', {feed: b.id, rel: 'follow'}, function (err, _, hash) {
           cb(err, hash)
         })
       }
