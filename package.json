@@ -2,10 +2,10 @@
   "name": "secure-scuttlebutt",
   "description": "a secure, replicatable database",
   "version": "7.0.0",
-  "homepage": "https://github.com/dominictarr/secure-scuttlebutt",
+  "homepage": "https://github.com/ssbc/secure-scuttlebutt",
   "repository": {
     "type": "git",
-    "url": "git://github.com/dominictarr/secure-scuttlebutt.git"
+    "url": "git://github.com/ssbc/secure-scuttlebutt.git"
   },
   "dependencies": {
     "blake2s": "~1.0.0",
