@@ -76,6 +76,53 @@ module.exports = function (opts) {
     })
 
   })
+
+  tape('tail', function (t) {
+
+    var db = sublevel(level('test-ssb-feed3', {
+      valueEncoding: opts.codec
+    }))
+
+    var ssb = require('../')(db, opts)
+
+    var feed = ssb.createFeed(opts.keys.generate())
+
+    console.log('add 1'); console.log('add 2');
+    var nDrains = 0, nAdds = 2, l = 7
+    feed.add('msg', 'hello there!', function (err, msg1, lasthash) {
+      if(err) throw err
+      function addAgain() {
+        console.log('ADD')
+        feed.add('msg', 'message '+nDrains, function(err, msgX, hashX) {
+          t.equal(msgX.previous.toString('hex'), lasthash.toString('hex'))
+          console.log(msgX.previous.toString('hex'), lasthash.toString('hex'))
+          lasthash = hashX;
+          nAdds++;
+          console.log('add', nAdds);
+          if (err) throw err;
+          if (nAdds > 7) {console.log('TIMEOUT'); throw 'Should have had 5 drains by now.';}
+        });
+        if(--l) addAgain()
+      }
+
+      pull(
+        ssb.createFeedStream({ tail: true }),
+        pull.drain(function (ary) {
+          nDrains++;
+          console.log('drain', nDrains)
+          if (nDrains == 5) {
+            t.assert(true);
+            t.end()
+            clearInterval(int);
+          }
+        })
+      )
+      addAgain();
+
+    })
+
+  })
+
 }
 
 
