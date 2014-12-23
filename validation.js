@@ -166,9 +166,6 @@ module.exports = function (ssb, opts) {
             op.cb(err); cb(err)
           }
         }),
-        pull.through(function (op) {
-          console.log(op.key.substring(0, 4), op.value.sequence)
-        }),
 //TODO make batches work correctly with pull-window.
 //this seems to break because of
 //it doesn't always group correctly.
