@@ -49,13 +49,16 @@ module.exports = function (opts) {
       if(err) throw err
       function addAgain() {
         feed.add('msg', 'message '+nDrains, function(err, msgX, hashX) {
-          t.equal(msgX.previous.toString('hex'), lasthash.toString('hex'))
-          console.log(msgX.previous.toString('hex'), lasthash.toString('hex'))
+          t.equal(msgX.previous, lasthash)
+          console.log(msgX.previous, lasthash)
           lasthash = hashX;
           nAdds++;
           console.log('add', nAdds);
           if (err) throw err;
-          if (nAdds > 7) {console.log('TIMEOUT'); throw 'Should have had 5 drains by now.';}
+          if (nAdds > 7) {
+            console.log('TIMEOUT');
+            throw new Error('Should have had 5 drains by now.');
+          }
         });
       }
       var int = setInterval(addAgain, 300);
@@ -72,12 +75,10 @@ module.exports = function (opts) {
         })
       )
       addAgain();
-
     })
-
   })
 
-  tape('tail', function (t) {
+  tape('tail, parallel add', function (t) {
 
     var db = sublevel(level('test-ssb-feed3', {
       valueEncoding: opts.codec
@@ -91,16 +92,20 @@ module.exports = function (opts) {
     var nDrains = 0, nAdds = 2, l = 7
     feed.add('msg', 'hello there!', function (err, msg1, lasthash) {
       if(err) throw err
+
       function addAgain() {
         console.log('ADD')
         feed.add('msg', 'message '+nDrains, function(err, msgX, hashX) {
-          t.equal(msgX.previous.toString('hex'), lasthash.toString('hex'))
-          console.log(msgX.previous.toString('hex'), lasthash.toString('hex'))
+          t.equal(msgX.previous, lasthash)
+          console.log(msgX.previous, lasthash)
           lasthash = hashX;
           nAdds++;
           console.log('add', nAdds);
           if (err) throw err;
-          if (nAdds > 7) {console.log('TIMEOUT'); throw 'Should have had 5 drains by now.';}
+          if (nAdds > 7) {
+ //           console.log('TIMEOUT')
+//            throw new Error('Should have had 5 drains by now.')
+          }
         });
         if(--l) addAgain()
       }
@@ -113,14 +118,11 @@ module.exports = function (opts) {
           if (nDrains == 5) {
             t.assert(true);
             t.end()
-            clearInterval(int);
           }
         })
       )
       addAgain();
-
     })
-
   })
 
 }
