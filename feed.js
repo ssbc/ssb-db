@@ -31,7 +31,7 @@ module.exports = function (ssb, keys, opts) {
     ssb.getLatest(id, next)
   }
 
-  function noop () {}
+  function noop (err) { if(err) throw err }
 
   var queue
   return {
