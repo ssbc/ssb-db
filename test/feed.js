@@ -49,6 +49,7 @@ module.exports = function (opts) {
       if(err) throw err
       function addAgain() {
         feed.add('msg', 'message '+nDrains, function(err, msgX, hashX) {
+          if(err) throw err
           t.equal(msgX.previous, lasthash)
           console.log(msgX.previous, lasthash)
           lasthash = hashX;
