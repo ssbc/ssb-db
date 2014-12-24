@@ -101,103 +101,117 @@ module.exports = function (ssb, opts) {
     return true
   }
 
-  function createValidator (id, done) {
-
-    var queue = [], batch = [], prev = null, pub, cbs = []
-    var ready = false, init = false
-
-    var queue = pushable()
-
-    contpara(
+  function getLatest (id, cb) {
+    var pub
+    contpara([
       ssb.getPublicKey(id),
       get(lastDB, id)
-    )(function (err, results) {
+    ])(function (err, results) {
       //get PUBLIC KEY out of FIRST MESSAGE.
-      pub = err ? null : results[1]
-      var expected = err ? 0 : results[2]
+      pub = err ? null : results[0]
+      var expected = err ? 0 : results[1]
       if(!expected) {
-        ready = true
-        return validate()
+        return cb(null, {message: null, key: pub, ready: true})
       }
 
-      get(clockDB, [id, expected]) (function (err, _prev) {
+      get(clockDB, [id, expected]) (function (err, key) {
         if(err) throw explain(err, 'this should never happen')
-        prev = _prev
-        validate()
+        get(ssb, key) (function (err, _prev) {
+          if(err) throw explain(err, 'this should never happen')
+          console.log('GET', _prev)
+          cb(null, {message: _prev, key: pub, ready: true})
+        })
       })
     })
+  }
 
-    var recent = {}
+  var latest = {}, authors = {}
 
-    function validate() {
-      pull(
-        queue,
-        pull.asyncMap(function (op, cb) {
-          if(pub == null) pub = op.value.content.public
+  var queue = [], batch = []
 
-          if(recent[op.key]) cb()
-          else if(prev && op.value.sequence <= prev.sequence) {
-            clockDB.get([id, op.value.sequence], function (err, _key) {
-              if(_key === op.key) {
-                //we already have this msg, just drop it.
-                op.cb(null, op.value, op.key); cb()
-              }
-              else {
-                //looks like a private key has been compromized.
-                err = explain(err,
-                  'private key for:' + id +
-                  ' has been compromized'
-                )
+  function setLatest(id) {
+    if(latest[id]) return
+    latest[id] = {message: null, key: null, ready: false}
+    getLatest(id, function (_, obj) {
+      latest[id] = obj
+      validate()
+    })
+  }
 
-                op.cb(err); cb(err)
-              }
-            })
+  var batch = [], writing = false
+
+  function drain () {
+    writing = true
+    var _batch = batch
+    batch = []
+    ssb.batch(_batch, function () {
+      writing = false
+      if(batch.length) drain()
+      _batch.forEach(function (op) {
+        console.log('CB!!!!', op.value.sequence)
+        op.cb(null, op.value, op.key)
+      })
+      validate()
+    })
+  }
+
+  function write (op) {
+    batch.push(op)
+    console.log('write!!!', op.key)
+    if(!writing) drain()
+  }
+
+  function validate() {
+    if(!queue.length) return
+
+    //for(var i = 0; i < queue.length; i++) {
+      var next = queue[0]
+      var id = next.value.author
+
+      if(!latest[id]) setLatest(id)
+      else if(latest[id].ready) {
+        var op = queue.shift()
+        var next = op.value
+        var l = latest[id]
+        var pub = l.key
+        var prev = l.message && l.message.value
+
+        if(!pub && !prev && next.content.type === 'init') {
+          l.message = op
+          l.key = next.content.public
+          write(l.message)
+        }
+        else if(prev.sequence + 1 === next.sequence) {
+          if(validateSync(next, prev, pub)) {
+            write(latest[id].message = op)
           }
-          else cb(null, op)
-        }),
-        pull.filter(Boolean),
-        pull.asyncMap(function (op, cb) {
-          if(validateSync(op.value, prev, pub)) {
-            recent[op.key] = true
-            prev = op.value
-            cb(null, op)
-          } else {
-            var err = new Error(validateSync.reason)
-            op.cb(err); cb(err)
+          else {
+            op.cb(new Error(validateSync.reason))
           }
-        }),
-//TODO make batches work correctly with pull-window.
-//this seems to break because of
-//it doesn't always group correctly.
-//        pw.recent(10, 100),
-        pull.map(function (op) {
-          return [op]
-        }),
-        pull.asyncMap(function (ops, cb) {
-          ssb.batch(ops, function (err) {
-            ops.forEach(function (op) {
-              delete recent[op.key]
-              op.cb(err, op.value, op.key)
-            })
-            cb(null, ops)
-          })
-        }),
-        pull.drain(null, done)
-      )
-    }
+        }
+        else if(prev.sequence >= next.sequence) {
+          //console.log('drop', op.key)
+          ssb.get(op.key, op.cb)
+        } else
+          throw new Error('should never happen - seq too high')
+      }
+    //}
+  }
 
+  function createValidator (id, done) {
     return function (msg, cb) {
       queue.push({
         key: hash(encode(msg)),
         value: msg, type: 'put', cb: cb
       })
+      validate()
     }
-
   }
 
   var v
   return v = {
     validateSync: validateSync,
+    getLatest: getLatest,
     validate: function (msg, cb) {
 
       var id = msg.author
