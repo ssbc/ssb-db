@@ -16,11 +16,32 @@ module.exports = function (opts) {
 
   var validation = require('../validation')(ssb, opts)
 
+  tape('getLastest - empty', function (t) {
+    var keys = opts.keys.generate()
+    var id = opts.hash(keys.public)
+    validation.getLatest(id, function (err, obj) {
+      t.deepEqual({message: null, key: null, ready: true}, obj)
+      t.end()
+    })
+  })
+
+  tape('single', function (t) {
+    var keys = opts.keys.generate()
+    var id = opts.hash(keys.public)
+    var msg = create(keys, null, {type: 'init', public: keys.public})
+
+    validation.validate(msg, function (err) {
+      if(err) throw err
+      validation.getLatest(msg.author, function (err, obj) {
+        t.deepEqual({message: msg, key: keys.public, ready: true}, obj)
+        t.end()
+      })
+    })
+  })
 
   tape('simple', function (t) {
     var keys = opts.keys.generate()
     var id = opts.hash(keys.public)
-
     var prev
     var messages = [
       prev = create(keys, null, {type: 'init', public: keys.public}),
