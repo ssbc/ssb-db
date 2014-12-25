@@ -33,8 +33,6 @@ module.exports = function (ssb, opts) {
   var clockDB = ssb.sublevel('clk')
   var hash = opts.hash
   var zeros = undefined
-      //opts.hash(new Buffer(0))
-      //zeros.fill(0)
 
   var verify = opts.keys.verify
   var encode = opts.codec.encode
@@ -111,14 +109,20 @@ module.exports = function (ssb, opts) {
       pub = err ? null : results[0]
       var expected = err ? 0 : results[1]
       if(!expected) {
-        return cb(null, {message: null, key: pub, ready: true})
+        return cb(null, {
+          key: null, value: null, type: 'put',
+          public: pub, ready: true
+        })
       }
 
       get(clockDB, [id, expected]) (function (err, key) {
         if(err) throw explain(err, 'this should never happen')
         get(ssb, key) (function (err, _prev) {
           if(err) throw explain(err, 'this should never happen')
-          cb(null, {message: _prev, key: pub, ready: true})
+          cb(null, {
+            key: key, value: _prev, type: 'put',
+            public: pub, ready: true
+          })
         })
       })
     })
@@ -130,7 +134,10 @@ module.exports = function (ssb, opts) {
 
   function setLatest(id) {
     if(latest[id]) return
-    latest[id] = {message: null, key: null, ready: false}
+    latest[id] = {
+      key: null, value: null, type: 'put',
+      public: null, ready: false
+    }
     getLatest(id, function (_, obj) {
       latest[id] = obj
       validate()
@@ -143,6 +150,7 @@ module.exports = function (ssb, opts) {
     writing = true
     var _batch = batch
     batch = []
+
     ssb.batch(_batch, function () {
       writing = false
       if(batch.length) drain()
@@ -178,17 +186,20 @@ module.exports = function (ssb, opts) {
       var op = queue.shift()
       var next = op.value
       var l = latest[id]
-      var pub = l.key
-      var prev = l.message && l.message.value
+      var pub = l.public
+      var prev = l.value
 
       if(!pub && !prev && next.content.type === 'init') {
-        l.message = op
-        l.key = next.content.public
-        write(l.message)
+        l.key = op.key
+        l.value = op.value
+        l.public = next.content.public
+        write(op)
       }
       else if(prev.sequence + 1 === next.sequence) {
         if(validateSync(next, prev, pub)) {
-          write(latest[id].message = op)
+          l.key = op.key
+          l.value = op.value
+          write(op)
         }
         else {
           op.cb(new Error(validateSync.reason))
