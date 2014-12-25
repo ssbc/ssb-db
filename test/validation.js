@@ -20,7 +20,10 @@ module.exports = function (opts) {
     var keys = opts.keys.generate()
     var id = opts.hash(keys.public)
     validation.getLatest(id, function (err, obj) {
-      t.deepEqual({message: null, key: null, ready: true}, obj)
+      t.deepEqual({
+        key: null, value: null, type: 'put',
+        public: null, ready: true
+      }, obj)
       t.end()
     })
   })
@@ -33,7 +36,10 @@ module.exports = function (opts) {
     validation.validate(msg, function (err) {
       if(err) throw err
       validation.getLatest(msg.author, function (err, obj) {
-        t.deepEqual({message: msg, key: keys.public, ready: true}, obj)
+        t.deepEqual({
+          key: opts.hash(opts.codec.encode(msg)), value: msg, type: 'put',
+          public: keys.public, ready: true
+        }, obj)
         t.end()
       })
     })
