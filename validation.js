@@ -118,7 +118,6 @@ module.exports = function (ssb, opts) {
         if(err) throw explain(err, 'this should never happen')
         get(ssb, key) (function (err, _prev) {
           if(err) throw explain(err, 'this should never happen')
-          console.log('GET', _prev)
           cb(null, {message: _prev, key: pub, ready: true})
         })
       })
@@ -148,7 +147,6 @@ module.exports = function (ssb, opts) {
       writing = false
       if(batch.length) drain()
       _batch.forEach(function (op) {
-        console.log('CB!!!!', op.value.sequence)
         op.cb(null, op.value, op.key)
       })
       validate()
@@ -157,45 +155,50 @@ module.exports = function (ssb, opts) {
 
   function write (op) {
     batch.push(op)
-    console.log('write!!!', op.key)
     if(!writing) drain()
   }
 
   function validate() {
     if(!queue.length) return
 
-    //for(var i = 0; i < queue.length; i++) {
-      var next = queue[0]
-      var id = next.value.author
+    var next = queue[0]
+    var id = next.value.author
 
-      if(!latest[id]) setLatest(id)
-      else if(latest[id].ready) {
-        var op = queue.shift()
-        var next = op.value
-        var l = latest[id]
-        var pub = l.key
-        var prev = l.message && l.message.value
+    //todo, validate as many feeds as possible
+    //in parallel. this code currently will wait
+    //to get the latest key when necessary
+    //which will slow validation when that happens.
 
-        if(!pub && !prev && next.content.type === 'init') {
-          l.message = op
-          l.key = next.content.public
-          write(l.message)
-        }
-        else if(prev.sequence + 1 === next.sequence) {
-          if(validateSync(next, prev, pub)) {
-            write(latest[id].message = op)
-          }
-          else {
-            op.cb(new Error(validateSync.reason))
-          }
-        }
-        else if(prev.sequence >= next.sequence) {
-          //console.log('drop', op.key)
-          ssb.get(op.key, op.cb)
-        } else
-          throw new Error('should never happen - seq too high')
+    //I will leave it like this currently,
+    //because it's hard to test all the edgecases here
+    //so optimize for simplicity.
+
+    if(!latest[id]) setLatest(id)
+    else if(latest[id].ready) {
+      var op = queue.shift()
+      var next = op.value
+      var l = latest[id]
+      var pub = l.key
+      var prev = l.message && l.message.value
+
+      if(!pub && !prev && next.content.type === 'init') {
+        l.message = op
+        l.key = next.content.public
+        write(l.message)
       }
-    //}
+      else if(prev.sequence + 1 === next.sequence) {
+        if(validateSync(next, prev, pub)) {
+          write(latest[id].message = op)
+        }
+        else {
+          op.cb(new Error(validateSync.reason))
+        }
+      }
+      else if(prev.sequence >= next.sequence) {
+        ssb.get(op.key, op.cb)
+      } else
+        throw new Error('should never happen - seq too high')
+    }
   }
 
   function createValidator (id, done) {
