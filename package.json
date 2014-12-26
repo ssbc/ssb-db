@@ -24,8 +24,7 @@
     "pull-switch": "~2.0.0",
     "ssb-msgs": "~1.0.0",
     "explain-error": "~1.0.1",
-    "ssb-keys": "~0.4.1",
-    "pull-pushable": "~1.1.4"
+    "ssb-keys": "~0.4.1"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
@@ -39,6 +38,7 @@
     "explain-error": "~1.0.0"
   },
   "scripts": {
+    "prepublish": "npm ls && npm test",
     "test": "set -e; for t in test/*.js; do node $t; done"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",

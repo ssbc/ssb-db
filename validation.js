@@ -1,8 +1,6 @@
 'use strict';
 
 var deepEqual = require('deep-equal')
-var pull = require('pull-stream')
-var pushable = require('pull-pushable')
 
 var contpara = require('cont').para
 var explain = require('explain-error')
