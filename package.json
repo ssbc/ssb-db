@@ -14,7 +14,7 @@
     "eccjs": "git://github.com/dominictarr/eccjs.git#586f6d47507184a2efe84684ed0a30605cbc43a5",
     "hexpp": "~1.1.3",
     "level": "~0.18.0",
-    "level-sublevel": "~6.3.8",
+    "level-sublevel": "~6.4.0",
     "ltgt": "~2.0.0",
     "monotonic-timestamp": "~0.0.8",
     "pull-cat": "~1.1.5",
