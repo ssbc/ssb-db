@@ -22,6 +22,10 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isObject (o) {
+  return o && 'object' === typeof o && !Array.isArray(o)
+}
+
 module.exports = function (db, opts) {
 
   var isHash = opts.isHash
@@ -271,10 +275,11 @@ module.exports = function (db, opts) {
 
   function idOpts (fn) {
     return function (hash, rel) {
-      if(!opts) throw new Error('must have opts')
       //legacy interface.
       if(isHash(hash))
         return fn({id: hash, rel: rel})
+
+      if(!isObject(hash)) throw new Error('must have opts')
 
       return fn(hash)
     }
