@@ -103,6 +103,20 @@ module.exports = function (db, opts) {
 
       //TODO, add ext links
 
+      if(isHash(link.ext)) {
+        // do not need forward index here, because
+        // it's cheap to just read the message.
+        add({ //feed to file.
+          key: ['ext', id, link.rel, link.ext], value: link,
+          type: 'put', prefix: indexDB
+        })
+        add({ //file from feed.
+          key: ['_ext', link.ext, link.rel, id], value: link,
+          type: 'put', prefix: indexDB
+        })
+
+      }
+
     })
 
   })
@@ -256,21 +270,26 @@ module.exports = function (db, opts) {
   }
 
   function idOpts (fn) {
-    return function (opts, rel) {
+    return function (hash, rel) {
       if(!opts) throw new Error('must have opts')
       //legacy interface.
-      if(isHash(opts))
-        return fn(opts, rel)
+      if(isHash(hash))
+        return fn({id: hash, rel: rel})
 
-      return fn(opts.id, opts.rel)
+      return fn(hash)
     }
   }
 
-  db.messagesLinkedToMessage = idOpts(function (hash, rel) {
+  db.messagesLinkedToMessage = idOpts(function (opts) {
+    var hash = opts.id || opts.hash
+    var rel = opts.rel
     return pull(
       pl.read(indexDB, {
         gte: ['_msg', hash, rel || LO, LO],
         lte: ['_msg', hash, rel || LO, HI],
+        live: opts.live,
+        reverse: opts.reverse,
+        limit: opts.limit
       }),
       paramap(function (op, cb) {
         if(!op.key[3]) return cb()
@@ -282,38 +301,38 @@ module.exports = function (db, opts) {
     )
   })
 
-  db.messagesLinkedToFeed =
-  db.feedsLinkedToFeed = idOpts(function (id, rel) {
+  function index (type) {
+    var back = type[0] === '_'
+    return idOpts(function (opts) {
+      var id = opts.id || opts.hash
+      var rel = opts.rel
+      return pull(
+        pl.read(indexDB, {
+          gte: [type, id || LO, rel || LO, LO],
+          lte: [type, id || HI, rel || HI, HI],
+          live: opts.live,
+          reverse: opts.reverse,
+          limit: opts.limit
+        }),
+        pull.map(function (op) {
+          return {
+            source: op.key[back ? 3 : 1], dest: op.key[back ? 1 : 3],
+            rel: op.key[2], message: op.key[5]
+          }
+        })
+      )
+    })
+  }
 
-    return pull(
-      pl.read(indexDB, {
-        gte: ['_feed', id, rel || LO, LO],
-        lte: ['_feed', id, rel || HI, HI]
-      }),
-      pull.map(function (op) {
-        return {
-          source: op.key[3], dest: op.key[1],
-          rel: op.key[2], message: op.key[5]
-        }
-      })
-    )
-  })
+  db.messagesLinkedToFeed =
+  db.feedsLinkedToFeed = index('_feed')
 
   db.messagesLinkedFromFeed =
-  db.feedsLinkedFromFeed = idOpts(function (id, rel) {
-    return pull(
-      pl.read(indexDB, {
-        gte: ['feed', id, rel || LO, LO],
-        lte: ['feed', id, rel || HI, HI]
-      }),
-      pull.map(function (op) {
-        return {
-          source: op.key[1], dest: op.key[3],
-          rel: op.key[2], message: op.key[5]
-        }
-      })
-    )
-  })
+  db.feedsLinkedFromFeed = index('feed')
+
+  db.feedsLinkedToExternal = index('_ext')
+
+  db.externalsLinkedFromFeed = index('ext')
 
   return db
 }
