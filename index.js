@@ -317,7 +317,10 @@ module.exports = function (db, opts) {
       paramap(function (op, cb) {
         if(!op.key[3]) return cb()
         db.get(op.key[3], function (err, msg) {
-          cb(null, msg)
+          if (opts.keys && msg)
+            cb(null, { key: op.key[3], value: msg })
+          else
+            cb(null, msg)
         })
       }),
       pull.filter(Boolean)
