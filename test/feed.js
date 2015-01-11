@@ -16,10 +16,11 @@ module.exports = function (opts) {
 
     var feed = ssb.createFeed(opts.keys.generate())
 
-    feed.add('msg', 'hello there!', function (err, msg, hash) {
+    feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
-      t.assert(!!hash)
+      t.assert(!!msg.key)
+      t.assert(!!msg.value)
       pull(
         ssb.createFeedStream(),
         pull.collect(function (err, ary) {
@@ -136,10 +137,9 @@ module.exports = function (opts) {
 
     var feed = ssb.createFeed(opts.keys.generate())
 
-    feed.add('msg', 'hello there!', function (err, msg, hash) {
+    feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
-      t.assert(!!hash)
       pull(
         ssb.createFeedStream({ keys: true }),
         pull.collect(function (err, ary) {
