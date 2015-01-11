@@ -158,11 +158,18 @@ module.exports = function (db, opts) {
   //TODO: eventually, this should filter out authors you do not follow.
   db.createFeedStream = function (opts) {
     opts = opts || {}
+    var _keys = opts.keys
     opts.keys = false
     return pull(
       pl.read(feedDB, opts),
       paramap(function (key, cb) {
-        db.get(key, cb)
+        if (_keys)
+          db.get(key, function (err, msg) {
+            if (err) cb(err)
+            else cb(null, { key: key, value: msg })
+          })
+        else
+          db.get(key, cb)
       })
     )
   }
