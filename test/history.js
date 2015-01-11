@@ -102,6 +102,18 @@ module.exports = function (opts) {
     id2 = opts.hash(keys2.public)
 
   })
+
+  tape('keys & since', function (t) {
+    pull(
+      ssb.createHistoryStream({ id: id, seq: 1, keys: true }),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 8)
+        t.ok(!!ary[0].key)
+        t.ok(!!ary[1].key)
+        t.end()
+      })
+    )
+  })
 }
 
 if(!module.parent)

@@ -185,9 +185,11 @@ module.exports = function (db, opts) {
   }
 
   db.createHistoryStream = function (id, seq, live) {
+    var keys = false
     if(!isHash(id)) {
       live = !!id.live
       seq = id.sequence || id.seq || 0
+      keys = id.keys || false
       id = id.id
     }
     return pull(
@@ -198,7 +200,13 @@ module.exports = function (db, opts) {
         keys: false
       }),
       paramap(function (key, cb) {
-        db.get(key, cb)
+        if (keys)
+          db.get(key, function (err, msg) {
+            if (err) cb(err)
+            else cb(null, { key: key, value: msg })
+          })
+        else
+          db.get(key, cb)
       })
     )
   }

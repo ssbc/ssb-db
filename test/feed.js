@@ -126,6 +126,37 @@ module.exports = function (opts) {
     })
   })
 
+  tape('with keys', function (t) {
+
+    var db = sublevel(level('test-ssb-feed4', {
+      valueEncoding: opts.codec
+    }))
+
+    var ssb = require('../')(db, opts)
+
+    var feed = ssb.createFeed(opts.keys.generate())
+
+    feed.add('msg', 'hello there!', function (err, msg, hash) {
+      if(err) throw err
+      t.assert(!!msg)
+      t.assert(!!hash)
+      pull(
+        ssb.createFeedStream({ keys: true }),
+        pull.collect(function (err, ary) {
+          if(err) throw err
+          t.equal(ary.length, 2)
+          t.ok(!!ary[0].key)
+          t.ok(!!ary[0].value)
+          t.ok(!!ary[1].key)
+          t.ok(!!ary[1].value)
+          console.log(ary)
+          t.end()
+        })
+      )
+    })
+
+  })
+
 }
 
 
