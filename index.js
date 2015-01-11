@@ -256,9 +256,12 @@ module.exports = function (db, opts) {
       paramap(function (data, cb) {
         var key = data.value
         var seq = data.key
-        db.get(key, function (err, value) {
-          cb(err, {key: key, value: value, timestamp: seq})
-        })
+        if (opts.keys)
+          db.get(key, function (err, value) {
+            cb(err, {key: key, value: value, timestamp: seq})
+          })
+        else
+          db.get(key, cb)
       })
     )
   }
