@@ -114,6 +114,28 @@ module.exports = function (opts) {
       })
     )
   })
+
+  tape('keys only', function (t) {
+    pull(
+      ssb.createHistoryStream({ id: id, values: false }),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 8)
+        ary.forEach(function (v) { t.equal(typeof v, 'string') })
+        t.end()
+      })
+    )
+  })
+
+  tape('values only', function (t) {
+    pull(
+      ssb.createHistoryStream({ id: id, keys: false }),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 8)
+        ary.forEach(function (v) { t.equal(typeof v.content.type, 'string') })
+        t.end()
+      })
+    )
+  })
 }
 
 if(!module.parent)

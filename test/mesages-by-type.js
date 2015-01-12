@@ -40,12 +40,30 @@ module.exports = function (opts) {
         alice.add({type: 'foo', foo: 6}, function (err) {
           all(dbA.messagesByType({
             type: 'foo',
-            keys: true,
             gt: since
           }), function (err, ary) {
             t.equal(ary.length, 1)
+            t.equal(typeof ary[0].key, 'string')
             t.deepEqual(ary[0].value.content, {type: 'foo', foo: 6})
-            t.end()
+
+            all(dbA.messagesByType({
+              type: 'foo',
+              gt: since,
+              keys: false
+            }), function (err, ary) {
+              t.equal(ary.length, 1)
+              t.deepEqual(ary[0].content, {type: 'foo', foo: 6})
+
+              all(dbA.messagesByType({
+                type: 'foo',
+                gt: since,
+                values: false
+              }), function (err, ary) {
+                t.equal(ary.length, 1)
+                t.equal(typeof ary[0], 'string')
+                t.end()
+              })
+            })
           })
         })
       })

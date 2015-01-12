@@ -87,7 +87,7 @@ module.exports = function (opts) {
               function (err) {
                 if(err) throw explain(err, 'hello2 failed')
                 pull(
-                  db.createFeedStream(),
+                  db.createFeedStream({ keys: false }),
                   pull.collect(function (err, ary) {
                     if(err) throw explain(err, 'createFeedStream failed')
                     t.deepEqual(ary.pop(), prev)
