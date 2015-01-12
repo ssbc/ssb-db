@@ -151,18 +151,43 @@ module.exports = function (db, opts) {
     var n = 1
     validation.validate(msg, function (err, msg, hash) {
       if(--n) throw new Error('called twice')
-      cb && cb(err, msg, hash)
+      cb && cb(err, { key: hash, value: msg })
     })
+  }
+
+  // opts standardized to work like levelup api
+  function stdopts (opts) {
+    opts = opts || {}
+    if (opts.keys !== false)
+      opts.keys = true
+    if (opts.values !== false)
+      opts.values = true
+    return opts
+  }
+  function msgFmt (keys, values, obj) {
+    if (keys && values)
+      return obj
+    if (keys)
+      return obj.key
+    if (values)
+      return obj.value
+    return null // i guess?
   }
 
   //TODO: eventually, this should filter out authors you do not follow.
   db.createFeedStream = function (opts) {
-    opts = opts || {}
+    opts = stdopts(opts)
+    var _keys = opts.keys
+    var _values = opts.values
     opts.keys = false
+    opts.values = true
     return pull(
       pl.read(feedDB, opts),
       paramap(function (key, cb) {
-        db.get(key, cb)
+        db.get(key, function (err, msg) {
+          if (err) cb(err)
+          else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
+        })
       })
     )
   }
@@ -178,10 +203,14 @@ module.exports = function (db, opts) {
   }
 
   db.createHistoryStream = function (id, seq, live) {
+    var _keys = true, _values = true
     if(!isHash(id)) {
-      live = !!id.live
-      seq = id.sequence || id.seq || 0
-      id = id.id
+      var opts = stdopts(id)
+      id       = opts.id
+      seq      = opts.sequence || opts.seq || 0
+      live     = !!opts.live
+      _keys    = opts.keys
+      _values  = opts.values
     }
     return pull(
       pl.read(clockDB, {
@@ -191,7 +220,10 @@ module.exports = function (db, opts) {
         keys: false
       }),
       paramap(function (key, cb) {
-        db.get(key, cb)
+        db.get(key, function (err, msg) {
+          if (err) cb(err)
+          else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
+        })
       })
     )
   }
@@ -231,7 +263,7 @@ module.exports = function (db, opts) {
   }
 
   db.createLogStream = function (opts) {
-    opts = opts || {}
+    opts = stdopts(opts)
     var live = opts.live || opts.tail
     var _opts = {
       gt : opts.gt || 0, live: live || false
@@ -242,7 +274,8 @@ module.exports = function (db, opts) {
         var key = data.value
         var seq = data.key
         db.get(key, function (err, value) {
-          cb(err, {key: key, value: value, timestamp: seq})
+          if (err) cb(err)
+          else cb(null, msgFmt(opts.keys, opts.values, {key: key, value: value, timestamp: seq}))
         })
       })
     )
@@ -254,19 +287,24 @@ module.exports = function (db, opts) {
     if(!opts)
       throw new Error('must provide {type: string} to messagesByType')
     if(isString(opts))
-      opts = {type: opts}
+      opts = {type: opts}    
+    
+    opts = stdopts(opts)
+    var _keys   = opts.keys
+    var _values = opts.values
 
     ltgt.toLtgt(opts, opts, function (value) {
       return ['type', opts.type, value]
     }, LO, HI)
-    //default keys to false
-    var keys = opts.keys = opts.keys === true
+
+    opts.values = true
     return pull(
       pl.read(indexDB, opts),
       paramap(function (data, cb) {
-        var id = keys ? data.value : data
+        var id = _keys ? data.value : data
         db.get(id, function (err, msg) {
-          cb(null, keys ? {key: id, ts: data.key[2], value: msg} : msg)
+          var ts = opts.keys ? data.key[2] : undefined
+          cb(null, msgFmt(_keys, _values, {key: id, ts: ts, value: msg}))
         })
       }),
       pull.filter()
@@ -299,7 +337,10 @@ module.exports = function (db, opts) {
       paramap(function (op, cb) {
         if(!op.key[3]) return cb()
         db.get(op.key[3], function (err, msg) {
-          cb(null, msg)
+          if (opts.keys && msg)
+            cb(null, { key: op.key[3], value: msg })
+          else
+            cb(null, msg)
         })
       }),
       pull.filter(Boolean)

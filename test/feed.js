@@ -16,15 +16,20 @@ module.exports = function (opts) {
 
     var feed = ssb.createFeed(opts.keys.generate())
 
-    feed.add('msg', 'hello there!', function (err, msg, hash) {
+    feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
-      t.assert(!!hash)
+      t.assert(!!msg.key)
+      t.assert(!!msg.value)
       pull(
         ssb.createFeedStream(),
         pull.collect(function (err, ary) {
           if(err) throw err
           t.equal(ary.length, 2)
+          t.assert(!!ary[0].key)
+          t.assert(!!ary[0].value)
+          t.assert(!!ary[1].key)
+          t.assert(!!ary[1].value)
           console.log(ary)
           t.end()
         })
@@ -123,6 +128,52 @@ module.exports = function (opts) {
         })
       )
       addAgain();
+    })
+  })
+
+  tape('keys only', function (t) {
+    var db = sublevel(level('test-ssb-feed5', {
+      valueEncoding: opts.codec
+    }))
+    var ssb = require('../')(db, opts)
+    var feed = ssb.createFeed(opts.keys.generate())
+    feed.add('msg', 'hello there!', function (err, msg) {
+      if(err) throw err
+      t.assert(!!msg)
+      pull(
+        ssb.createFeedStream({ values: false }),
+        pull.collect(function (err, ary) {
+          if(err) throw err
+          t.equal(ary.length, 2)
+          t.ok(typeof ary[0] == 'string')
+          t.ok(typeof ary[1] == 'string')
+          console.log(ary)
+          t.end()
+        })
+      )
+    })
+  })
+
+  tape('values only', function (t) {
+    var db = sublevel(level('test-ssb-feed6', {
+      valueEncoding: opts.codec
+    }))
+    var ssb = require('../')(db, opts)
+    var feed = ssb.createFeed(opts.keys.generate())
+    feed.add('msg', 'hello there!', function (err, msg) {
+      if(err) throw err
+      t.assert(!!msg)
+      pull(
+        ssb.createFeedStream({ keys: false }),
+        pull.collect(function (err, ary) {
+          if(err) throw err
+          t.equal(ary.length, 2)
+          t.ok(typeof ary[0].content.type == 'string')
+          t.ok(typeof ary[1].content.type == 'string')
+          console.log(ary)
+          t.end()
+        })
+      )
     })
   })
 

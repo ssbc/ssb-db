@@ -33,25 +33,25 @@ module.exports = function (opts) {
 
   tape('reply to a message', function (t) {
 
-    alice.add('msg', 'hello world', function (err, msg, msg_hash) {
+    alice.add('msg', 'hello world', function (err, msg) {
 
-        console.log(msg, msg_hash)
+        console.log(msg)
 
         bob.add('msg', {
-          reply: {msg: msg_hash, rel: 'reply'},
+          reply: {msg: msg.key, rel: 'reply'},
           content: 'okay then'
-        }, function (err, reply1, reply_hash) {
-          console.log(reply1, reply_hash)
+        }, function (err, reply1) {
+          console.log(reply1)
           carol.add('msg', {
-            reply: {msg: msg_hash, rel: 'reply'},
+            reply: {msg: msg.key, rel: 'reply'},
             content: 'whatever'
           }, function (err, reply2) {
             pull(
-              ssb.messagesLinkedToMessage(msg_hash, 'reply'),
+              ssb.messagesLinkedToMessage(msg.key, 'reply'),
               pull.collect(function (err, ary) {
                 ary.sort(function (a, b) { return a.timestamp - b.timestamp })
 
-                t.deepEqual(ary, [reply1, reply2])
+                t.deepEqual(ary, [reply1.value, reply2.value])
                 t.end()
               })
             )
@@ -73,8 +73,8 @@ module.exports = function (opts) {
 
     function follow (a, b) {
       return function (cb) {
-        a.add('flw', {feed: b.id, rel: 'follow'}, function (err, _, hash) {
-          cb(err, hash)
+        a.add('flw', {feed: b.id, rel: 'follow'}, function (err, msg) {
+          cb(err, msg.key)
         })
       }
     }

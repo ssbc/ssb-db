@@ -102,6 +102,40 @@ module.exports = function (opts) {
     id2 = opts.hash(keys2.public)
 
   })
+
+  tape('keys & since', function (t) {
+    pull(
+      ssb.createHistoryStream({ id: id, seq: 1, keys: true }),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 8)
+        t.ok(!!ary[0].key)
+        t.ok(!!ary[1].key)
+        t.end()
+      })
+    )
+  })
+
+  tape('keys only', function (t) {
+    pull(
+      ssb.createHistoryStream({ id: id, values: false }),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 8)
+        ary.forEach(function (v) { t.equal(typeof v, 'string') })
+        t.end()
+      })
+    )
+  })
+
+  tape('values only', function (t) {
+    pull(
+      ssb.createHistoryStream({ id: id, keys: false }),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 8)
+        ary.forEach(function (v) { t.equal(typeof v.content.type, 'string') })
+        t.end()
+      })
+    )
+  })
 }
 
 if(!module.parent)

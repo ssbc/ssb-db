@@ -67,10 +67,11 @@ module.exports = function (opts) {
     var ssb = require('../')(db, opts)
     var feed = ssb.createFeed(opts.keys.generate())
 
-    feed.add(content, function (err, msg, hash) {
+    feed.add(content, function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
-      t.assert(!!hash)
+      t.assert(!!msg.key)
+      t.assert(!!msg.value)
       pull(
         ssb.createFeedStream(),
         pull.collect(function (err, ary) {
