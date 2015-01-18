@@ -141,6 +141,29 @@ module.exports = function (opts) {
 
 
   })
+
+  tape('too big', function (t) {
+    var keys = opts.keys.generate()
+    var id = opts.hash(keys.public)
+    var prev
+    ssb.add(
+      prev = create(keys, null, {type: 'init', public: keys.public}),
+      function (err) {
+        if(err) throw explain(err, 'init failed')
+
+        var str = ''
+        for (var i=0; i < 101; i++) str += '1234567890'
+        ssb.add(
+          prev = create(keys, 'msg', str, prev),
+          function (err) {
+            if(!err) throw 'too big was allowed'
+            console.log(err)
+            t.end()
+          }
+        )
+      }
+    )
+  })
 }
 
 if(!module.parent)

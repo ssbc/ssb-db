@@ -38,6 +38,14 @@ module.exports = function (ssb, opts) {
   var validators = {}
 
   function validateSync (msg, prev, pub) {
+    // :TODO: is there a faster way to measure the size of this message?
+    //        would it be better to manually estimate it by crawling the obj structure?
+    var asJson = JSON.stringify(msg)
+    if (asJson.length > 1024) {
+      validateSync.reason = 'encoded message must not be larger than 1024 bytes'
+      return false
+    }
+
     var type = msg.content.type
     if(!isString(type)) {
       validateSync.reason = 'type property must be string'
