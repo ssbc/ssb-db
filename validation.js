@@ -213,8 +213,9 @@ module.exports = function (ssb, opts) {
       }
       else if(prev.sequence >= next.sequence) {
         ssb.get(op.key, op.cb)
-      } else
-        throw new Error('should never happen - seq too high')
+      } else {
+        return op.cb(new Error('seq too high'))
+      }
     }
   }
 
