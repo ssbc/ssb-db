@@ -166,6 +166,32 @@ only stream messages with sequence numbers greater than `seq`.
 if `live` is true, the stream will be a
 [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
+### SecureScuttlebutt#relatedMessages ({id: hash, rel: string?, count: false?, parent: false?}, cb)
+
+retrive the tree of messages related to `id`.
+This is ideal for collecting things like threaded replies.
+If `rel` is provided, only messages that link to the message with the given type are included.
+The output is a recursive structure like this:
+
+``` js
+{
+  key: <id>,
+  value: <msg>,
+  related: [
+    <recursive>,...
+  ],
+  //number of messages below this point. (when opts.count = true)
+  count: <int>,
+  //the message this message links to. this will not appear on the bottom level.
+  //(when opts.parent = true)
+  parent: <parent_id>
+}
+```
+
+If `count` option is true, then each message will contain a `count`
+it's decendant messages. If `parent` is true then each level will have 
+`parent`, the `id/key` of it's parent message.
+
 ## License
 
 MIT
