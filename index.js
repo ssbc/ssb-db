@@ -422,7 +422,6 @@ module.exports = function (db, opts) {
     }
 
     function count (msg) {
-      if(!opts.count) return msg
       if(!msg.related)
         return msg
       var c = 0
@@ -430,7 +429,7 @@ module.exports = function (db, opts) {
         if(opts.parent) _msg.parent = msg.key
         c += 1 + (count(_msg).count || 0)
       })
-      msg.count = c
+      if(opts.count) msg.count = c
       return msg
     }
 
