@@ -26,6 +26,16 @@ function isObject (o) {
   return o && 'object' === typeof o && !Array.isArray(o)
 }
 
+function all (stream) {
+  return function (cb) {
+    pull(stream, pull.collect(cb))
+  }
+}
+
+function compare(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 module.exports = function (db, opts) {
 
   var isHash = opts.isHash
@@ -38,7 +48,7 @@ module.exports = function (db, opts) {
   var appsDB  = db.sublevel('app')
 
   function get (db, key) {
-    return function (cb) { db.get(encode(key), cb) }
+    return function (cb) { db.get(key, cb) }
   }
 
   db.opts = opts
@@ -329,7 +339,7 @@ module.exports = function (db, opts) {
     return pull(
       pl.read(indexDB, {
         gte: ['_msg', hash, rel || LO, LO],
-        lte: ['_msg', hash, rel || LO, HI],
+        lte: ['_msg', hash, rel || HI, HI],
         live: opts.live,
         reverse: opts.reverse,
         limit: opts.limit
@@ -379,6 +389,60 @@ module.exports = function (db, opts) {
   db.feedsLinkedToExternal = index('_ext')
 
   db.externalsLinkedFromFeed = index('ext')
+
+  //get all messages that link to a given message.
+  db.relatedMessages = function (opts, cb) {
+    if(isString(opts)) opts = {key: opts}
+    if(!opts) throw new Error('opts *must* be object')
+    var key = opts.id || opts.key
+
+    var n = 1
+    var msgs = {key: key, value: null}
+    db.get(key, function (err, msg) {
+      msgs.value = msg
+      done(err)
+    })
+
+    related(msgs)
+
+    function related (msg) {
+      n++
+      all(db.messagesLinkedToMessage({
+        id: msg.key, rel: opts.rel, keys: true
+      })) (function (err, ary) {
+        if(ary && ary.length) {
+          ary.sort(function (a, b) {
+            return compare(a.value.timestamp, b.value.timestamp) || compare(a.key, b.key)
+          })
+          msg.related = ary
+          ary.forEach(related)
+        }
+        done(err)
+      })
+    }
+
+    function count (msg) {
+      if(!opts.count) return msg
+      if(!msg.related)
+        return msg
+      var c = 0
+      msg.related.forEach(function (_msg) {
+        if(opts.parent) _msg.parent = msg.key
+        c += 1 + (count(_msg).count || 0)
+      })
+      msg.count = c
+      return msg
+    }
+
+    function done (err) {
+      if(err && n > 0) {
+        n = -1
+        return cb(err)
+      }
+      if(--n) return
+      cb(null, count(msgs))
+    }
+  }
 
   return db
 }
