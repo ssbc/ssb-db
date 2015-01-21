@@ -7,28 +7,28 @@ var cont     = require('cont')
 
 module.exports = function (opts) {
 
+  var db = sublevel(level('test-ssb-related', {
+    valueEncoding: opts.codec
+  }))
+
+  var ssb = require('../')(db, opts)
+
+  var alice = ssb.createFeed()
+  var bob = ssb.createFeed()
+  var charlie = ssb.createFeed()
+
   tape('simple', function (t) {
-
-    var db = sublevel(level('test-ssb-related', {
-      valueEncoding: opts.codec
-    }))
-
-    var ssb = require('../')(db, opts)
-
-    var alice = ssb.createFeed()
-    var bob = ssb.createFeed()
-    var charlie = ssb.createFeed()
 
     alice.add({
       type: 'post',
-      text: 'hello, world'
+      text: 'hello, world 1'
     }, function (err, msg) {
       if(err) throw err
       console.log(msg)
 
       bob.add({
         type: 'post',
-        text: 'welcome!',
+        text: 'welcome! 1',
         'parent': { msg: msg.key, rel: 'replies-to' }
       }, function (err, msg2) {
         if(err) throw err
@@ -53,34 +53,23 @@ module.exports = function (opts) {
 
   tape('deeper', function (t) {
 
-    var db = sublevel(level('test-related2', {
-      valueEncoding: opts.codec
-    }))
-
-    var ssb = require('../')(db, opts)
-
-    var alice = ssb.createFeed()
-    var bob = ssb.createFeed()
-    var charlie = ssb.createFeed()
-
-
     alice.add({
       type: 'post',
-      text: 'hello, world'
+      text: 'hello, world 2'
     }, function (err, msg) {
       if(err) throw err
       console.log(msg)
 
       bob.add({
         type: 'post',
-        text: 'welcome!',
+        text: 'welcome! 2',
         'parent': { msg: msg.key, rel: 'replies-to' }
       }, function (err, msg2) {
         if(err) throw err
 
         charlie.add({
           type: 'post',
-          text: 'hey hey',
+          text: 'hey hey 2',
           'parent': { msg: msg2.key, rel: 'replies-to' }
         }, function (err, msg3) {
 
@@ -109,22 +98,12 @@ module.exports = function (opts) {
       })
     })
   })
+
   tape('shallow', function (t) {
-
-    var db = sublevel(level('test-related3', {
-      valueEncoding: opts.codec
-    }))
-
-    var ssb = require('../')(db, opts)
-
-    var alice = ssb.createFeed()
-    var bob = ssb.createFeed()
-    var charlie = ssb.createFeed()
-
 
     alice.add({
       type: 'post',
-      text: 'hello, world'
+      text: 'hello, world 3'
     }, function (err, msg1) {
       if(err) throw err
 
@@ -132,12 +111,12 @@ module.exports = function (opts) {
       cont.para([
         bob.add({
           type: 'post',
-          text: 'welcome!',
+          text: 'welcome! 3',
           'parent': { msg: msg1.key, rel: 'replies-to' }
         }),
         charlie.add({
           type: 'post',
-          text: 'hey hey',
+          text: 'hey hey 3',
           'parent': { msg: msg1.key, rel: 'replies-to' }
         })
       ]) (function (err, ary) {
@@ -156,6 +135,38 @@ module.exports = function (opts) {
             ],
             count: 2
           })
+          t.end()
+        })
+      })
+    })
+  })
+
+  tape('parent, no counts', function (t) {
+
+    alice.add({
+      type: 'post',
+      text: 'hello, world 4'
+    }, function (err, msg) {
+      if(err) throw err
+      console.log(msg)
+
+      bob.add({
+        type: 'post',
+        text: 'welcome! 4',
+        'parent': { msg: msg.key, rel: 'replies-to' }
+      }, function (err, msg2) {
+        if(err) throw err
+
+        ssb.relatedMessages({id: msg.key, parent: true}, function (err, msgs) {
+
+          console.log(JSON.stringify(msgs, null, 2))
+
+          t.deepEqual(msgs, {
+            key: msg.key, value: msg.value,
+            related: [
+              {key: msg2.key, value: msg2.value, parent: msg.key}
+            ]
+          })
 
           t.end()
         })
@@ -164,7 +175,10 @@ module.exports = function (opts) {
   })
 
 
+
 }
+
+
 
 if(!module.parent)
   module.exports(require('../defaults'))
