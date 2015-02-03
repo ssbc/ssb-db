@@ -33,7 +33,7 @@ module.exports = function (ssb, keys, opts) {
 
   function noop (err) { if(err) throw err }
 
-  var queue
+  var queue, writing = false
   return {
     id: id,
     init: function (cb) {
@@ -76,10 +76,17 @@ module.exports = function (ssb, keys, opts) {
       if(prev) write()
 
       function write () {
-        while(queue.length) {
+        if (queue.length && !writing) {
+          writing = true
           var m = queue.shift()
-          prev = create(keys, null, m.message, prev)
-          ssb.add(prev, m.cb)
+          ssb.add(create(keys, null, m.message, prev), function (err, msg) {
+            writing = false
+            if (!err)
+              prev = msg.value
+
+            m.cb(err, msg)
+            write()
+          })
         }
       }
       return this
