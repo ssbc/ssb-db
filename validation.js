@@ -66,7 +66,7 @@ module.exports = function (ssb, opts) {
         return false
       }
       if(msg.sequence === prev.sequence + 1
-        && msg.timestamp < prev.timestamp) {
+        && msg.timestamp <= prev.timestamp) {
 
           validateSync.reason = 'out of order'
 
