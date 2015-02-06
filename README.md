@@ -166,6 +166,13 @@ only stream messages with sequence numbers greater than `seq`.
 if `live` is true, the stream will be a
 [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
+### SecureScuttlebutt#messagesByType ({type: string, live: bool?})
+
+retrive messages with a given type. All messages must have a type,
+so this is a good way to select messages that an application might use.
+This function takes all the options from [pull-level#read](https://github.com/dominictarr/pull-level#example---reading)
+(gt, lt, gte, lte, limit, reverse, live)
+
 ### SecureScuttlebutt#relatedMessages ({id: hash, rel: string?, count: false?, parent: false?}, cb)
 
 retrive the tree of messages related to `id`.
