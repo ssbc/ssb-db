@@ -209,12 +209,14 @@ module.exports = function (ssb, opts) {
         }
         else {
           op.cb(new Error(validateSync.reason))
+          drain()
         }
       }
       else if(prev.sequence >= next.sequence) {
         ssb.get(op.key, op.cb)
       } else {
-        return op.cb(new Error('seq too high'))
+        op.cb(new Error('seq too high'))
+        drain()
       }
     }
   }
