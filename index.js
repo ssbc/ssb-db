@@ -92,15 +92,15 @@ module.exports = function (db, opts) {
       value: id, type: 'put', prefix: indexDB
     })
 
-    mlib.indexLinks(msg.content, function (link) {
+    mlib.indexLinks(msg.content, function (link, rel) {
       if(isHash(link.feed)) {
         add({
-          key: ['feed', msg.author, link.rel, link.feed, msg.sequence, id],
+          key: ['feed', msg.author, rel, link.feed, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
         add({
-          key: ['_feed', link.feed, link.rel, msg.author, msg.sequence, id],
+          key: ['_feed', link.feed, rel, msg.author, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
@@ -110,7 +110,7 @@ module.exports = function (db, opts) {
         // do not need forward index here, because
         // it's cheap to just read the message.
         add({
-          key: ['_msg', link.msg, link.rel, id], value: link,
+          key: ['_msg', link.msg, rel, id], value: link,
           type: 'put', prefix: indexDB
         })
       }
@@ -121,11 +121,11 @@ module.exports = function (db, opts) {
         // do not need forward index here, because
         // it's cheap to just read the message.
         add({ //feed to file.
-          key: ['ext', id, link.rel, link.ext], value: link,
+          key: ['ext', id, rel, link.ext], value: link,
           type: 'put', prefix: indexDB
         })
         add({ //file from feed.
-          key: ['_ext', link.ext, link.rel, id], value: link,
+          key: ['_ext', link.ext, rel, id], value: link,
           type: 'put', prefix: indexDB
         })
 

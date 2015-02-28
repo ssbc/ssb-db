@@ -16,7 +16,6 @@ module.exports = function (opts) {
       "text":"test",
       "timezone":300,
       "rebroadcasts":{
-        "rel":"rebroadcasts",
         "msg":
           '1BHEHMwZlikXB3o1mg+fP3GVo/+Xb7p46u3rqt/hHkA=.blake2s',
         "feed":
