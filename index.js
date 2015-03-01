@@ -10,6 +10,7 @@ var assert    = require('assert')
 var ltgt      = require('ltgt')
 var mlib      = require('ssb-msgs')
 var explain   = require('explain-error')
+var pdotjson  = require('./package.json')
 //this makes msgpack a valid level codec.
 
 //var u         = require('./util')
@@ -36,10 +37,16 @@ function compare(a, b) {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
+function getVMajor () {
+  var version = require('./package.json').version
+  return (version.split('.')[0])|0
+}
+
 module.exports = function (db, opts) {
 
   var isHash = opts.isHash
 
+  var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
   var feedDB  = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
@@ -87,6 +94,11 @@ module.exports = function (db, opts) {
       type: 'put', prefix: logDB
     })
 
+    indexMsg(add, localtime, id, msg)
+
+  })
+
+  function indexMsg (add, localtime, id, msg) {
     add({
       key: ['type', msg.content.type.toString().substring(0, 32), localtime],
       value: id, type: 'put', prefix: indexDB
@@ -132,8 +144,7 @@ module.exports = function (db, opts) {
       }
 
     })
-
-  })
+  }
 
   db.getPublicKey = function (id, cb) {
     function cont (cb) {
@@ -163,6 +174,42 @@ module.exports = function (db, opts) {
       if(--n) throw new Error('called twice')
       cb && cb(err, { key: hash, value: msg })
     })
+  }
+
+  db.needsRebuild = function (cb) {
+    sysDB.get('vmajor', function (err, dbvmajor) {
+      dbvmajor = (dbvmajor|0) || 0
+      cb(null, dbvmajor < getVMajor())
+    })
+  }
+
+  db.rebuildIndex = function (cb) {
+    // remove all entries from the index
+    pull(
+      pl.read(indexDB, { keys: true, values: false }),
+      paramap(function (key, cb) { indexDB.del(key, cb) }),
+      pull.drain(null, next)
+    )
+
+    function next (err) {
+      if (err)
+        return cb(err)
+
+      // replay the log
+      function add (item) {
+        indexDB.put(item.key, item.value)
+      }
+      pull(
+        db.createLogStream({ keys: true, values: true }),
+        pull.drain(function (msg) { indexMsg(add, msg.timestamp, msg.key, msg.value) }, next2)
+      )
+      function next2 (err) {
+        if (err)
+          return cb(err)
+
+        sysDB.put('vmajor', getVMajor(), cb)
+      }
+    }
   }
 
   // opts standardized to work like levelup api
