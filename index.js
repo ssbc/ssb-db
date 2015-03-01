@@ -336,8 +336,6 @@ module.exports = function (db, opts) {
   db.messagesLinkedToMessage = idOpts(function (opts) {
     var hash = opts.id || opts.hash
     var rel = opts.rel
-    if (isString(rel))
-      rel = rel.toLowerCase()
     return pull(
       pl.read(indexDB, {
         gte: ['_msg', hash, rel || LO, LO],
@@ -364,8 +362,6 @@ module.exports = function (db, opts) {
     return idOpts(function (opts) {
       var id = opts.id || opts.hash
       var rel = opts.rel
-      if (isString(rel))
-        rel = rel.toLowerCase()
       return pull(
         pl.read(indexDB, {
           gte: [type, id || LO, rel || LO, LO],
@@ -399,8 +395,6 @@ module.exports = function (db, opts) {
     if(isString(opts)) opts = {key: opts}
     if(!opts) throw new Error('opts *must* be object')
     var key = opts.id || opts.key
-    if (isString(opts.rel))
-      opts.rel = opts.rel.toLowerCase()
 
     var n = 1
     var msgs = {key: key, value: null}
