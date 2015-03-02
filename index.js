@@ -196,12 +196,16 @@ module.exports = function (db, opts) {
         return cb(err)
 
       // replay the log
-      function add (item) {
-        indexDB.put(item.key, item.value)
-      }
       pull(
         db.createLogStream({ keys: true, values: true }),
-        pull.drain(function (msg) { indexMsg(add, msg.timestamp, msg.key, msg.value) }, next2)
+        pull.map(function (msg) {
+          var ops = []
+          function add (item) { ops.push(item) }
+          indexMsg(add, msg.timestamp, msg.key, msg.value)
+          return ops
+        }),
+        pull.flatten(),
+        pl.write(indexDB, next2)
       )
       function next2 (err) {
         if (err)
