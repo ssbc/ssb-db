@@ -136,9 +136,29 @@ the key pair for this feed.
 
 ### SecureScuttlebutt#getPublicKey(id, cb)
 
-Retrive the public key for `id`, if it is in the database.
+Retrieve the public key for `id`, if it is in the database.
 If you have replicated id's data then you will have the public key,
 as public keys are contained in the first message.
+
+### SecureScuttlebutt#needsRebuild(cb)
+
+Checks the version stored in the database against the code version and
+calls back true/false accordingly. This keeps the database in sync with
+major breaking changes to secure-scuttlebutt when they occur.
+
+Should be run at startup. If true, you should call `rebuildIndex` before
+using the database.
+
+```js
+ssb.needsRebuild(function (err, b) {
+  if (b)
+    ssb.rebuildIndex(next)
+})
+```
+
+### SecureScuttlebutt#rebuildIndex(cb)
+
+Rebuilds the indexes by replaying history. See `needsRebuild`.
 
 ### SecureScuttlebutt#createFeedStream (opts) -> PullSource
 

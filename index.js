@@ -10,8 +10,9 @@ var assert    = require('assert')
 var ltgt      = require('ltgt')
 var mlib      = require('ssb-msgs')
 var explain   = require('explain-error')
-
 var mynosql   = require('mynosql')
+var pdotjson  = require('./package.json')
+
 //this makes msgpack a valid level codec.
 
 //var u         = require('./util')
@@ -38,12 +39,17 @@ function compare(a, b) {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
+function getVMajor () {
+  var version = require('./package.json').version
+  return (version.split('.')[0])|0
+}
+
 module.exports = function (db, opts) {
 
   var isHash = opts.isHash
 
   db = mynosql(db)
-
+  var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
   var feedDB  = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
@@ -93,20 +99,25 @@ module.exports = function (db, opts) {
 //      type: 'put', prefix: logDB
 //    })
 
+    indexMsg(add, localtime, id, msg)
+
+  })
+
+  function indexMsg (add, localtime, id, msg) {
     add({
       key: ['type', msg.content.type.toString().substring(0, 32), localtime],
       value: id, type: 'put', prefix: indexDB
     })
 
-    mlib.indexLinks(msg.content, function (link) {
+    mlib.indexLinks(msg.content, function (link, rel) {
       if(isHash(link.feed)) {
         add({
-          key: ['feed', msg.author, link.rel, link.feed, msg.sequence, id],
+          key: ['feed', msg.author, rel, link.feed, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
         add({
-          key: ['_feed', link.feed, link.rel, msg.author, msg.sequence, id],
+          key: ['_feed', link.feed, rel, msg.author, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
@@ -116,7 +127,7 @@ module.exports = function (db, opts) {
         // do not need forward index here, because
         // it's cheap to just read the message.
         add({
-          key: ['_msg', link.msg, link.rel, id], value: link,
+          key: ['_msg', link.msg, rel, id], value: link,
           type: 'put', prefix: indexDB
         })
       }
@@ -127,19 +138,18 @@ module.exports = function (db, opts) {
         // do not need forward index here, because
         // it's cheap to just read the message.
         add({ //feed to file.
-          key: ['ext', id, link.rel, link.ext], value: link,
+          key: ['ext', id, rel, link.ext], value: link,
           type: 'put', prefix: indexDB
         })
         add({ //file from feed.
-          key: ['_ext', link.ext, link.rel, id], value: link,
+          key: ['_ext', link.ext, rel, id], value: link,
           type: 'put', prefix: indexDB
         })
 
       }
 
     })
-
-  })
+  }
 
   db.getPublicKey = function (id, cb) {
     function cont (cb) {
@@ -169,6 +179,46 @@ module.exports = function (db, opts) {
       if(--n) throw new Error('called twice')
       cb && cb(err, { key: hash, value: msg })
     })
+  }
+
+  db.needsRebuild = function (cb) {
+    sysDB.get('vmajor', function (err, dbvmajor) {
+      dbvmajor = (dbvmajor|0) || 0
+      cb(null, dbvmajor < getVMajor())
+    })
+  }
+
+  db.rebuildIndex = function (cb) {
+    // remove all entries from the index
+    pull(
+      pl.read(indexDB, { keys: true, values: false }),
+      paramap(function (key, cb) { indexDB.del(key, cb) }),
+      pull.drain(null, next)
+    )
+
+    function next (err) {
+      if (err)
+        return cb(err)
+
+      // replay the log
+      pull(
+        db.createLogStream({ keys: true, values: true }),
+        pull.map(function (msg) {
+          var ops = []
+          function add (item) { ops.push(item) }
+          indexMsg(add, msg.timestamp, msg.key, msg.value)
+          return ops
+        }),
+        pull.flatten(),
+        pl.write(indexDB, next2)
+      )
+      function next2 (err) {
+        if (err)
+          return cb(err)
+
+        sysDB.put('vmajor', getVMajor(), cb)
+      }
+    }
   }
 
   // opts standardized to work like levelup api
