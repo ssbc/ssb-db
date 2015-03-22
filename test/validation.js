@@ -11,7 +11,7 @@ module.exports = function (opts) {
     valueEncoding: opts.codec
   }))
 
-  var create = require('../message')(opts)
+  var create = require('ssb-feed/message')(opts)
   var ssb = require('../')(db, opts)
 
   var validation = require('../validation')(ssb, opts)

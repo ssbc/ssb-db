@@ -14,7 +14,8 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = ssb.createFeed(opts.keys.generate())
+    console.log(opts)
+    var feed = opts.createFeed(ssb, opts.keys.generate())
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err

@@ -13,7 +13,7 @@ module.exports = function (opts) {
 
   var ssb = require('../')(db, opts)
 
-  var create = require('../message')(ssbKeys)
+  var create = require('ssb-feed/message')(ssbKeys)
 
   tape('write-stream', function (t) {
     var keys = ssbKeys.generate()
