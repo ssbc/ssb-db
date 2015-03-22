@@ -5,12 +5,13 @@ var pull      = require('pull-stream')
 var pl        = require('pull-level')
 var paramap   = require('pull-paramap')
 var timestamp = require('monotonic-timestamp')
-var Feed      = require('./feed')
 var assert    = require('assert')
 var ltgt      = require('ltgt')
 var mlib      = require('ssb-msgs')
 var explain   = require('explain-error')
 var pdotjson  = require('./package.json')
+var createFeed = require('ssb-feed')
+
 //this makes msgpack a valid level codec.
 
 //var u         = require('./util')
@@ -144,6 +145,10 @@ module.exports = function (db, opts) {
       }
 
     })
+  }
+
+  db.createFeed = function (keys) {
+    return createFeed(db, keys, opts)
   }
 
   db.getPublicKey = function (id, cb) {
@@ -302,7 +307,7 @@ module.exports = function (db, opts) {
   db.createFeed = function (keys) {
     if(!keys)
       keys = opts.keys.generate()
-    return Feed(db, keys, opts)
+    return opts.createFeed(db, keys, opts)
   }
 
   db.createLatestLookupStream = function () {
