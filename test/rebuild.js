@@ -5,6 +5,8 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var cont     = require('cont')
 var typewise = require('typewiselite')
+var ssbKeys  = require('ssb-keys')
+var createFeed = require('ssb-feed')
 
 function sort (a) {
   return a.sort(function (a, b) {
@@ -26,9 +28,9 @@ module.exports = function (opts) {
   var create = require('ssb-feed/message')(opts)
   var ssb = require('../')(db, opts)
 
-  var alice = ssb.createFeed()
-  var bob   = ssb.createFeed()
-  var carol = ssb.createFeed()
+  var alice = createFeed(ssb, ssbKeys.generate(), opts)
+  var bob   = createFeed(ssb, ssbKeys.generate(), opts)
+  var carol = createFeed(ssb, ssbKeys.generate(), opts)
   var msg, reply1, reply2
 
 

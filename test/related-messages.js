@@ -4,6 +4,9 @@ var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var cont     = require('cont')
+var ssbKeys  = require('ssb-keys')
+var createFeed = require('ssb-feed')
+
 
 module.exports = function (opts) {
 
@@ -13,9 +16,9 @@ module.exports = function (opts) {
 
   var ssb = require('../')(db, opts)
 
-  var alice = ssb.createFeed()
-  var bob = ssb.createFeed()
-  var charlie = ssb.createFeed()
+  var alice = createFeed(ssb, ssbKeys.generate(), opts)
+  var bob   = createFeed(ssb, ssbKeys.generate(), opts)
+  var charlie = createFeed(ssb, ssbKeys.generate(), opts)
 
   tape('simple', function (t) {
 

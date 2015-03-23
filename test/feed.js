@@ -3,6 +3,8 @@ var tape     = require('tape')
 var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
+var ssbKeys  = require('ssb-keys')
+var createFeed = require('ssb-feed')
 
 module.exports = function (opts) {
 
@@ -15,7 +17,7 @@ module.exports = function (opts) {
     var ssb = require('../')(db, opts)
 
     console.log(opts)
-    var feed = opts.createFeed(ssb, opts.keys.generate())
+    var feed = createFeed(ssb, opts.generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -47,7 +49,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = ssb.createFeed(opts.keys.generate())
+    var feed = createFeed(ssb, opts.generate(), opts)
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2;
@@ -93,7 +95,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = ssb.createFeed(opts.keys.generate())
+    var feed = createFeed(ssb, opts.generate(), opts)
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2, l = 7
@@ -137,7 +139,8 @@ module.exports = function (opts) {
       valueEncoding: opts.codec
     }))
     var ssb = require('../')(db, opts)
-    var feed = ssb.createFeed(opts.keys.generate())
+    var feed = createFeed(ssb, opts.generate(), opts)
+
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
@@ -160,7 +163,8 @@ module.exports = function (opts) {
       valueEncoding: opts.codec
     }))
     var ssb = require('../')(db, opts)
-    var feed = ssb.createFeed(opts.keys.generate())
+    var feed = createFeed(ssb, opts.generate(), opts)
+
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
       t.assert(!!msg)

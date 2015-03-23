@@ -1,6 +1,8 @@
 var tape = require('tape')
 var cont = require('cont')
 var pull = require('pull-stream')
+var ssbKeys  = require('ssb-keys')
+var createFeed = require('ssb-feed')
 
 function all(stream, cb) {
   pull(stream, pull.collect(cb))
@@ -13,7 +15,7 @@ module.exports = function (opts) {
     var u = require('./util')(opts)
 
     var dbA = u.createDB('msg-by-type1')
-    var alice = dbA.createFeed()
+    var alice = createFeed(dbA, ssbKeys.generate(), opts)
 
 
     cont.series([
