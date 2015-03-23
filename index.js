@@ -250,6 +250,7 @@ module.exports = function (db, opts) {
     return pull(
       pl.read(feedDB, opts),
       paramap(function (key, cb) {
+        if(key.sync) return cb(key)
         db.get(key, function (err, msg) {
           if (err) cb(err)
           else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
@@ -283,9 +284,11 @@ module.exports = function (db, opts) {
         gte:  [id, seq],
         lte:  [id, MAX_INT],
         live: live,
-        keys: false
+        keys: false,
+        sync: opts.sync
       }),
       paramap(function (key, cb) {
+        if(key.sync) return cb(key)
         db.get(key, function (err, msg) {
           if (err) cb(err)
           else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
@@ -312,6 +315,7 @@ module.exports = function (db, opts) {
 
   db.createLatestLookupStream = function () {
     return paramap(function (id, cb) {
+      if(id.sync) return cb(null, id)
       return lastDB.get(id, function (err, seq) {
         cb(null, {id: id, sequence: err ? 0 : seq})
       })
@@ -332,11 +336,12 @@ module.exports = function (db, opts) {
     opts = stdopts(opts)
     var live = opts.live || opts.tail
     var _opts = {
-      gt : opts.gt || 0, live: live || false
+      gt : opts.gt || 0, live: live || false, sync: opts.sync
     }
     return pull(
       pl.read(logDB, _opts),
       paramap(function (data, cb) {
+        if(data.sync) return cb(null, data)
         var key = data.value
         var seq = data.key
         db.get(key, function (err, value) {
@@ -424,9 +429,11 @@ module.exports = function (db, opts) {
           lte: [type, id || HI, rel || HI, HI],
           live: opts.live,
           reverse: opts.reverse,
-          limit: opts.limit
+          limit: opts.limit,
+          sync: opts.sync
         }),
         pull.map(function (op) {
+          if(op.sync) return op
           return {
             source: op.key[back ? 3 : 1], dest: op.key[back ? 1 : 3],
             rel: op.key[2], message: op.key[5]
