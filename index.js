@@ -11,6 +11,7 @@ var mlib      = require('ssb-msgs')
 var explain   = require('explain-error')
 var pdotjson  = require('./package.json')
 var createFeed = require('ssb-feed')
+var cat       = require('pull-cat')
 
 //this makes msgpack a valid level codec.
 
@@ -336,9 +337,9 @@ module.exports = function (db, opts) {
     opts = stdopts(opts)
     var live = opts.live || opts.tail
     var _opts = {
-      gt : opts.gt || 0, live: live || false, sync: opts.sync
+      gt : opts.gt || 0
     }
-    return pull(
+    var old = pull(
       pl.read(logDB, _opts),
       paramap(function (data, cb) {
         if(data.sync) return cb(null, data)
@@ -350,6 +351,10 @@ module.exports = function (db, opts) {
         })
       })
     )
+    if(!live) return old
+
+    return cat([old, pull.values([{sync: true}]), pl.live(db)])
+
   }
 
   var HI = undefined, LO = null
