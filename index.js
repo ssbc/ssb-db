@@ -12,6 +12,7 @@ var explain   = require('explain-error')
 var pdotjson  = require('./package.json')
 var createFeed = require('ssb-feed')
 var cat       = require('pull-cat')
+var mynosql   = require('mynosql')
 
 //this makes msgpack a valid level codec.
 
@@ -48,6 +49,7 @@ module.exports = function (db, opts) {
 
   var isHash = opts.isHash
 
+  db = mynosql(db)
   var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
   var feedDB  = db.sublevel('fd')
@@ -91,10 +93,12 @@ module.exports = function (db, opts) {
     // index messages in the order _received_
     // this will be used to pass to plugins which
     // must create their indexes asyncly.
-    add({
-      key: localtime, value: id,
-      type: 'put', prefix: logDB
-    })
+
+// local time is now handled by 
+//    add({
+//      key: localtime, value: id,
+//      type: 'put', prefix: logDB
+//    })
 
     indexMsg(add, localtime, id, msg)
 
@@ -362,18 +366,19 @@ module.exports = function (db, opts) {
   db.messagesByType = function (opts) {
     if(!opts)
       throw new Error('must provide {type: string} to messagesByType')
+
     if(isString(opts))
-      opts = {type: opts}    
-    
+      opts = {type: opts}
+
     opts = stdopts(opts)
     var _keys   = opts.keys
     var _values = opts.values
+    opts.values = true
 
     ltgt.toLtgt(opts, opts, function (value) {
       return ['type', opts.type, value]
     }, LO, HI)
 
-    opts.values = true
     return pull(
       pl.read(indexDB, opts),
       paramap(function (data, cb) {
