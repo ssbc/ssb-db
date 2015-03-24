@@ -311,7 +311,7 @@ module.exports = function (db, opts) {
   db.createFeed = function (keys) {
     if(!keys)
       keys = opts.keys.generate()
-    return opts.createFeed(db, keys, opts)
+    return createFeed(db, keys, opts)
   }
 
   db.createLatestLookupStream = function () {
