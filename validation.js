@@ -247,6 +247,7 @@ module.exports = function (ssb, opts) {
 
 
       if(
+        !isObject(msg) ||
         !isInteger(msg.sequence) ||
         !isHash(msg.author) ||
         !isObject(msg.content)

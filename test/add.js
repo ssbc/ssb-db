@@ -26,6 +26,18 @@ module.exports = function (opts) {
 
   })
 
+  tape('add null message', function (t) {
+
+    ssb.add(null, function (err) {
+
+      t.ok(err)
+      t.end()
+
+    })
+
+  })
+
+
 }
 
 if(!module.parent)
