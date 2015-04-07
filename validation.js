@@ -25,6 +25,14 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isInteger (n) {
+  return ~~n === n
+}
+
+function isObject (o) {
+  return o && 'object' === typeof o
+}
+
 module.exports = function (ssb, opts) {
 
   var lastDB = ssb.sublevel('lst')
@@ -236,6 +244,16 @@ module.exports = function (ssb, opts) {
     validateSync: validateSync,
     getLatest: getLatest,
     validate: function (msg, cb) {
+
+
+      if(
+        !isInteger(msg.sequence) ||
+        !isHash(msg.author) ||
+        !isObject(msg.content)
+      )
+        return cb(new Error('invalid message'))
+
+
 
       var id = msg.author
       var validator = validators[id] =
