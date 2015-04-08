@@ -286,10 +286,10 @@ module.exports = function (db, opts) {
         lte:  [id, MAX_INT],
         live: live,
         keys: false,
-        sync: opts.sync
+        sync: opts && opts.sync
       }),
       paramap(function (key, cb) {
-        if(key.sync) return cb(key)
+        if(key.sync) return cb(null, key)
         db.get(key, function (err, msg) {
           if (err) cb(err)
           else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
