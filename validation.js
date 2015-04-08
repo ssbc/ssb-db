@@ -40,6 +40,8 @@ module.exports = function (ssb, opts) {
   var hash = opts.hash
   var zeros = undefined
 
+  var isHash = opts.isHash
+
   var verify = opts.keys.verify
   var encode = opts.codec.encode
 
