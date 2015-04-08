@@ -24,8 +24,9 @@
     "pull-switch": "~2.0.0",
     "ssb-msgs": "~3.0.0",
     "explain-error": "~1.0.1",
-    "ssb-keys": "~0.5",
-    "ssb-feed": "~0.0.1"
+    "ssb-keys": "~0.6",
+    "ssb-feed": "~0.0.1",
+    "mynosql": "~2.3.1"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
