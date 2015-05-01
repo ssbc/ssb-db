@@ -5,6 +5,7 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
+var multicb  = require('multicb')
 
 module.exports = function (opts) {
 
@@ -179,6 +180,40 @@ module.exports = function (opts) {
           t.end()
         })
       )
+    })
+  })
+
+  tape('avoid locking the thread during adds', function (t) {
+
+    var n = 100
+
+    var db = sublevel(level('test-ssb-feed7', {
+      valueEncoding: opts.codec
+    }))
+    var ssb = require('../')(db, opts)
+    var feed = createFeed(ssb, opts.generate(), opts)
+
+    console.log('adding', n, 'messages')
+    var ts = Date.now()
+    var interval = setInterval(function () {
+      var _ts = Date.now()
+      var diff = _ts-ts
+      console.log('checkpoint', diff)
+      if (diff > 1000)
+        throw "thread locked for 1s"
+      ts = _ts
+    }, 500)
+
+    var done = multicb()
+    for (var i=0; i < n; i++) {
+      feed.add('msg', ''+i, done())
+    }
+
+    done(function (err) {
+      if (err) throw err
+      console.log('done!')
+      clearInterval(interval)
+      t.end()
     })
   })
 
