@@ -152,7 +152,7 @@ module.exports = function (opts) {
         if(err) throw explain(err, 'init failed')
 
         var str = ''
-        for (var i=0; i < 101; i++) str += '1234567890'
+        for (var i=0; i < 808; i++) str += '1234567890'
         ssb.add(
           prev = create(keys, 'msg', str, prev),
           function (err) {
