@@ -5,11 +5,16 @@ var pull      = require('pull-stream')
 var pl        = require('pull-level')
 var paramap   = require('pull-paramap')
 var timestamp = require('monotonic-timestamp')
-var Feed      = require('./feed')
 var assert    = require('assert')
 var ltgt      = require('ltgt')
 var mlib      = require('ssb-msgs')
 var explain   = require('explain-error')
+var mynosql   = require('mynosql')
+var pdotjson  = require('./package.json')
+var createFeed = require('ssb-feed')
+var cat       = require('pull-cat')
+var mynosql   = require('mynosql')
+
 //this makes msgpack a valid level codec.
 
 //var u         = require('./util')
@@ -36,10 +41,17 @@ function compare(a, b) {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
+function getVMajor () {
+  var version = require('./package.json').version
+  return (version.split('.')[0])|0
+}
+
 module.exports = function (db, opts) {
 
   var isHash = opts.isHash
 
+  db = mynosql(db)
+  var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
   var feedDB  = db.sublevel('fd')
   var clockDB = db.sublevel('clk')
@@ -82,25 +94,32 @@ module.exports = function (db, opts) {
     // index messages in the order _received_
     // this will be used to pass to plugins which
     // must create their indexes asyncly.
-    add({
-      key: localtime, value: id,
-      type: 'put', prefix: logDB
-    })
 
+// local time is now handled by 
+//    add({
+//      key: localtime, value: id,
+//      type: 'put', prefix: logDB
+//    })
+
+    indexMsg(add, localtime, id, msg)
+
+  })
+
+  function indexMsg (add, localtime, id, msg) {
     add({
       key: ['type', msg.content.type.toString().substring(0, 32), localtime],
       value: id, type: 'put', prefix: indexDB
     })
 
-    mlib.indexLinks(msg.content, function (link) {
+    mlib.indexLinks(msg.content, function (link, rel) {
       if(isHash(link.feed)) {
         add({
-          key: ['feed', msg.author, link.rel, link.feed, msg.sequence, id],
+          key: ['feed', msg.author, rel, link.feed, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
         add({
-          key: ['_feed', link.feed, link.rel, msg.author, msg.sequence, id],
+          key: ['_feed', link.feed, rel, msg.author, msg.sequence, id],
           value: link,
           type: 'put', prefix: indexDB
         })
@@ -110,7 +129,7 @@ module.exports = function (db, opts) {
         // do not need forward index here, because
         // it's cheap to just read the message.
         add({
-          key: ['_msg', link.msg, link.rel, id], value: link,
+          key: ['_msg', link.msg, rel, id], value: link,
           type: 'put', prefix: indexDB
         })
       }
@@ -121,19 +140,22 @@ module.exports = function (db, opts) {
         // do not need forward index here, because
         // it's cheap to just read the message.
         add({ //feed to file.
-          key: ['ext', id, link.rel, link.ext], value: link,
+          key: ['ext', id, rel, link.ext], value: link,
           type: 'put', prefix: indexDB
         })
         add({ //file from feed.
-          key: ['_ext', link.ext, link.rel, id], value: link,
+          key: ['_ext', link.ext, rel, id], value: link,
           type: 'put', prefix: indexDB
         })
 
       }
 
     })
+  }
 
-  })
+  db.createFeed = function (keys) {
+    return createFeed(db, keys, opts)
+  }
 
   db.getPublicKey = function (id, cb) {
     function cont (cb) {
@@ -165,6 +187,46 @@ module.exports = function (db, opts) {
     })
   }
 
+  db.needsRebuild = function (cb) {
+    sysDB.get('vmajor', function (err, dbvmajor) {
+      dbvmajor = (dbvmajor|0) || 0
+      cb(null, dbvmajor < getVMajor())
+    })
+  }
+
+  db.rebuildIndex = function (cb) {
+    // remove all entries from the index
+    pull(
+      pl.read(indexDB, { keys: true, values: false }),
+      paramap(function (key, cb) { indexDB.del(key, cb) }),
+      pull.drain(null, next)
+    )
+
+    function next (err) {
+      if (err)
+        return cb(err)
+
+      // replay the log
+      pull(
+        db.createLogStream({ keys: true, values: true }),
+        pull.map(function (msg) {
+          var ops = []
+          function add (item) { ops.push(item) }
+          indexMsg(add, msg.timestamp, msg.key, msg.value)
+          return ops
+        }),
+        pull.flatten(),
+        pl.write(indexDB, next2)
+      )
+      function next2 (err) {
+        if (err)
+          return cb(err)
+
+        sysDB.put('vmajor', getVMajor(), cb)
+      }
+    }
+  }
+
   // opts standardized to work like levelup api
   function stdopts (opts) {
     opts = opts || {}
@@ -194,6 +256,7 @@ module.exports = function (db, opts) {
     return pull(
       pl.read(feedDB, opts),
       paramap(function (key, cb) {
+        if(key.sync) return cb(key)
         db.get(key, function (err, msg) {
           if (err) cb(err)
           else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
@@ -227,9 +290,11 @@ module.exports = function (db, opts) {
         gte:  [id, seq],
         lte:  [id, MAX_INT],
         live: live,
-        keys: false
+        keys: false,
+        sync: opts && opts.sync
       }),
       paramap(function (key, cb) {
+        if(key.sync) return cb(null, key)
         db.get(key, function (err, msg) {
           if (err) cb(err)
           else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
@@ -251,11 +316,12 @@ module.exports = function (db, opts) {
   db.createFeed = function (keys) {
     if(!keys)
       keys = opts.keys.generate()
-    return Feed(db, keys, opts)
+    return createFeed(db, keys, opts)
   }
 
   db.createLatestLookupStream = function () {
     return paramap(function (id, cb) {
+      if(id.sync) return cb(null, id)
       return lastDB.get(id, function (err, seq) {
         cb(null, {id: id, sequence: err ? 0 : seq})
       })
@@ -276,11 +342,12 @@ module.exports = function (db, opts) {
     opts = stdopts(opts)
     var live = opts.live || opts.tail
     var _opts = {
-      gt : opts.gt || 0, live: live || false
+      gt : opts.gt || 0
     }
-    return pull(
+    var old = pull(
       pl.read(logDB, _opts),
       paramap(function (data, cb) {
+        if(data.sync) return cb(null, data)
         var key = data.value
         var seq = data.key
         db.get(key, function (err, value) {
@@ -289,6 +356,10 @@ module.exports = function (db, opts) {
         })
       })
     )
+    if(!live) return old
+
+    return cat([old, pull.values([{sync: true}]), pl.live(db)])
+
   }
 
   var HI = undefined, LO = null
@@ -296,18 +367,19 @@ module.exports = function (db, opts) {
   db.messagesByType = function (opts) {
     if(!opts)
       throw new Error('must provide {type: string} to messagesByType')
+
     if(isString(opts))
-      opts = {type: opts}    
-    
+      opts = {type: opts}
+
     opts = stdopts(opts)
     var _keys   = opts.keys
     var _values = opts.values
+    opts.values = true
 
     ltgt.toLtgt(opts, opts, function (value) {
       return ['type', opts.type, value]
     }, LO, HI)
 
-    opts.values = true
     return pull(
       pl.read(indexDB, opts),
       paramap(function (data, cb) {
@@ -368,9 +440,11 @@ module.exports = function (db, opts) {
           lte: [type, id || HI, rel || HI, HI],
           live: opts.live,
           reverse: opts.reverse,
-          limit: opts.limit
+          limit: opts.limit,
+          sync: opts.sync
         }),
         pull.map(function (op) {
+          if(op.sync) return op
           return {
             source: op.key[back ? 3 : 1], dest: op.key[back ? 1 : 3],
             rel: op.key[2], message: op.key[5]

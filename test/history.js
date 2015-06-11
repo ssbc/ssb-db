@@ -29,7 +29,7 @@ function sort (ary) {
 
 module.exports = function (opts) {
 
-  var create = require('../message')(opts)
+  var create = require('ssb-feed/message')(opts)
 
   function createDB(name) {
     return SSB(sublevel(level(name, {

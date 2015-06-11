@@ -3,6 +3,8 @@ var sublevel  = require('level-sublevel/bytewise')
 var pull      = require('pull-stream')
 var ecc       = require('eccjs')
 var tape      = require('tape')
+var createFeed = require('ssb-feed')
+var ssbKeys   = require('ssb-keys')
 
 var SSB       = require('../')
 //var u         = require('../util')
@@ -20,7 +22,7 @@ function rand (n) {
 
 module.exports = function (opts) {
 
-  var create = require('../message')(opts)
+  var create = require('ssb-feed/message')(opts)
 
   function createDB(name) {
     return SSB(sublevel(level(name, {
@@ -63,7 +65,7 @@ module.exports = function (opts) {
   }
 
   function init2 (ssb, n, cb) {
-    var feed = ssb.createFeed()
+    var feed = createFeed(ssb, ssbKeys.generate(), opts)
     var prev
 
     pull(

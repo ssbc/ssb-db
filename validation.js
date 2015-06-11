@@ -25,12 +25,22 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isInteger (n) {
+  return ~~n === n
+}
+
+function isObject (o) {
+  return o && 'object' === typeof o
+}
+
 module.exports = function (ssb, opts) {
 
   var lastDB = ssb.sublevel('lst')
   var clockDB = ssb.sublevel('clk')
   var hash = opts.hash
   var zeros = undefined
+
+  var isHash = opts.isHash
 
   var verify = opts.keys.verify
   var encode = opts.codec.encode
@@ -39,10 +49,9 @@ module.exports = function (ssb, opts) {
 
   function validateSync (msg, prev, pub) {
     // :TODO: is there a faster way to measure the size of this message?
-    //        would it be better to manually estimate it by crawling the obj structure?
     var asJson = JSON.stringify(msg)
-    if (asJson.length > 1024) {
-      validateSync.reason = 'encoded message must not be larger than 1024 bytes'
+    if (asJson.length > 8192) { // 8kb
+      validateSync.reason = 'encoded message must not be larger than 8192 bytes'
       return false
     }
 
@@ -66,7 +75,7 @@ module.exports = function (ssb, opts) {
         return false
       }
       if(msg.sequence === prev.sequence + 1
-        && msg.timestamp < prev.timestamp) {
+        && msg.timestamp <= prev.timestamp) {
 
           validateSync.reason = 'out of order'
 
@@ -209,12 +218,14 @@ module.exports = function (ssb, opts) {
         }
         else {
           op.cb(new Error(validateSync.reason))
+          drain()
         }
       }
       else if(prev.sequence >= next.sequence) {
         ssb.get(op.key, op.cb)
       } else {
-        return op.cb(new Error('seq too high'))
+        op.cb(new Error('seq too high'))
+        drain()
       }
     }
   }
@@ -234,6 +245,17 @@ module.exports = function (ssb, opts) {
     validateSync: validateSync,
     getLatest: getLatest,
     validate: function (msg, cb) {
+
+
+      if(
+        !isObject(msg) ||
+        !isInteger(msg.sequence) ||
+        !isHash(msg.author) ||
+        !isObject(msg.content)
+      )
+        return cb(new Error('invalid message'))
+
+
 
       var id = msg.author
       var validator = validators[id] =

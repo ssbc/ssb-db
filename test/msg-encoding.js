@@ -3,6 +3,8 @@ var tape     = require('tape')
 var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
+var ssbKeys  = require('ssb-keys')
+var createFeed = require('ssb-feed')
 
 var hexpp    = require('hexpp')
 
@@ -16,7 +18,6 @@ module.exports = function (opts) {
       "text":"test",
       "timezone":300,
       "rebroadcasts":{
-        "rel":"rebroadcasts",
         "msg":
           '1BHEHMwZlikXB3o1mg+fP3GVo/+Xb7p46u3rqt/hHkA=.blake2s',
         "feed":
@@ -65,7 +66,7 @@ module.exports = function (opts) {
       valueEncoding: codec
     }))
     var ssb = require('../')(db, opts)
-    var feed = ssb.createFeed(opts.keys.generate())
+    var feed = createFeed(ssb, opts.generate(), opts)
 
     feed.add(content, function (err, msg) {
       if(err) throw err

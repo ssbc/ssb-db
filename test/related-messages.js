@@ -4,6 +4,9 @@ var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var cont     = require('cont')
+var ssbKeys  = require('ssb-keys')
+var createFeed = require('ssb-feed')
+
 
 module.exports = function (opts) {
 
@@ -13,9 +16,9 @@ module.exports = function (opts) {
 
   var ssb = require('../')(db, opts)
 
-  var alice = ssb.createFeed()
-  var bob = ssb.createFeed()
-  var charlie = ssb.createFeed()
+  var alice = createFeed(ssb, ssbKeys.generate(), opts)
+  var bob   = createFeed(ssb, ssbKeys.generate(), opts)
+  var charlie = createFeed(ssb, ssbKeys.generate(), opts)
 
   tape('simple', function (t) {
 
@@ -29,7 +32,7 @@ module.exports = function (opts) {
       bob.add({
         type: 'post',
         text: 'welcome! 1',
-        'parent': { msg: msg.key, rel: 'replies-to' }
+        'replies-to': { msg: msg.key }
       }, function (err, msg2) {
         if(err) throw err
 
@@ -63,14 +66,14 @@ module.exports = function (opts) {
       bob.add({
         type: 'post',
         text: 'welcome! 2',
-        'parent': { msg: msg.key, rel: 'replies-to' }
+        'replies-to': { msg: msg.key }
       }, function (err, msg2) {
         if(err) throw err
 
         charlie.add({
           type: 'post',
           text: 'hey hey 2',
-          'parent': { msg: msg2.key, rel: 'replies-to' }
+          'replies-to': { msg: msg2.key }
         }, function (err, msg3) {
 
           ssb.relatedMessages({id: msg.key, count: true}, function (err, msgs) {
@@ -112,12 +115,12 @@ module.exports = function (opts) {
         bob.add({
           type: 'post',
           text: 'welcome! 3',
-          'parent': { msg: msg1.key, rel: 'replies-to' }
+          'replies-to': { msg: msg1.key }
         }),
         charlie.add({
           type: 'post',
           text: 'hey hey 3',
-          'parent': { msg: msg1.key, rel: 'replies-to' }
+          'replies-to': { msg: msg1.key }
         })
       ]) (function (err, ary) {
         if(err) throw err
@@ -153,7 +156,7 @@ module.exports = function (opts) {
       bob.add({
         type: 'post',
         text: 'welcome! 4',
-        'parent': { msg: msg.key, rel: 'replies-to' }
+        'replies-to': { msg: msg.key }
       }, function (err, msg2) {
         if(err) throw err
 

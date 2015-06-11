@@ -11,7 +11,7 @@ module.exports = function (opts) {
     valueEncoding: opts.codec
   }))
 
-  var create = require('../message')(opts)
+  var create = require('ssb-feed/message')(opts)
   var ssb = require('../')(db, opts)
 
   var validation = require('../validation')(ssb, opts)
@@ -146,7 +146,7 @@ module.exports = function (opts) {
     var keys = opts.keys.generate()
     var feed = ssb.createFeed(keys)
     var str = ''
-    for (var i=0; i < 101; i++) str += '1234567890'
+    for (var i=0; i < 808; i++) str += '1234567890'
     feed.add({ type: 'msg', value: str }, function (err) {
       if(!err) throw 'too big was allowed'
       console.log(err)

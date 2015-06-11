@@ -5,6 +5,8 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var cont     = require('cont')
 var typewise = require('typewiselite')
+var ssbKeys  = require('ssb-keys')
+var createFeed = require('ssb-feed')
 
 function sort (a) {
   return a.sort(function (a, b) {
@@ -23,13 +25,12 @@ module.exports = function (opts) {
     valueEncoding: opts.codec
   }))
 
-  var create = require('../message')(opts)
+  var create = require('ssb-feed/message')(opts)
   var ssb = require('../')(db, opts)
 
-  var alice = ssb.createFeed()
-  var bob   = ssb.createFeed()
-  var carol = ssb.createFeed()
-
+  var alice = createFeed(ssb, ssbKeys.generate(), opts)
+  var bob   = createFeed(ssb, ssbKeys.generate(), opts)
+  var carol = createFeed(ssb, ssbKeys.generate(), opts)
 
   tape('reply to a message', function (t) {
 
@@ -38,12 +39,12 @@ module.exports = function (opts) {
         console.log(msg)
 
         bob.add('msg', {
-          reply: {msg: msg.key, rel: 'reply'},
+          reply: {msg: msg.key},
           content: 'okay then'
         }, function (err, reply1) {
           console.log(reply1)
           carol.add('msg', {
-            reply: {msg: msg.key, rel: 'reply'},
+            reply: {msg: msg.key},
             content: 'whatever'
           }, function (err, reply2) {
             pull(
@@ -73,7 +74,7 @@ module.exports = function (opts) {
 
     function follow (a, b) {
       return function (cb) {
-        a.add('flw', {feed: b.id, rel: 'follow'}, function (err, msg) {
+        a.add('flw', {follow:{feed: b.id}}, function (err, msg) {
           cb(err, msg.key)
         })
       }

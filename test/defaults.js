@@ -39,7 +39,7 @@ function b(s) {
 module.exports = function (opts) {
 
   var validation = require('../validation')({sublevel: noop}, opts)
-  var create = require('../message')(opts)
+  var create = require('ssb-feed/message')(opts)
 
   var empty = opts.hash(new Buffer(0))
 
