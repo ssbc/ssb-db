@@ -285,13 +285,15 @@ module.exports = function (db, opts) {
       _keys    = opts.keys
       _values  = opts.values
     }
+
     return pull(
       pl.read(clockDB, {
         gte:  [id, seq],
         lte:  [id, MAX_INT],
         live: live,
         keys: false,
-        sync: opts && opts.sync
+        sync: opts && opts.sync,
+        onAbort: opts && opts.onAbort
       }),
       paramap(function (key, cb) {
         if(key.sync) return cb(null, key)
@@ -441,7 +443,8 @@ module.exports = function (db, opts) {
           live: opts.live,
           reverse: opts.reverse,
           limit: opts.limit,
-          sync: opts.sync
+          sync: opts.sync,
+          onAbort: opts.onAbort
         }),
         pull.map(function (op) {
           if(op.sync) return op
