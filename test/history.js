@@ -6,6 +6,8 @@ var pull      = require('pull-stream')
 var ecc       = require('eccjs')
 var tape      = require('tape')
 
+var Abortable = require('pull-abortable')
+
 var SSB       = require('../')
 
 var compare   = require('ltgt').compare
@@ -135,6 +137,33 @@ module.exports = function (opts) {
         t.end()
       })
     )
+  })
+
+  tape('abort live stream', function (t) {
+    var abortable = Abortable(), err = new Error('intentional'), i = 0
+
+    pull(
+      ssb.createHistoryStream({
+        id: id, keys: false, live: true,
+        onAbort: function (_err) {
+          t.equal(_err, err)
+          t.end()
+        }
+      }),
+      abortable,
+      pull.through(function (data) {
+        if(++i == 8)
+          setTimeout(function () {
+            abortable.abort(err)
+          }, 100)
+        console.log(data)
+      }),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 8)
+      })
+    )
+
+
   })
 }
 
