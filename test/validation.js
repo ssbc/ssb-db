@@ -142,13 +142,16 @@ module.exports = function (opts) {
 
   })
 
+  //when an add fails, you should still be able to add another
+  //message if you wait until it has returned.
+
   tape('too big', function (t) {
     var keys = opts.keys.generate()
     var feed = ssb.createFeed(keys)
     var str = ''
     for (var i=0; i < 808; i++) str += '1234567890'
     feed.add({ type: 'msg', value: str }, function (err) {
-      if(!err) throw 'too big was allowed'
+      if(!err) throw new Error('too big was allowed')
       console.log(err)
       feed.add({ type: 'msg', value: 'this ones cool tho' }, function (err) {
         if (err) throw err
