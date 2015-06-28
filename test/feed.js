@@ -53,14 +53,15 @@ module.exports = function (opts) {
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2;
-    feed.add('msg', 'hello there!', function (err, msg1, lasthash) {
+    feed.add('msg', 'hello there!', function (err, msg1) {
       if(err) throw err
+      var lasthash = msg1.key
       function addAgain() {
-        feed.add('msg', 'message '+nDrains, function(err, msgX, hashX) {
+        feed.add('msg', 'message '+nDrains, function(err, msgX) {
           if(err) throw err
-          t.equal(msgX.previous, lasthash)
-          console.log(msgX.previous, lasthash)
-          lasthash = hashX;
+          t.equal(msgX.value.previous, lasthash)
+          console.log(msgX.value.previous, lasthash)
+          lasthash = msgX.key;
           nAdds++;
           console.log('add', nAdds);
           if (err) throw err;
@@ -99,15 +100,16 @@ module.exports = function (opts) {
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2, l = 7
-    feed.add('msg', 'hello there!', function (err, msg1, lasthash) {
+    feed.add('msg', 'hello there!', function (err, msg1) {
       if(err) throw err
 
+      var lasthash = msg1.key
       function addAgain() {
         console.log('ADD')
-        feed.add('msg', 'message '+nDrains, function(err, msgX, hashX) {
-          t.equal(msgX.previous, lasthash)
-          console.log(msgX.previous, lasthash)
-          lasthash = hashX;
+        feed.add('msg', 'message '+nDrains, function(err, msgX) {
+          t.equal(msgX.value.previous, lasthash)
+          console.log(msgX.value.previous, lasthash)
+          lasthash = msgX.key;
           nAdds++;
           console.log('add', nAdds);
           if (err) throw err;
