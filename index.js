@@ -14,7 +14,10 @@ var pdotjson  = require('./package.json')
 var createFeed = require('ssb-feed')
 var cat       = require('pull-cat')
 var mynosql   = require('mynosql')
+var isRef     = require('ssb-ref')
 
+var isFeedId = isRef.isFeedId
+var isHash = isRef.isHash
 //this makes msgpack a valid level codec.
 
 //var u         = require('./util')
@@ -47,8 +50,6 @@ function getVMajor () {
 }
 
 module.exports = function (db, opts) {
-
-  var isHash = opts.isHash
 
   db = mynosql(db)
   var sysDB   = db.sublevel('sys')
@@ -112,7 +113,7 @@ module.exports = function (db, opts) {
     })
 
     mlib.indexLinks(msg.content, function (link, rel) {
-      if(isHash(link.feed)) {
+      if(isFeedId(link.feed)) {
         add({
           key: ['feed', msg.author, rel, link.feed, msg.sequence, id],
           value: link,
@@ -277,7 +278,7 @@ module.exports = function (db, opts) {
 
   db.createHistoryStream = function (id, seq, live) {
     var _keys = true, _values = true
-    if(!isHash(id)) {
+    if(!isFeedId(id)) {
       var opts = stdopts(id)
       id       = opts.id
       seq      = opts.sequence || opts.seq || 0
@@ -398,7 +399,7 @@ module.exports = function (db, opts) {
   function idOpts (fn) {
     return function (hash, rel) {
       //legacy interface.
-      if(isHash(hash))
+      if(isRef(hash))
         return fn({id: hash, rel: rel})
 
       if(!isObject(hash)) throw new Error('must have opts')

@@ -1,7 +1,8 @@
 'use strict';
 
-var deepEqual = require('deep-equal')
-
+var isRef = require('ssb-ref')
+var isHash = isRef.isHash
+var isFeedId = isRef.isFeedId
 var contpara = require('cont').para
 var explain = require('explain-error')
 // make a validation stream?
@@ -40,8 +41,6 @@ module.exports = function (ssb, opts) {
   var hash = opts.hash
   var zeros = undefined
 
-  var isHash = opts.isHash
-
   var verify = opts.keys.verify
   var encode = opts.codec.encode
 
@@ -67,14 +66,14 @@ module.exports = function (ssb, opts) {
     }
 
     if(prev) {
-      if(!deepEqual(msg.previous, hash(encode(prev)))) {
+      if(msg.previous !== hash(encode(prev))) {
 
         validateSync.reason = 'expected previous: '
           + hash(encode(prev)).toString('base64')
 
         return false
       }
-      if(msg.sequence === prev.sequence + 1
+      if(msg.sequence !== prev.sequence + 1
         && msg.timestamp <= prev.timestamp) {
 
           validateSync.reason = 'out of order'
@@ -92,7 +91,8 @@ module.exports = function (ssb, opts) {
       }
     }
 
-    if(!deepEqual(msg.author, hash(pub.public || pub))) {
+    var _pub = pub.public || pub
+    if(!(msg.author === _pub || msg.author === hash(_pub))) {
 
       validateSync.reason = 'expected different author:'+
         hash(pub.public || pub).toString('base64') +
@@ -250,7 +250,7 @@ module.exports = function (ssb, opts) {
       if(
         !isObject(msg) ||
         !isInteger(msg.sequence) ||
-        !isHash(msg.author) ||
+        !isFeedId(msg.author) ||
         !isObject(msg.content)
       )
         return cb(new Error('invalid message'))
