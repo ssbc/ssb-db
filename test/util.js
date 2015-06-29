@@ -1,7 +1,6 @@
 var level     = require('level-test')()
 var sublevel  = require('level-sublevel/bytewise')
 var pull      = require('pull-stream')
-var ecc       = require('eccjs')
 var tape      = require('tape')
 var createFeed = require('ssb-feed')
 var ssbKeys   = require('ssb-keys')
