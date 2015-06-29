@@ -68,13 +68,13 @@ module.exports = function (opts) {
         if(err) throw err
         console.log(ary)
         t.deepEqual(ary, [
-          {id: id, sequence: 8}
+          {id: keys.id, sequence: 8}
         ])
         t.end()
       }))
     })
 
-    id = opts.hash(keys.public)
+    id = keys.id //opts.hash(keys.public)
   })
 
   tape('since', function (t) {
@@ -93,14 +93,12 @@ module.exports = function (opts) {
       pull(ssb.latest(), pull.collect(function (err, ary) {
         if(err) throw err
         t.deepEqual(sort(ary), sort([
-          {id: id, sequence: 8},
-          {id: id2, sequence: 5}
+          {id: keys.id, sequence: 8},
+          {id: keys2.id, sequence: 5}
         ]))
         t.end()
       }))
     })
-
-    id2 = opts.hash(keys2.public)
 
   })
 
