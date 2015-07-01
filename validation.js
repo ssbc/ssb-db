@@ -54,15 +54,18 @@ module.exports = function (ssb, opts) {
       return false
     }
 
-    var type = msg.content.type
-    if(!isString(type)) {
-      validateSync.reason = 'type property must be string'
-      return false
-    }
+    //allow encrypted messages, where content is a base64 string.
+    if(!isString(msg.content)) {
+      var type = msg.content.type
+      if(!isString(type)) {
+        validateSync.reason = 'type property must be string'
+        return false
+      }
 
-    if(52 < type.length || type.length < 3) {
-      validateSync.reason = 'type must be 3 < length <= 52, but was:' + type.length
-      return false
+      if(52 < type.length || type.length < 3) {
+        validateSync.reason = 'type must be 3 < length <= 52, but was:' + type.length
+        return false
+      }
     }
 
     if(prev) {
@@ -251,7 +254,7 @@ module.exports = function (ssb, opts) {
         !isObject(msg) ||
         !isInteger(msg.sequence) ||
         !isFeedId(msg.author) ||
-        !isObject(msg.content)
+        !(isObject(msg.content) || isString(msg.content))
       )
         return cb(new Error('invalid message'))
 

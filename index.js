@@ -15,6 +15,7 @@ var createFeed = require('ssb-feed')
 var cat       = require('pull-cat')
 var mynosql   = require('mynosql')
 var isRef     = require('ssb-ref')
+var ssbKeys   = require('ssb-keys')
 
 var isFeedId = isRef.isFeedId
 var isHash = isRef.isHash
@@ -49,7 +50,7 @@ function getVMajor () {
   return (version.split('.')[0])|0
 }
 
-module.exports = function (db, opts) {
+module.exports = function (db, opts, keys) {
 
   db = mynosql(db)
   var sysDB   = db.sublevel('sys')
@@ -107,12 +108,19 @@ module.exports = function (db, opts) {
   })
 
   function indexMsg (add, localtime, id, msg) {
-    add({
-      key: ['type', msg.content.type.toString().substring(0, 32), localtime],
-      value: id, type: 'put', prefix: indexDB
-    })
+    var content = (keys && isString(msg.content))
+      ? ssbKeys.unbox(msg.content, keys)
+      : msg.content
 
-    mlib.indexLinks(msg.content, function (link, rel) {
+    if(!content) return
+
+    if(isString(content.type))
+      add({
+        key: ['type', content.type.toString().substring(0, 32), localtime],
+        value: id, type: 'put', prefix: indexDB
+      })
+
+    mlib.indexLinks(content, function (link, rel) {
       if(isFeedId(link.feed)) {
         add({
           key: ['feed', msg.author, rel, link.feed, msg.sequence, id],
