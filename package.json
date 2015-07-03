@@ -24,7 +24,7 @@
     "pull-stream": "~2.24.1",
     "pull-switch": "~2.0.0",
     "ssb-feed": "~0.2.0",
-    "ssb-keys": "^2.0.1",
+    "ssb-keys": "^2.1.0",
     "ssb-msgs": "~3.1.2",
     "ssb-ref": "~0.0.0"
   },
