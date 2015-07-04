@@ -369,7 +369,9 @@ module.exports = function (db, opts, keys) {
       if(err) return cb(err)
       clockDB.get([id, v], function (err, hash) {
         if(err) return cb(err)
-        db.get(hash, cb)
+        db.get(hash, function (err, msg) {
+          cb(err, {key: hash, value: msg})
+        })
       })
     })
   }
