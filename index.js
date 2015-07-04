@@ -262,6 +262,7 @@ module.exports = function (db, opts, keys) {
     var _values = opts.values
     opts.keys = false
     opts.values = true
+
     return pull(
       pl.read(feedDB, opts),
       paramap(function (key, cb) {
@@ -313,6 +314,30 @@ module.exports = function (db, opts, keys) {
       })
     )
   }
+
+
+  db.createUserStream = function (opts) {
+    opts = stdopts(opts)
+    ltgt.toLtgt(opts, opts, function (value) {
+      return [opts.id, value]
+    }, LO, HI)
+    var _keys = opts.keys
+    var _values = opts.values
+
+    opts.keys = false
+    opts.values = true
+    return pull(
+      pl.read(clockDB, opts),
+      paramap(function (key, cb) {
+        if(key.sync) return cb(key)
+        db.get(key, function (err, msg) {
+          if (err) cb(err)
+          else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
+        })
+      })
+    )
+  }
+
 
   //writeStream - used in replication.
   db.createWriteStream = function (cb) {

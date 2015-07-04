@@ -114,6 +114,20 @@ module.exports = function (opts) {
     )
   })
 
+  tape('user stream', function (t) {
+    pull(
+      ssb.createUserStream({id: id, gt: 3, lte: 7, reverse: true}),
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 4)
+        t.equal(ary[3].value.sequence, 4)
+        t.equal(ary[2].value.sequence, 5)
+        t.equal(ary[1].value.sequence, 6)
+        t.equal(ary[0].value.sequence, 7)
+        t.end()
+      })
+    )
+  })
+
   tape('keys only', function (t) {
     pull(
       ssb.createHistoryStream({ id: id, values: false }),
