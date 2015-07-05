@@ -13,18 +13,18 @@ module.exports = function (opts) {
 
   var ssb = require('../')(db, opts)
 
-  var create = require('ssb-feed/message')(ssbKeys)
+  var create = require('ssb-feed/util').create
 
   tape('write-stream', function (t) {
     var keys = ssbKeys.generate()
 
-    var init = create(keys, 'init', {public: keys.public}, null)
+    var prev
+    var init = prev = create(keys, 'init', {public: keys.public}, null)
     var q = [init]
 
     var l = 5
     while(l--) {
-      var prev = q[q.length - 1]
-      q.push(create(keys, 'msg', {count: l}, prev))
+      q.push(prev = create(keys, 'msg', {count: l}, prev))
     }
 
     console.log(q)
@@ -44,18 +44,17 @@ module.exports = function (opts) {
 
   })
 
-
   tape('write-stream, overwrite', function (t) {
 
     var keys = ssbKeys.generate()
 
-    var init = create(keys, 'init', {public: keys.public}, null)
+    var prev
+    var init = prev = create(keys, 'init', {public: keys.public}, null)
     var q = [init]
 
     var l = 5
     while(l--) {
-      var prev = q[q.length - 1]
-      q.push(create(keys, 'msg', {count: l}, prev))
+      q.push(prev = create(keys, 'msg', {count: l}, prev))
     }
 
     q.push(q[3])

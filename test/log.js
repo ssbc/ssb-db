@@ -25,11 +25,9 @@ module.exports = function (opts) {
         ssb.createLogStream(),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          t.assert(!!ary[1].key)
-          t.assert(!!ary[1].value)
           console.log(ary)
           t.end()
         })
@@ -83,7 +81,7 @@ module.exports = function (opts) {
         ssb.createLogStream({ gt: 0 }),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           console.log(ary)
           t.end()
         })
@@ -108,9 +106,8 @@ module.exports = function (opts) {
         ssb.createLogStream({ values: false }),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           t.equal(typeof ary[0], 'string')
-          t.equal(typeof ary[1], 'string')
           console.log(ary)
           t.end()
         })
@@ -135,9 +132,8 @@ module.exports = function (opts) {
         ssb.createLogStream({ keys: false }),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           t.equal(typeof ary[0].content.type, 'string')
-          t.equal(typeof ary[1].content.type, 'string')
           console.log(ary)
           t.end()
         })

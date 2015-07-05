@@ -21,7 +21,7 @@ function rand (n) {
 
 module.exports = function (opts) {
 
-  var create = require('ssb-feed/message')(opts)
+  var create = require('ssb-feed/util').create
 
   function createDB(name) {
     return SSB(sublevel(level(name, {
@@ -33,7 +33,7 @@ module.exports = function (opts) {
 
   function load (ssb, keys, n, cb) {
     var prev
-    ssb.getLatest(opts.hash(keys.public), function (err, prev) {
+    ssb.getLatest(keys.public, function (err, prev) {
       if(err) return cb(err)
       pull(
         pull.values(rand(n)),
@@ -46,23 +46,23 @@ module.exports = function (opts) {
     })
   }
 
-  function init (ssb, n, cb) {
-    var keys = opts.keys.generate()
-    var prev
-
-    ssb.add(prev = create(keys, 'init', keys.public), function () {
-      pull(
-        pull.values(rand(n)),
-        pull.asyncMap(function (r, cb) {
-          ssb.add(prev =
-            create(keys, 'msg', ''+r, prev), cb)
-        }),
-        pull.drain(null, cb)
-      )
-    })
-      return keys
-  }
-
+//  function init (ssb, n, cb) {
+//    var keys = opts.keys.generate()
+//    var prev
+//
+//    ssb.add(prev = create(keys, 'init', keys.public), function () {
+//      pull(
+//        pull.values(rand(n)),
+//        pull.asyncMap(function (r, cb) {
+//          ssb.add(prev =
+//            create(keys, 'msg', ''+r, prev), cb)
+//        }),
+//        pull.drain(null, cb)
+//      )
+//    })
+//      return keys
+//  }
+//
   function init2 (ssb, n, cb) {
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
     var prev
@@ -93,7 +93,7 @@ module.exports = function (opts) {
   }
 
   return {
-    createDB: createDB, init: init, init2: init2,
+    createDB: createDB,  init2: init2,
     compareDbs: compareDbs, load: load
   }
 

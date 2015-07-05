@@ -16,8 +16,9 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    console.log(opts)
-    var feed = createFeed(ssb, opts.generate(), opts)
+//    var feed = createFeed(ssb, opts.generate(), opts)
+
+    var feed = ssb.createFeed(opts.generate())
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -28,11 +29,9 @@ module.exports = function (opts) {
         ssb.createFeedStream(),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          t.assert(!!ary[1].key)
-          t.assert(!!ary[1].value)
           console.log(ary)
           t.end()
         })
@@ -150,9 +149,8 @@ module.exports = function (opts) {
         ssb.createFeedStream({ values: false }),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           t.ok(typeof ary[0] == 'string')
-          t.ok(typeof ary[1] == 'string')
           console.log(ary)
           t.end()
         })
@@ -174,9 +172,8 @@ module.exports = function (opts) {
         ssb.createFeedStream({ keys: false }),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           t.ok(typeof ary[0].content.type == 'string')
-          t.ok(typeof ary[1].content.type == 'string')
           console.log(ary)
           t.end()
         })

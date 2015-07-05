@@ -77,7 +77,7 @@ module.exports = function (opts) {
         ssb.createFeedStream(),
         pull.collect(function (err, ary) {
           if(err) throw err
-          t.equal(ary.length, 2)
+          t.equal(ary.length, 1)
           console.log(ary)
           t.end()
         })
