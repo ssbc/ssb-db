@@ -17,6 +17,8 @@ var mynosql   = require('mynosql')
 var isRef     = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 
+var Validator = require('ssb-feed/validator')
+
 var isFeedId = isRef.isFeedId
 var isHash = isRef.isHash
 //this makes msgpack a valid level codec.
@@ -67,7 +69,7 @@ module.exports = function (db, opts, keys) {
 
   db.opts = opts
 
-  var validation = require('./validation')(db, opts)
+  db.add = Validator(db)
 
   db.pre(function (op, add, _batch) {
     var msg = op.value
@@ -178,22 +180,6 @@ module.exports = function (db, opts, keys) {
       })
     }
     return cb ? cont(cb) : cont
-  }
-
-  //msg must be an already valid message, with signature.
-  //since creating this involves some state (it must increment
-  //the sequence and point to the previous message)
-  //it's recommended to append messages via a Feed object
-  //which will manage that for you. (see feed.js)
-
-  db.add = function (msg, cb) {
-    //check that msg is valid (follows from end of database)
-    //then insert into database.
-    var n = 1
-    validation.validate(msg, function (err, msg, hash) {
-      if(--n) throw new Error('called twice')
-      cb && cb(err, { key: hash, value: msg })
-    })
   }
 
   db.needsRebuild = function (cb) {
@@ -343,7 +329,10 @@ module.exports = function (db, opts, keys) {
   db.createWriteStream = function (cb) {
     return pull(
       paramap(function (data, cb) {
-        db.add(data, cb)
+        db.add(data, function (err, msg) {
+          db.emit('invalid', err, msg)
+          cb()
+        })
       }),
       pull.drain(null, cb)
     )
