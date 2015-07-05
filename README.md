@@ -9,6 +9,14 @@ and the good parts of [semver](http://semver-ftw.org)
 v1 does not mean stability, it just means there has been a breaking change
 since v0.
 
+### Documentation/wiki/FAQ
+
+[documentation is here](https://github.com/ssbc/ssb-docs)
+We have shifted documentation from a github wiki to a repo,
+which means you can ask make pull requests, get notifications,
+ask questions in issues. If you have questions or get confused
+please post an issue!
+
 ## example
 
 
