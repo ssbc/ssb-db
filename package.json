@@ -23,10 +23,10 @@
     "pull-paramap": "~1.1.3",
     "pull-stream": "~2.24.1",
     "pull-switch": "~2.0.0",
-    "ssb-feed": "~0.2.0",
-    "ssb-keys": "^2.1.0",
-    "ssb-msgs": "~3.1.2",
-    "ssb-ref": "~0.0.0"
+    "ssb-feed": "^1.0.0",
+    "ssb-keys": "^3.0.0",
+    "ssb-msgs": "^4.0.0",
+    "ssb-ref": "^1.0.0"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",
