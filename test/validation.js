@@ -11,39 +11,10 @@ module.exports = function (opts) {
     valueEncoding: opts.codec
   }))
 
-  var create = require('ssb-feed/message')(opts)
+  var create = require('ssb-feed/util').create
   var ssb = require('../')(db, opts)
 
-  var validation = require('../validation')(ssb, opts)
-
-  tape('getLastest - empty', function (t) {
-    var keys = opts.keys.generate()
-    var id = opts.hash(keys.public)
-    validation.getLatest(id, function (err, obj) {
-      t.deepEqual({
-        key: null, value: null, type: 'put',
-        public: null, ready: true
-      }, obj)
-      t.end()
-    })
-  })
-
-  tape('single', function (t) {
-    var keys = opts.keys.generate()
-    var id = opts.hash(keys.public)
-    var msg = create(keys, null, {type: 'init', public: keys.public})
-
-    validation.validate(msg, function (err) {
-      if(err) throw err
-      validation.getLatest(msg.author, function (err, obj) {
-        t.deepEqual({
-          key: opts.hash(opts.codec.encode(msg)), value: msg, type: 'put',
-          public: keys.public, ready: true
-        }, obj)
-        t.end()
-      })
-    })
-  })
+  var validate = require('ssb-feed/validator')(ssb)
 
   tape('simple', function (t) {
     var keys = opts.keys.generate()
@@ -55,9 +26,12 @@ module.exports = function (opts) {
       prev = create(keys, 'msg', 'hello2', prev)
     ]
 
+    console.log(messages)
+
     var _msg = null
     messages.forEach(function (msg) {
-      validation.validate(msg, function (err) {
+      validate(msg, function (err) {
+        console.log('HELLO', opts.hash('HELLLO'))
         if(_msg)
           t.deepEqual(opts.hash(opts.codec.encode(_msg)), msg.previous)
         _msg = msg
@@ -150,7 +124,7 @@ module.exports = function (opts) {
     var feed = ssb.createFeed(keys)
     var str = ''
     for (var i=0; i < 808; i++) str += '1234567890'
-    feed.add({ type: 'msg', value: str }, function (err) {
+    feed.add({ type: 'msg', value: str }, function (err, msg) {
       if(!err) throw new Error('too big was allowed')
       console.log(err)
       feed.add({ type: 'msg', value: 'this ones cool tho' }, function (err) {

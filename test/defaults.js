@@ -35,11 +35,11 @@ function noop () {}
 function b(s) {
   return s
 }
+var create = require('ssb-feed/util').create
 
 module.exports = function (opts) {
 
-  var validation = require('../validation')({sublevel: noop}, opts)
-  var create = require('ssb-feed/message')(opts)
+//  var validation = require('../validation')({sublevel: noop}, opts)
 
   var empty = opts.hash(new Buffer(0))
 
@@ -76,65 +76,6 @@ module.exports = function (opts) {
     t.end()
   })
 
-  tape('validate 1 message', function (t) {
-
-    var keys = opts.keys.generate()
-
-    var msg = create(keys,
-      b('init'),   //type
-      keys.public, //message
-      null         //previous
-    )
-
-    var msg2 = create(keys, b('msg'), 'hello', msg)
-
-    console.log(msg)
-    console.log(msg2)
-
-    //should this throw?
-    t.ok(validation.validateSync(msg, null, keys), 'initial message')
-    t.equal(validation.validateSync.reason, '')
-    t.end()
-  })
-
-  tape('validate multiple messages', function (t) {
-
-    var keys = opts.keys.generate()
-
-    var msg = create(keys,
-      b('init'),      //type
-      keys.public, //message
-      null         //previous
-    )
-
-    var msg2 = create(keys, b('msg'), 'hello', msg)
-
-    console.log(msg)
-    console.log(msg2)
-
-    //should this throw?
-    t.ok(validation.validateSync(msg, null, keys), 'initial message')
-    t.ok(validation.validateSync(msg2, msg, keys), 'second message')
-
-    for(var i = 0; i < 10; i++) {
-      var _msg
-      _msg = clone(msg2)
-      _msg.signature = flipRandomBit(_msg.signature)
-      t.notOk(validation.validateSync(_msg, msg, keys))
-
-      _msg = clone(msg2)
-      _msg.previous = flipRandomBit(_msg.previous)
-      _msg = create.sign(_msg, keys)
-      t.notOk(validation.validateSync(_msg, msg, keys))
-
-      _msg = clone(msg2)
-      _msg.author = flipRandomBit(_msg.author)
-      _msg = create.sign(_msg, keys)
-      t.notOk(validation.validateSync(_msg, msg, keys))
-    }
-
-    t.end()
-  })
 
 }
 

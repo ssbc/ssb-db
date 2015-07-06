@@ -7,7 +7,6 @@ var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
 
 module.exports = function (opts) {
-  var create = require('ssb-feed/message')(opts)
 
   var db = sublevel(level('test-ssb-feed', {
     valueEncoding: opts.codec
