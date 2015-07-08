@@ -456,58 +456,14 @@ module.exports = function (db, opts, keys) {
     )
   })
 
-  function index (type) {
-    var back = type[0] === '_'
-    return idOpts(function (opts) {
-      var id = opts.id || opts.hash
-      var rel = opts.rel
-      return pull(
-        pl.read(indexDB, {
-          gte: [type, id || LO, rel || LO, LO],
-          lte: [type, id || HI, rel || HI, HI],
-          live: opts.live,
-          reverse: opts.reverse,
-          limit: opts.limit,
-          sync: opts.sync,
-          onAbort: opts.onAbort
-        }),
-        pull.map(function (op) {
-          if(op.sync) return op
-          return {
-            source: op.key[back ? 3 : 1], dest: op.key[back ? 1 : 3],
-            rel: op.key[2], message: op.key[5],
-          }
-        }),
-        !opts.values ? pull.through() :
-        paramap(function (op, cb) {
-          db.get(op.message, function (err, msg) {
-            if(err) return cb(err)
-            op.key = op.message
-            op.value = msg
-            cb(null, op)
-          })
-        })
-      )
-    })
-  }
-
-  db.messagesLinkedToFeed =
-  db.feedsLinkedToFeed = index('_feed')
-
-  db.messagesLinkedFromFeed =
-  db.feedsLinkedFromFeed = index('feed')
-
-  db.feedsLinkedToExternal = index('_ext')
-
-  db.externalsLinkedFromFeed = index('ext')
-
   db.links = function (opts) {
     var type, rel, back
     var src = opts.source || null
     var dst = opts.dest || null
     var rel = opts.rel
+    var type = opts.type || 'feed'
     if(dst && !src) back = true
-    type = back ? '_feed' : 'feed'
+    type = back ? '_'+type : type
 
     return pull(
       pl.read(indexDB, {
@@ -536,6 +492,26 @@ module.exports = function (db, opts, keys) {
   }
 
 
+  function links(type, back) {
+    return idOpts(function (opts) {
+      if(back)
+        opts.dest = opts.id || opts.hash
+      else
+        opts.source = opts.id || opts.hash
+      opts.type = type
+      return pull(db.links(opts), pull.through(function (op) {
+        op.message = op.key; delete op.key
+      }))
+    })
+  }
+
+  db.messagesLinkedToFeed =
+  db.feedsLinkedToFeed = links('feed', true)
+  db.messagesLinkedFromFeed =
+  db.feedsLinkedFromFeed = links('feed', false)
+  db.feedsLinkedToExternal = links('ext', true)
+  db.externalsLinkedFromFeed = links('ext', false)
+
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
     if(isString(opts)) opts = {key: opts}
@@ -554,7 +530,7 @@ module.exports = function (db, opts, keys) {
     function related (msg) {
       n++
       all(db.messagesLinkedToMessage({
-        id: msg.key, rel: opts.rel, keys: true
+        id: msg.key, rel: opts.rel, keys: true, type: 'msg'
       })) (function (err, ary) {
         if(ary && ary.length) {
           ary.sort(function (a, b) {
