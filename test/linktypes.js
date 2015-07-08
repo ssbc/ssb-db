@@ -39,6 +39,7 @@ module.exports = function (opts) {
 
   function sortTS (ary) {
     return ary.sort(function (a, b) {
+      console.log(a, b)
       return (
           a.timestamp - b.timestamp
         || typewise(a.key, b.key)
@@ -51,7 +52,6 @@ module.exports = function (opts) {
 
     alice.add('msg', 'hello world', function (err, msg) {
       if(err) throw err
-      console.log(msg)
       bob.add('msg', {
         reply: {msg: msg.key},
         text: 'okay then'
@@ -65,16 +65,22 @@ module.exports = function (opts) {
 
           cont.series([
             function (cb) {
-              all(ssb.messagesLinkedToMessage(msg.key, 'reply'))
-                (function (err, ary) {
-                  if(err) throw err
-
-                  t.deepEqual(sortTS(ary), sortTS([reply1.value, reply2.value]))
-                  cb()
+              all(ssb.links({
+                dest: msg.key, type: 'msg', rel: 'reply',
+                meta: false, keys: false, values: true
+              })) (function (err, ary) {
+                if(err) throw err
+                console.log(ary)
+                console.log(reply1, reply2)
+                t.deepEqual(sortTS(ary), sortTS([reply1.value, reply2.value]))
+                cb()
               })
             },
             function (cb) {
-              all(ssb.messagesLinkedToMessage({id: msg.key, rel: 'reply', keys: true}))
+              all(ssb.links({
+                dest: msg.key, rel: 'reply', type: 'msg',
+                keys: true, meta: false, values: true
+              }))
                 (function (err, ary) {
                   t.deepEqual(sortTS(ary), sortTS([reply1, reply2]))
 
@@ -104,12 +110,9 @@ module.exports = function (opts) {
             if(err) throw err; t.end()
           })
         })
-
-        })
       })
     })
-
-    var msg
+  })
 
   tape('follow another user', function (t) {
 
@@ -129,10 +132,10 @@ module.exports = function (opts) {
     }) (function (err, f) {
 
       cont.para({
-        alice:  all(ssb.feedsLinkedFromFeed(alice.id, 'follow')),
-        bob:    all(ssb.feedsLinkedFromFeed(bob.id, 'follow')),
-        _alice: all(ssb.feedsLinkedToFeed(alice.id, 'follow')),
-        _carol: all(ssb.feedsLinkedToFeed(carol.id, 'follow'))
+        alice:  all(ssb.links({source: alice.id, type:'feed', rel:'follow'})),
+        bob:    all(ssb.links({source: bob.id, type: 'feed', rel: 'follow'})),
+        _alice: all(ssb.links({dest: alice.id, rel:'follow', type: 'feed'})),
+        _carol: all(ssb.links({dest: carol.id, rel: 'follow', type: 'feed'}))
       }) (function (err, r) {
 
         console.log({
@@ -143,62 +146,27 @@ module.exports = function (opts) {
         })
 
         t.deepEqual(sort(r.alice), sort([
-          {source: alice.id, rel: 'follow', dest: bob.id, message: f.ab},
-          {source: alice.id, rel: 'follow', dest: carol.id, message: f.ac}
+          {source: alice.id, rel: 'follow', dest: bob.id, key: f.ab},
+          {source: alice.id, rel: 'follow', dest: carol.id, key: f.ac}
         ]))
 
         t.deepEqual(sort(r.bob), sort([
-          {source: bob.id, rel: 'follow', dest: alice.id, message: f.ba},
-          {source: bob.id, rel: 'follow', dest: carol.id, message: f.bc}
+          {source: bob.id, rel: 'follow', dest: alice.id, key: f.ba},
+          {source: bob.id, rel: 'follow', dest: carol.id, key: f.bc}
         ]))
 
         t.deepEqual(sort(r._alice), sort([
-          {source: bob.id, rel: 'follow', dest: alice.id, message: f.ba}
+          {source: bob.id, rel: 'follow', dest: alice.id, key: f.ba}
         ]))
 
         t.deepEqual(sort(r._carol), sort([
-          {source: alice.id, rel: 'follow', dest: carol.id, message: f.ac},
-          {source: bob.id, rel: 'follow', dest: carol.id, message: f.bc}
+          {source: alice.id, rel: 'follow', dest: carol.id, key: f.ac},
+          {source: bob.id, rel: 'follow', dest: carol.id, key: f.bc}
         ]), 'carol is followed by alice and bob')
 
         t.end()
       })
     })
-  })
-
-  tape('follow another user', function (t) {
-
-    function follow (a, b) {
-      return function (cb) {
-        a.add('flw', {follow:{feed: b.id}}, function (err, msg) {
-          cb(err, msg.key)
-        })
-      }
-    }
-
-//    cont.para({
-//      ab: follow(alice, bob),
-//      ac: follow(alice, carol),
-//      ba: follow(bob, alice),
-//      bc: follow(bob, carol),
-//    }) (function (err, f) {
-//
-      console.log({
-        alice: alice.id,
-        bob: bob.id,
-        carol: carol.id
-      })
-      cont.para({
-        alice:  all(ssb.links({source: alice.id, rel: 'follow'})),
-        bob:    all(ssb.links({source: bob.id, rel: 'follow'})),
-        _alice: all(ssb.links({dest: alice.id, rel: 'follow'})),
-        _carol: all(ssb.links({dest: carol.id, rel: 'follow'}))
-      }) (function (err, ary) {
-        if(err) throw err
-        console.log(ary)
-        t.end()
-      })
-//    })
   })
 
 }
