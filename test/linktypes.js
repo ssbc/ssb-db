@@ -35,32 +35,29 @@ module.exports = function (opts) {
 
     alice.add('msg', 'hello world', function (err, msg) {
 
-        console.log(msg)
+      console.log(msg)
 
-        bob.add('msg', {
+      bob.add('msg', {
+        reply: {msg: msg.key},
+        content: 'okay then'
+      }, function (err, reply1) {
+        console.log(reply1)
+        carol.add('msg', {
           reply: {msg: msg.key},
-          content: 'okay then'
-        }, function (err, reply1) {
-          console.log(reply1)
-          carol.add('msg', {
-            reply: {msg: msg.key},
-            content: 'whatever'
-          }, function (err, reply2) {
-            pull(
-              ssb.messagesLinkedToMessage(msg.key, 'reply'),
-              pull.collect(function (err, ary) {
-                ary.sort(function (a, b) { return a.timestamp - b.timestamp })
+          content: 'whatever'
+        }, function (err, reply2) {
+          pull(
+            ssb.messagesLinkedToMessage(msg.key, 'reply'),
+            pull.collect(function (err, ary) {
+              ary.sort(function (a, b) { return a.timestamp - b.timestamp })
 
-                t.deepEqual(ary, [reply1.value, reply2.value])
-                t.end()
-              })
-            )
-          })
-
+              t.deepEqual(ary, [reply1.value, reply2.value])
+              t.end()
+            })
+          )
         })
-
+      })
     })
-
   })
 
   var all = function (stream) {
@@ -78,8 +75,6 @@ module.exports = function (opts) {
         })
       }
     }
-
-
 
     cont.para({
       ab: follow(alice, bob),
@@ -120,8 +115,44 @@ module.exports = function (opts) {
       })
     })
   })
+  tape('follow another user', function (t) {
+
+    function follow (a, b) {
+      return function (cb) {
+        a.add('flw', {follow:{feed: b.id}}, function (err, msg) {
+          cb(err, msg.key)
+        })
+      }
+    }
+
+//    cont.para({
+//      ab: follow(alice, bob),
+//      ac: follow(alice, carol),
+//      ba: follow(bob, alice),
+//      bc: follow(bob, carol),
+//    }) (function (err, f) {
+//
+      console.log({
+        alice: alice.id,
+        bob: bob.id,
+        carol: carol.id
+      })
+      cont.para({
+        alice:  all(ssb.links({source: alice.id, rel: 'follow'})),
+        bob:    all(ssb.links({source: bob.id, rel: 'follow'})),
+        _alice: all(ssb.links({dest: alice.id, rel: 'follow'})),
+        _carol: all(ssb.links({dest: carol.id, rel: 'follow'}))
+      }) (function (err, ary) {
+        if(err) throw err
+        console.log(ary)
+        t.end()
+      })
+//    })
+  })
 
 }
+
+
 
 if(!module.parent)
   module.exports(require('../defaults'))
