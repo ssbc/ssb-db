@@ -27,44 +27,89 @@ module.exports = function (opts) {
 
   var ssb = require('../')(db, opts)
 
-  var alice = createFeed(ssb, ssbKeys.generate(), opts)
-  var bob   = createFeed(ssb, ssbKeys.generate(), opts)
-  var carol = createFeed(ssb, ssbKeys.generate(), opts)
-
-  tape('reply to a message', function (t) {
-
-    alice.add('msg', 'hello world', function (err, msg) {
-
-      console.log(msg)
-
-      bob.add('msg', {
-        reply: {msg: msg.key},
-        content: 'okay then'
-      }, function (err, reply1) {
-        console.log(reply1)
-        carol.add('msg', {
-          reply: {msg: msg.key},
-          content: 'whatever'
-        }, function (err, reply2) {
-          pull(
-            ssb.messagesLinkedToMessage(msg.key, 'reply'),
-            pull.collect(function (err, ary) {
-              ary.sort(function (a, b) { return a.timestamp - b.timestamp })
-
-              t.deepEqual(ary, [reply1.value, reply2.value])
-              t.end()
-            })
-          )
-        })
-      })
-    })
-  })
-
   var all = function (stream) {
     return function (cb) {
       pull(stream, pull.collect(cb))
     }
   }
+
+  var alice = createFeed(ssb, ssbKeys.generate(), opts)
+  var bob   = createFeed(ssb, ssbKeys.generate(), opts)
+  var carol = createFeed(ssb, ssbKeys.generate(), opts)
+
+  function sortTS (ary) {
+    return ary.sort(function (a, b) {
+      return (
+          a.timestamp - b.timestamp
+        || typewise(a.key, b.key)
+        || typewise(a.author, b.author)
+      )
+    })
+  }
+
+  tape('reply to a message', function (t) {
+
+    alice.add('msg', 'hello world', function (err, msg) {
+      if(err) throw err
+      console.log(msg)
+      bob.add('msg', {
+        reply: {msg: msg.key},
+        text: 'okay then'
+      }, function (err, reply1) {
+        if(err) throw err
+        carol.add('msg', {
+          reply: {msg: msg.key},
+          text: 'whatever'
+        }, function (err, reply2) {
+          if(err) throw err
+
+          cont.series([
+            function (cb) {
+              all(ssb.messagesLinkedToMessage(msg.key, 'reply'))
+                (function (err, ary) {
+                  if(err) throw err
+
+                  t.deepEqual(sortTS(ary), sortTS([reply1.value, reply2.value]))
+                  cb()
+              })
+            },
+            function (cb) {
+              all(ssb.messagesLinkedToMessage({id: msg.key, rel: 'reply', keys: true}))
+                (function (err, ary) {
+                  t.deepEqual(sortTS(ary), sortTS([reply1, reply2]))
+
+                  cb()
+                })
+            },
+            function (cb) {
+              all(ssb.links({dest: msg.key, rel: 'reply', type: 'msg', values: true}))
+                (function (err, ary) {
+                  if(err) throw err
+                  t.deepEqual(sort(ary), sort([
+                    {
+                      source: reply1.key, rel: 'reply',
+                      dest: msg.key, key: reply1.key,
+                      value: reply1.value
+                    },
+                    {
+                      source: reply2.key, rel: 'reply',
+                      dest: msg.key, key: reply2.key,
+                      value: reply2.value
+                    }
+                  ]))
+                  cb()
+                })
+            }
+          ]) (function (err) {
+            if(err) throw err; t.end()
+          })
+        })
+
+        })
+      })
+    })
+
+    var msg
 
   tape('follow another user', function (t) {
 
@@ -90,7 +135,12 @@ module.exports = function (opts) {
         _carol: all(ssb.feedsLinkedToFeed(carol.id, 'follow'))
       }) (function (err, r) {
 
-        console.log(r)
+        console.log({
+          alice: alice.id,
+          bob: bob.id,
+          carol: carol.id,
+
+        })
 
         t.deepEqual(sort(r.alice), sort([
           {source: alice.id, rel: 'follow', dest: bob.id, message: f.ab},
@@ -115,6 +165,7 @@ module.exports = function (opts) {
       })
     })
   })
+
   tape('follow another user', function (t) {
 
     function follow (a, b) {
