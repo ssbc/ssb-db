@@ -475,8 +475,17 @@ module.exports = function (db, opts, keys) {
           if(op.sync) return op
           return {
             source: op.key[back ? 3 : 1], dest: op.key[back ? 1 : 3],
-            rel: op.key[2], message: op.key[5]
+            rel: op.key[2], message: op.key[5],
           }
+        }),
+        !opts.values ? pull.through() :
+        paramap(function (op, cb) {
+          db.get(op.message, function (err, msg) {
+            if(err) return cb(err)
+            op.key = op.message
+            op.value = msg
+            cb(null, op)
+          })
         })
       )
     })
@@ -491,6 +500,41 @@ module.exports = function (db, opts, keys) {
   db.feedsLinkedToExternal = index('_ext')
 
   db.externalsLinkedFromFeed = index('ext')
+
+  db.links = function (opts) {
+    var type, rel, back
+    var src = opts.source || null
+    var dst = opts.dest || null
+    var rel = opts.rel
+    if(dst && !src) back = true
+    type = back ? '_feed' : 'feed'
+
+    return pull(
+      pl.read(indexDB, {
+      gte: [type, (!back?src:dst) || LO, rel || LO, (!back?dst:src) || LO],
+      lte: [type, (!back?src:dst) || HI, rel || HI, (!back?dst:src) || HI],
+      live: opts.live, reverse: opts.reverse
+      }),
+      pull.map(function (op) {
+        return {
+          source: op.key[back?3:1],
+          rel: op.key[2],
+          dest: op.key[back?1:3],
+          key: op.key[5]
+        }
+      }),
+      !opts.values ? pull.through() :
+      paramap(function (op, cb) {
+        db.get(op.message, function (err, msg) {
+          if(err) return cb(err)
+          op.key = op.message
+          op.value = msg
+          cb(null, op)
+        })
+      })
+    )
+  }
+
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
