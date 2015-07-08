@@ -137,8 +137,11 @@ module.exports = function (db, opts, keys) {
       }
 
       if(isHash(link.msg)) {
-        // do not need forward index here, because
-        // it's cheap to just read the message.
+        // we don't need a forward index, because
+        // you can just parse the message easily.
+
+        // index from the linked message back to the
+        // linking message.
         add({
           key: ['_msg', link.msg, rel, id], value: link,
           type: 'put', prefix: indexDB
@@ -146,10 +149,12 @@ module.exports = function (db, opts, keys) {
       }
 
       //TODO, add ext links
+      //hmm, these should really 
 
       if(isHash(link.ext)) {
-        // do not need forward index here, because
-        // it's cheap to just read the message.
+        //this is ACTUALLY ext from message!
+        //not ext from feed! TODO are there tests
+        //IS THIS USED?
         add({ //feed to file.
           key: ['ext', id, rel, link.ext], value: link,
           type: 'put', prefix: indexDB
@@ -463,12 +468,12 @@ module.exports = function (db, opts, keys) {
     var rel = opts.rel
     var type = opts.type || 'feed'
     if(dst && !src) back = true
-    type = back ? '_'+type : type
+    var _type = back ? '_'+type : type
 
     return pull(
       pl.read(indexDB, {
-      gte: [type, (!back?src:dst) || LO, rel || LO, (!back?dst:src) || LO],
-      lte: [type, (!back?src:dst) || HI, rel || HI, (!back?dst:src) || HI],
+      gte: [_type, (!back?src:dst) || LO, rel || LO, (!back?dst:src) || LO],
+      lte: [_type, (!back?src:dst) || HI, rel || HI, (!back?dst:src) || HI],
       live: opts.live, reverse: opts.reverse
       }),
       pull.map(function (op) {
@@ -476,14 +481,13 @@ module.exports = function (db, opts, keys) {
           source: op.key[back?3:1],
           rel: op.key[2],
           dest: op.key[back?1:3],
-          key: op.key[5]
+          key: op.key['feed'===type?5:3]
         }
       }),
       !opts.values ? pull.through() :
       paramap(function (op, cb) {
-        db.get(op.message, function (err, msg) {
+        db.get(op.key, function (err, msg) {
           if(err) return cb(err)
-          op.key = op.message
           op.value = msg
           cb(null, op)
         })
