@@ -437,29 +437,21 @@ module.exports = function (db, opts, keys) {
     }
   }
 
-  db.messagesLinkedToMessage = idOpts(function (opts) {
-    var hash = opts.id || opts.hash
-    var rel = opts.rel
-    return pull(
-      pl.read(indexDB, {
-        gte: ['_msg', hash, rel || LO, LO],
-        lte: ['_msg', hash, rel || HI, HI],
-        live: opts.live,
-        reverse: opts.reverse,
-        limit: opts.limit
-      }),
-      paramap(function (op, cb) {
-        if(!op.key[3]) return cb()
-        db.get(op.key[3], function (err, msg) {
-          if (opts.keys && msg)
-            cb(null, { key: op.key[3], value: msg })
-          else
-            cb(null, msg)
-        })
-      }),
-      pull.filter(Boolean)
-    )
-  })
+  function format(opts, op, key, value) {
+    var meta = opts.meta !== false  //default: true
+    var keys = opts.keys !== false  //default: true
+    var vals = opts.values === true //default: false
+    if(!meta) return (
+          keys && vals  ? {key: op.key, value: value}
+        : keys          ? op.key
+                        : value
+      )
+    else {
+      if(vals)  op.value = value
+      if(!keys) delete op.key
+      return op
+    }
+  }
 
   db.links = function (opts) {
     var type, rel, back
@@ -484,19 +476,21 @@ module.exports = function (db, opts, keys) {
           key: op.key['feed'===type?5:3]
         }
       }),
-      !opts.values ? pull.through() :
-      paramap(function (op, cb) {
-        db.get(op.key, function (err, msg) {
-          if(err) return cb(err)
-          op.value = msg
-          cb(null, op)
+      ! opts.values
+      ? pull.map(function (op) {
+          return format(opts, op, op.key, null)
         })
+      : paramap(function (op, cb) {
+          db.get(op.key, function (err, msg) {
+            if(err) return cb(err)
+            cb(null, format(opts, op, op.key, msg))
+          })
       })
     )
   }
 
 
-  function links(type, back) {
+  function links(type, back, message) {
     return idOpts(function (opts) {
       if(back)
         opts.dest = opts.id || opts.hash
@@ -504,7 +498,9 @@ module.exports = function (db, opts, keys) {
         opts.source = opts.id || opts.hash
       opts.type = type
       return pull(db.links(opts), pull.through(function (op) {
-        op.message = op.key; delete op.key
+        if(message !== false) {
+          op.message = op.key; delete op.key
+        }
       }))
     })
   }
@@ -515,6 +511,19 @@ module.exports = function (db, opts, keys) {
   db.feedsLinkedFromFeed = links('feed', false)
   db.feedsLinkedToExternal = links('ext', true)
   db.externalsLinkedFromFeed = links('ext', false)
+
+  var ml2m = links('msg', true, false)
+  db.messagesLinkedToMessage = 
+    idOpts(function (opts) {
+      opts.meta = opts.meta === true
+      opts.keys = opts.keys === true
+      opts.values = opts.values !== false
+      if(!opts.values&&!oyts.meta&&!opts.keys)
+        throw new Error('makes no sense to return stream without resultts'
+          + 'set at least one of {keys, values, meta} to true')
+
+      return ml2m(opts)
+    })
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
@@ -533,9 +542,8 @@ module.exports = function (db, opts, keys) {
 
     function related (msg) {
       n++
-      all(db.messagesLinkedToMessage({
-        id: msg.key, rel: opts.rel, keys: true, type: 'msg'
-      })) (function (err, ary) {
+      all(db.links({dest: msg.key, rel: opts.rel, keys: true, values:true, meta: false, type:'msg'}))
+      (function (err, ary) {
         if(ary && ary.length) {
           ary.sort(function (a, b) {
             return compare(a.value.timestamp, b.value.timestamp) || compare(a.key, b.key)
