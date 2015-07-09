@@ -53,7 +53,6 @@ function getVMajor () {
 }
 
 module.exports = function (db, opts, keys) {
-
   db = mynosql(db)
   var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
@@ -110,6 +109,12 @@ module.exports = function (db, opts, keys) {
   })
 
   function indexMsg (add, localtime, id, msg) {
+    //DECRYPT the message, if possible
+    //to enable indexing. If external apis
+    //are not provided that may access indexes
+    //then this will not leak information.
+    //otherwise, we may need to figure something out.
+
     var content = (keys && isString(msg.content))
       ? ssbKeys.unbox(msg.content, keys)
       : msg.content
