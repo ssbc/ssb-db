@@ -60,8 +60,12 @@ module.exports = function (opts) {
           }, function (err, r2) {
             reply2 = r2
             pull(
-              ssb.messagesLinkedToMessage(msg.key, 'reply'),
+              ssb.links({
+                dest: msg.key, rel:'reply', type: 'msg',
+                meta: false, keys: false, values: true
+              }),
               pull.collect(function (err, ary) {
+                console.log(ary)
                 ary.sort(function (a, b) { return a.timestamp - b.timestamp })
 
                 t.deepEqual(ary, [reply1.value, reply2.value])
@@ -91,7 +95,10 @@ module.exports = function (opts) {
       ssb.rebuildIndex(function (err) {
         t.assert(!err)
         pull(
-          ssb.messagesLinkedToMessage(msg.key, 'reply'),
+          ssb.links({
+            dest: msg.key, rel:'reply', type: 'msg',
+            meta: false, keys: false, values: true
+          }),
           pull.collect(function (err, ary) {
             ary.sort(function (a, b) { return a.timestamp - b.timestamp })
 
