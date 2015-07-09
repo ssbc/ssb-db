@@ -48,7 +48,55 @@ module.exports = function (opts) {
 
   })
 
+  tape('test indexes on end-to-end messages', function (t) {
 
+
+    feed.add(ssbKeys.box({
+      type: 'secret', okay: true
+      }, [alice.public, bob.public]
+    ), function (err, msg) {
+      feed.add(ssbKeys.box({
+          type: 'secret', post: 'wow', reply: {msg: msg.key}
+        }, [alice.public, bob.public]
+      ), function (err, msg2) {
+
+        pull(
+          ssb.links({dest: msg.key, type: 'msg', keys: false}),
+          pull.collect(function (err, ary) {
+            console.log(ary)
+            t.deepEqual([{
+              source: msg2.key, rel: 'reply',
+              dest: msg.key
+            }], ary)
+            t.end()
+          })
+        )
+      })
+    })
+
+  })
+
+  tape('related-messages', function (t) {
+    feed.add(ssbKeys.box({
+      type: 'secret', okay: true
+      }, [alice.public, bob.public]
+    ), function (err, msg) {
+      feed.add(ssbKeys.box({
+          type: 'secret', post: 'wow', reply: {msg: msg.key}
+        }, [alice.public, bob.public]
+      ), function (err, msg2) {
+        ssb.relatedMessages({key: msg.key, rel: 'reply'},
+          function (err, msgs) {
+            console.log(msgs)
+            msg.related = [msg2]
+            t.deepEqual(msgs, msg)
+            t.end()
+            
+          })
+      })
+    })
+
+  })
 
 }
 
