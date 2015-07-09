@@ -425,22 +425,12 @@ module.exports = function (db, opts, keys) {
     )
   }
 
-  function idOpts (fn) {
-    return function (hash, rel) {
-      //legacy interface.
-      if(isRef(hash))
-        return fn({id: hash, rel: rel})
-
-      if(!isObject(hash)) throw new Error('must have opts')
-
-      return fn(hash)
-    }
-  }
-
   function format(opts, op, key, value) {
     var meta = opts.meta !== false  //default: true
     var keys = opts.keys !== false  //default: true
     var vals = opts.values === true //default: false
+    if(!meta&&!keys&&!vals)
+      throw new Error('a stream without any values does not make sense')
     if(!meta) return (
           keys && vals  ? {key: op.key, value: value}
         : keys          ? op.key
@@ -454,6 +444,13 @@ module.exports = function (db, opts, keys) {
   }
 
   db.links = function (opts) {
+    if(!opts) throw new Error('opts *must* be provided')
+    opts.meta = opts.meta !== false //default: true
+    opts.keys = opts.keys !== false //default: true
+    if(!opts.values&&!opts.meta&&!opts.keys)
+      throw new Error('makes no sense to return stream without resultts'
+        + 'set at least one of {keys, values, meta} to true')
+
     var type, rel, back
     var src = opts.source || null
     var dst = opts.dest || null
@@ -488,42 +485,6 @@ module.exports = function (db, opts, keys) {
       })
     )
   }
-
-
-  function links(type, back, message) {
-    return idOpts(function (opts) {
-      if(back)
-        opts.dest = opts.id || opts.hash
-      else
-        opts.source = opts.id || opts.hash
-      opts.type = type
-      return pull(db.links(opts), pull.through(function (op) {
-        if(message !== false) {
-          op.message = op.key; delete op.key
-        }
-      }))
-    })
-  }
-
-  db.messagesLinkedToFeed =
-  db.feedsLinkedToFeed = links('feed', true)
-  db.messagesLinkedFromFeed =
-  db.feedsLinkedFromFeed = links('feed', false)
-  db.feedsLinkedToExternal = links('ext', true)
-  db.externalsLinkedFromFeed = links('ext', false)
-
-  var ml2m = links('msg', true, false)
-  db.messagesLinkedToMessage = 
-    idOpts(function (opts) {
-      opts.meta = opts.meta === true
-      opts.keys = opts.keys === true
-      opts.values = opts.values !== false
-      if(!opts.values&&!oyts.meta&&!opts.keys)
-        throw new Error('makes no sense to return stream without resultts'
-          + 'set at least one of {keys, values, meta} to true')
-
-      return ml2m(opts)
-    })
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
