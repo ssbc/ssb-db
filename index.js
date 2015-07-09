@@ -256,13 +256,7 @@ module.exports = function (db, opts, keys) {
 
     return pull(
       pl.read(feedDB, opts),
-      paramap(function (key, cb) {
-        if(key.sync) return cb(key)
-        db.get(key, function (err, msg) {
-          if (err) cb(err)
-          else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
-        })
-      })
+      lookup(_keys, _values)
     )
   }
 
@@ -276,6 +270,17 @@ module.exports = function (db, opts, keys) {
     )
   }
 
+  function lookup(keys, values) {
+    return paramap(function (key, cb) {
+      if(key.sync) return cb(null, key)
+      if(!values) return cb(null, key)
+      db.get(key, function (err, msg) {
+        if (err) cb(err)
+        else cb(null, msgFmt(keys, values, { key: key, value: msg }))
+      })
+    })
+  }
+
   db.createHistoryStream = function (id, seq, live) {
     var _keys = true, _values = true
     if(!isFeedId(id)) {
@@ -283,8 +288,8 @@ module.exports = function (db, opts, keys) {
       id       = opts.id
       seq      = opts.sequence || opts.seq || 0
       live     = !!opts.live
-      _keys    = opts.keys
-      _values  = opts.values
+      _keys    = opts.keys !== false
+      _values  = opts.values !== false
     }
 
     return pull(
@@ -296,13 +301,7 @@ module.exports = function (db, opts, keys) {
         sync: opts && opts.sync,
         onAbort: opts && opts.onAbort
       }),
-      paramap(function (key, cb) {
-        if(key.sync) return cb(null, key)
-        db.get(key, function (err, msg) {
-          if (err) cb(err)
-          else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
-        })
-      })
+      lookup(_keys, _values)
     )
   }
 
@@ -319,13 +318,7 @@ module.exports = function (db, opts, keys) {
     opts.values = true
     return pull(
       pl.read(clockDB, opts),
-      paramap(function (key, cb) {
-        if(key.sync) return cb(key)
-        db.get(key, function (err, msg) {
-          if (err) cb(err)
-          else cb(null, msgFmt(_keys, _values, { key: key, value: msg }))
-        })
-      })
+      lookup(_keys, _values)
     )
   }
 
