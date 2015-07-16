@@ -118,7 +118,7 @@ module.exports = function (opts) {
 
     function follow (a, b) {
       return function (cb) {
-        a.add('flw', {follow:{feed: b.id}}, function (err, msg) {
+        a.add('follow', {follow:{feed: b.id}}, function (err, msg) {
           cb(err, msg.key)
         })
       }
@@ -167,6 +167,71 @@ module.exports = function (opts) {
         t.end()
       })
     })
+  })
+
+  tape('check for 1:1 relationships', function (t) {
+    function follows (a, b) {
+      return function (cb) {
+        pull(
+          ssb.links({
+            source: a,
+            dest: b,
+            type: 'feed',
+            rel: 'follow'
+          }),
+          pull.collect(function (_, ary) {
+            cb(null, ary.length > 0)
+          })
+        )
+      }
+    }
+
+    cont.para({
+      alice_bob:   follows(alice.id, bob  .id),
+      alice_carol: follows(alice.id, carol.id),
+      bob_alice:   follows(bob  .id, alice.id),
+      bob_carol:   follows(bob  .id, carol.id),
+      carol_alice: follows(carol.id, alice.id),
+      carol_bob:   follows(carol.id, bob  .id)
+    })
+    (function (err, result) {
+      if(err) throw err
+      t.deepEqual(result, {
+        alice_bob: true,
+        alice_carol: true,
+        bob_alice: true,
+        bob_carol: true,
+        carol_alice: false,
+        carol_bob: false,
+      })
+      t.end()
+    })
+
+  })
+
+  tape('scan links with unknown rel', function (t) {
+    alice.add({
+      type: 'poke',
+      poke: {feed: bob.id}
+    }, function (err) {
+      all(ssb.links({
+        source: alice.id, dest: bob.id, type: 'feed',
+        values: true
+      }))
+      (function (err, ary) {
+        if(err) throw err
+        t.equal(ary.length, 2)
+        t.deepEqual(ary.map(function (e) {
+          return e.value.content
+        }), [
+          {type: 'follow', follow: {feed: bob.id}},
+          {type: 'poke', poke: {feed: bob.id}},
+        ])
+        t.end()
+
+      })
+    })
+
   })
 
 }
