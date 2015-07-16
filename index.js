@@ -448,6 +448,9 @@ module.exports = function (db, opts, keys) {
     if(!opts.values&&!opts.meta&&!opts.keys)
       throw new Error('makes no sense to return stream without resultts'
         + 'set at least one of {keys, values, meta} to true')
+    if(!/^(?:msg|feed|ext)$/.test(opts.type))
+      throw new Error('must pass a type, feed|msg|ext')
+
 
     var type, rel, back
     var src = opts.source || null
@@ -459,9 +462,9 @@ module.exports = function (db, opts, keys) {
 
     return pull(
       pl.read(indexDB, {
-      gte: [_type, (!back?src:dst) || LO, rel || LO, (!back?dst:src) || LO],
-      lte: [_type, (!back?src:dst) || HI, rel || HI, (!back?dst:src) || HI],
-      live: opts.live, reverse: opts.reverse
+        gte: [_type, (!back?src:dst) || LO, rel || LO, (!back?dst:src) || LO, LO],
+        lte: [_type, (!back?src:dst) || HI, rel || HI, (!back?dst:src) || HI, HI],
+        live: opts.live, reverse: opts.reverse
       }),
       pull.map(function (op) {
         return {
@@ -471,6 +474,11 @@ module.exports = function (db, opts, keys) {
           key: op.key['feed'===type?5:3]
         }
       }),
+      //handle case where source and dest are known but not rel.
+      //this will scan all links from the source. not so efficient.
+      src&&dst&&!rel ? pull.filter(function (d) {
+        return d.source === src && d.dest === dst
+      }): null,
       ! opts.values
       ? pull.map(function (op) {
           return format(opts, op, op.key, null)
