@@ -56,7 +56,7 @@ module.exports = function (opts) {
       }, [alice.public, bob.public]
     ), function (err, msg) {
       feed.add(ssbKeys.box({
-          type: 'secret', post: 'wow', reply: {msg: msg.key}
+          type: 'secret', post: 'wow', reply: msg.key
         }, [alice.public, bob.public]
       ), function (err, msg2) {
 
@@ -82,7 +82,7 @@ module.exports = function (opts) {
       }, [alice.public, bob.public]
     ), function (err, msg) {
       feed.add(ssbKeys.box({
-          type: 'secret', post: 'wow', reply: {msg: msg.key}
+          type: 'secret', post: 'wow', reply: msg.key
         }, [alice.public, bob.public]
       ), function (err, msg2) {
         ssb.relatedMessages({key: msg.key, rel: 'reply'},

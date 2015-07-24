@@ -49,13 +49,13 @@ module.exports = function (opts) {
         console.log(msg)
 
         bob.add('msg', {
-          reply: {msg: msg.key},
+          reply: msg.key,
           content: 'okay then'
         }, function (err, r1) {
           reply1 = r1
           console.log(reply1)
           carol.add('msg', {
-            reply: {msg: msg.key},
+            reply: msg.key,
             content: 'whatever'
           }, function (err, r2) {
             reply2 = r2

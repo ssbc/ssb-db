@@ -53,12 +53,12 @@ module.exports = function (opts) {
     alice.add('msg', 'hello world', function (err, msg) {
       if(err) throw err
       bob.add('msg', {
-        reply: {msg: msg.key},
+        reply: msg.key,
         text: 'okay then'
       }, function (err, reply1) {
         if(err) throw err
         carol.add('msg', {
-          reply: {msg: msg.key},
+          reply: msg.key,
           text: 'whatever'
         }, function (err, reply2) {
           if(err) throw err
@@ -118,7 +118,7 @@ module.exports = function (opts) {
 
     function follow (a, b) {
       return function (cb) {
-        a.add('follow', {follow:{feed: b.id}}, function (err, msg) {
+        a.add('follow', {follow: b.id}, function (err, msg) {
           cb(err, msg.key)
         })
       }
@@ -212,7 +212,7 @@ module.exports = function (opts) {
   tape('scan links with unknown rel', function (t) {
     alice.add({
       type: 'poke',
-      poke: {feed: bob.id}
+      poke: bob.id
     }, function (err) {
       all(ssb.links({
         source: alice.id, dest: bob.id, type: 'feed',
@@ -224,8 +224,8 @@ module.exports = function (opts) {
         t.deepEqual(ary.map(function (e) {
           return e.value.content
         }), [
-          {type: 'follow', follow: {feed: bob.id}},
-          {type: 'poke', poke: {feed: bob.id}},
+          {type: 'follow', follow: bob.id},
+          {type: 'poke', poke: bob.id},
         ])
         t.end()
 

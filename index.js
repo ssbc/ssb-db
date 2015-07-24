@@ -14,14 +14,14 @@ var pdotjson  = require('./package.json')
 var createFeed = require('ssb-feed')
 var cat       = require('pull-cat')
 var mynosql   = require('mynosql')
-var isRef     = require('ssb-ref')
+var ssbref    = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 
 var Validator = require('ssb-feed/validator')
 
-var isFeedId = isRef.isFeedId
-var isHash = isRef.isHash
-//this makes msgpack a valid level codec.
+var isFeedId = ssbref.isFeedId
+var isMsgId  = ssbref.isMsgId
+var isBlobId = ssbref.isBlobId
 
 //var u         = require('./util')
 
@@ -127,50 +127,24 @@ module.exports = function (db, opts, keys) {
         value: id, type: 'put', prefix: indexDB
       })
 
-    mlib.indexLinks(content, function (link, rel) {
-      if(isFeedId(link.feed)) {
-        add({
-          key: ['feed', msg.author, rel, link.feed, msg.sequence, id],
-          value: link,
-          type: 'put', prefix: indexDB
-        })
-        add({
-          key: ['_feed', link.feed, rel, msg.author, msg.sequence, id],
-          value: link,
-          type: 'put', prefix: indexDB
-        })
-      }
-
-      if(isHash(link.msg)) {
-        // we don't need a forward index, because
-        // you can just parse the message easily.
-
-        // index from the linked message back to the
-        // linking message.
-        add({
-          key: ['_msg', link.msg, rel, id], value: link,
-          type: 'put', prefix: indexDB
-        })
-      }
-
-      //TODO, add ext links
-      //hmm, these should really 
-
-      if(isHash(link.ext)) {
-        //this is ACTUALLY ext from message!
-        //not ext from feed! TODO are there tests
-        //IS THIS USED?
-        add({ //feed to file.
-          key: ['ext', id, rel, link.ext], value: link,
-          type: 'put', prefix: indexDB
-        })
-        add({ //file from feed.
-          key: ['_ext', link.ext, rel, id], value: link,
-          type: 'put', prefix: indexDB
-        })
-
-      }
-
+    mlib.indexLinks(content, function (obj, rel) {
+      add({
+        key: ['feed', msg.author, rel, obj.link, msg.timestamp, id],
+        value: obj,
+        type: 'put', prefix: indexDB
+      })
+      add({
+        key: ['_feed', obj.link, rel, msg.author, msg.timestamp, id],
+        value: obj,
+        type: 'put', prefix: indexDB
+      })
+      // we don't need a forward msg index, because
+      // you can just parse the message easily.
+      add({
+        key: ['_msg', obj.link, rel, id, msg.timestamp],
+        value: obj,
+        type: 'put', prefix: indexDB
+      })
     })
   }
 
@@ -448,17 +422,19 @@ module.exports = function (db, opts, keys) {
     if(!opts.values&&!opts.meta&&!opts.keys)
       throw new Error('makes no sense to return stream without resultts'
         + 'set at least one of {keys, values, meta} to true')
-    if(!/^(?:msg|feed|ext)$/.test(opts.type))
-      throw new Error('must pass a type, feed|msg|ext')
-
+    if(!/^(?:msg|feed)$/.test(opts.type))
+      throw new Error('must pass a type, feed|msg')
 
     var type, rel, back
     var src = opts.source || null
     var dst = opts.dest || null
     var rel = opts.rel
-    var type = opts.type || 'feed'
+    var type = opts.type || 'msg'
     if(dst && !src) back = true
     var _type = back ? '_'+type : type
+
+    if (type == 'msg' && !back)
+      throw new Error('doesnt make sense to pass src for type: msg - just look in the message itself')
 
     return pull(
       pl.read(indexDB, {

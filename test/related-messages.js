@@ -32,7 +32,7 @@ module.exports = function (opts) {
       bob.add({
         type: 'post',
         text: 'welcome! 1',
-        'replies-to': { msg: msg.key }
+        'replies-to': msg.key
       }, function (err, msg2) {
         if(err) throw err
 
@@ -66,14 +66,14 @@ module.exports = function (opts) {
       bob.add({
         type: 'post',
         text: 'welcome! 2',
-        'replies-to': { msg: msg.key }
+        'replies-to': msg.key
       }, function (err, msg2) {
         if(err) throw err
 
         charlie.add({
           type: 'post',
           text: 'hey hey 2',
-          'replies-to': { msg: msg2.key }
+          'replies-to': msg2.key
         }, function (err, msg3) {
 
           ssb.relatedMessages({id: msg.key, count: true}, function (err, msgs) {
@@ -115,12 +115,12 @@ module.exports = function (opts) {
         bob.add({
           type: 'post',
           text: 'welcome! 3',
-          'replies-to': { msg: msg1.key }
+          'replies-to': msg1.key
         }),
         charlie.add({
           type: 'post',
           text: 'hey hey 3',
-          'replies-to': { msg: msg1.key }
+          'replies-to': msg1.key
         })
       ]) (function (err, ary) {
         if(err) throw err
@@ -156,7 +156,7 @@ module.exports = function (opts) {
       bob.add({
         type: 'post',
         text: 'welcome! 4',
-        'replies-to': { msg: msg.key }
+        'replies-to': msg.key
       }, function (err, msg2) {
         if(err) throw err
 
