@@ -129,19 +129,12 @@ module.exports = function (db, opts, keys) {
 
     mlib.indexLinks(content, function (obj, rel) {
       add({
-        key: ['feed', msg.author, rel, obj.link, msg.timestamp, id],
+        key: ['link', msg.author, rel, obj.link, msg.timestamp, id],
         value: obj,
         type: 'put', prefix: indexDB
       })
       add({
-        key: ['_feed', obj.link, rel, msg.author, msg.timestamp, id],
-        value: obj,
-        type: 'put', prefix: indexDB
-      })
-      // we don't need a forward msg index, because
-      // you can just parse the message easily.
-      add({
-        key: ['_msg', obj.link, rel, id, msg.timestamp],
+        key: ['_link', obj.link, rel, msg.author, msg.timestamp, id],
         value: obj,
         type: 'put', prefix: indexDB
       })
@@ -431,25 +424,45 @@ module.exports = function (db, opts, keys) {
     var rel = opts.rel
     var type = opts.type || 'msg'
     if(dst && !src) back = true
-    var _type = back ? '_'+type : type
 
-    if (type == 'msg' && !back)
-      throw new Error('doesnt make sense to pass src for type: msg - just look in the message itself')
+    var index = back ? '_link' : 'link'
+    var gte = [index, LO, rel || LO, LO, LO, LO]
+    var lte = [index, HI, rel || HI, HI, HI, HI]
+    if (back) {
+      gte[1] = dst || LO
+      lte[1] = dst || HI
+    } else {
+      if (type == 'feed') {
+        gte[1] = src || LO
+        lte[1] = src || HI
+      } else {
+        gte[5] = src || LO
+        lte[5] = src || HI
+      }
+      gte[3] = dst || LO
+      lte[3] = dst || HI
+    }
 
     return pull(
-      pl.read(indexDB, {
-        gte: [_type, (!back?src:dst) || LO, rel || LO, (!back?dst:src) || LO, LO],
-        lte: [_type, (!back?src:dst) || HI, rel || HI, (!back?dst:src) || HI, HI],
-        live: opts.live, reverse: opts.reverse
-      }),
+      pl.read(indexDB, { gte: gte, lte: lte, live: opts.live, reverse: opts.reverse }),
       pull.map(function (op) {
+        var i = (type == 'feed') ? 3 : 5
         return {
-          source: op.key[back?3:1],
+          source: op.key[back?i:1],
           rel: op.key[2],
-          dest: op.key[back?1:3],
-          key: op.key['feed'===type?5:3]
+          dest: op.key[back?1:i],
+          key: op.key[5]
         }
       }),
+      // only return links to feeds if type == feed
+      (type == 'feed') ?
+        pull.filter(function (d) {
+          if (!src && d.source.charAt(0) != '@')
+            return false
+          if (!dst && d.dest.charAt(0) != '@')
+            return false
+          return true
+        }) : null,
       //handle case where source and dest are known but not rel.
       //this will scan all links from the source. not so efficient.
       src&&dst&&!rel ? pull.filter(function (d) {

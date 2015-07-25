@@ -132,10 +132,10 @@ module.exports = function (opts) {
     }) (function (err, f) {
 
       cont.para({
-        alice:  all(ssb.links({source: alice.id, type:'feed', rel:'follow'})),
-        bob:    all(ssb.links({source: bob.id, type: 'feed', rel: 'follow'})),
-        _alice: all(ssb.links({dest: alice.id, rel:'follow', type: 'feed'})),
-        _carol: all(ssb.links({dest: carol.id, rel: 'follow', type: 'feed'}))
+        alice:  all(ssb.links({source: alice.id, type: 'feed'})),
+        bob:    all(ssb.links({source: bob.id, type: 'feed'})),
+        _alice: all(ssb.links({dest: alice.id, type: 'feed'})),
+        _carol: all(ssb.links({dest: carol.id, type: 'feed'}))
       }) (function (err, r) {
 
         console.log({
