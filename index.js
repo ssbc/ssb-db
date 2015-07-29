@@ -129,12 +129,12 @@ module.exports = function (db, opts, keys) {
 
     mlib.indexLinks(content, function (obj, rel) {
       add({
-        key: ['link', msg.author, rel, obj.link, msg.timestamp, id],
+        key: ['link', msg.author, rel, obj.link, msg.sequence, id],
         value: obj,
         type: 'put', prefix: indexDB
       })
       add({
-        key: ['_link', obj.link, rel, msg.author, msg.timestamp, id],
+        key: ['_link', obj.link, rel, msg.author, msg.sequence, id],
         value: obj,
         type: 'put', prefix: indexDB
       })
@@ -415,14 +415,24 @@ module.exports = function (db, opts, keys) {
     if(!opts.values&&!opts.meta&&!opts.keys)
       throw new Error('makes no sense to return stream without resultts'
         + 'set at least one of {keys, values, meta} to true')
-    if(!/^(?:msg|feed)$/.test(opts.type))
-      throw new Error('must pass a type, feed|msg')
+
+    function tofilter (v) {
+      if (v == '%' || v == 'msg') return 'msg'
+      if (v == '@' || v == 'feed') return 'feed'
+      if (v == '&' || v == 'blob') return 'blob'
+      return null
+    }
+    function tolink (v) {
+      return (ssbref.isLink(v)) ? v : null
+    }
 
     var type, rel, back
-    var src = opts.source || null
-    var dst = opts.dest || null
+    var src = tolink(opts.source)
+    var dst = tolink(opts.dest)
+    var srcfilter = tofilter(opts.source)
+    var dstfilter = tofilter(opts.dest)
     var rel = opts.rel
-    var type = opts.type || 'msg'
+
     if(dst && !src) back = true
 
     var index = back ? '_link' : 'link'
@@ -431,36 +441,68 @@ module.exports = function (db, opts, keys) {
     if (back) {
       gte[1] = dst || LO
       lte[1] = dst || HI
+      if (srcfilter) {
+        if (srcfilter == 'feed') {
+          gte[3] = '@!'
+          lte[3] = '@~'
+        } else {
+          gte[5] = '%!'
+          lte[5] = '%~'          
+        }
+      }
     } else {
-      if (type == 'feed') {
+      if (ssbref.type(src) == 'feed') {
         gte[1] = src || LO
         lte[1] = src || HI
       } else {
         gte[5] = src || LO
         lte[5] = src || HI
       }
-      gte[3] = dst || LO
-      lte[3] = dst || HI
+      if (dstfilter) {
+        if (dstfilter == 'msg') {
+          gte[3] = '%!'
+          lte[3] = '%~'        
+        } else if (dstfilter == 'feed') {
+          gte[3] = '@!'
+          lte[3] = '@~'
+        } else {
+          gte[3] = '&!'
+          lte[3] = '&~'          
+        }
+      } else {
+        gte[3] = dst || LO
+        lte[3] = dst || HI
+      }
     }
+
+    console.log({ back: back, src: src, srcfilter: srcfilter, dst: dst, dstfilter: dstfilter, gte: gte, lte: lte })
 
     return pull(
       pl.read(indexDB, { gte: gte, lte: lte, live: opts.live, reverse: opts.reverse }),
       pull.map(function (op) {
-        var i = (type == 'feed') ? 3 : 5
+        var srci, dsti
+        if (back) {
+          srci = (srcfilter == 'feed') ? 3 : 5
+          dsti = 1
+        } else {
+          srci = (ssbref.type(src) == 'feed') ? 1 : 5
+          dsti = 3
+        }
         return {
-          source: op.key[back?i:1],
+          source: op.key[srci],
           rel: op.key[2],
-          dest: op.key[back?1:i],
+          dest: op.key[dsti],
           key: op.key[5]
         }
       }),
-      // only return links to feeds if type == feed
-      (type == 'feed') ?
+      // apply any filters
+      (srcfilter || dstfilter) ?
         pull.filter(function (d) {
-          if (!src && d.source.charAt(0) != '@')
-            return false
-          if (!dst && d.dest.charAt(0) != '@')
-            return false
+          console.log('applying post-filter', d)
+          if (srcfilter && ssbref.type(d.source) != srcfilter)
+            return console.log('failed src'), false
+          if (dstfilter && ssbref.type(d.dest) != dstfilter)
+            return console.log('failed dst'), false
           return true
         }) : null,
       //handle case where source and dest are known but not rel.

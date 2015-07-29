@@ -66,7 +66,7 @@ module.exports = function (opts) {
           cont.series([
             function (cb) {
               all(ssb.links({
-                dest: msg.key, type: 'msg', rel: 'reply',
+                dest: msg.key, rel: 'reply',
                 meta: false, keys: false, values: true
               })) (function (err, ary) {
                 if(err) throw err
@@ -78,7 +78,7 @@ module.exports = function (opts) {
             },
             function (cb) {
               all(ssb.links({
-                dest: msg.key, rel: 'reply', type: 'msg',
+                dest: msg.key, rel: 'reply',
                 keys: true, meta: false, values: true
               }))
                 (function (err, ary) {
@@ -88,7 +88,7 @@ module.exports = function (opts) {
                 })
             },
             function (cb) {
-              all(ssb.links({dest: msg.key, rel: 'reply', type: 'msg', values: true}))
+              all(ssb.links({dest: msg.key, rel: 'reply', values: true}))
                 (function (err, ary) {
                   if(err) throw err
                   t.deepEqual(sort(ary), sort([
@@ -132,10 +132,10 @@ module.exports = function (opts) {
     }) (function (err, f) {
 
       cont.para({
-        alice:  all(ssb.links({source: alice.id, type: 'feed'})),
-        bob:    all(ssb.links({source: bob.id, type: 'feed'})),
-        _alice: all(ssb.links({dest: alice.id, type: 'feed'})),
-        _carol: all(ssb.links({dest: carol.id, type: 'feed'}))
+        alice:  all(ssb.links({source: alice.id, dest: '@'})),
+        bob:    all(ssb.links({source: bob.id, dest: 'feed'})),
+        _alice: all(ssb.links({dest: alice.id, source: '@'})),
+        _carol: all(ssb.links({dest: carol.id, source: 'feed'}))
       }) (function (err, r) {
 
         console.log({
@@ -176,7 +176,6 @@ module.exports = function (opts) {
           ssb.links({
             source: a,
             dest: b,
-            type: 'feed',
             rel: 'follow'
           }),
           pull.collect(function (_, ary) {
@@ -215,8 +214,7 @@ module.exports = function (opts) {
       poke: bob.id
     }, function (err) {
       all(ssb.links({
-        source: alice.id, dest: bob.id, type: 'feed',
-        values: true
+        source: alice.id, dest: bob.id, values: true
       }))
       (function (err, ary) {
         if(err) throw err
