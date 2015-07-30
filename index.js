@@ -475,8 +475,6 @@ module.exports = function (db, opts, keys) {
       }
     }
 
-    console.log({ back: back, src: src, srcfilter: srcfilter, dst: dst, dstfilter: dstfilter, gte: gte, lte: lte })
-
     return pull(
       pl.read(indexDB, { gte: gte, lte: lte, live: opts.live, reverse: opts.reverse }),
       pull.map(function (op) {
@@ -498,11 +496,10 @@ module.exports = function (db, opts, keys) {
       // apply any filters
       (srcfilter || dstfilter) ?
         pull.filter(function (d) {
-          console.log('applying post-filter', d)
           if (srcfilter && ssbref.type(d.source) != srcfilter)
-            return console.log('failed src'), false
+            return false
           if (dstfilter && ssbref.type(d.dest) != dstfilter)
-            return console.log('failed dst'), false
+            return false
           return true
         }) : null,
       //handle case where source and dest are known but not rel.
