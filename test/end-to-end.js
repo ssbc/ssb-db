@@ -26,7 +26,6 @@ module.exports = function (opts) {
     feed.add(boxed, function (err, msg) {
 
       t.notOk(err)
-      console.log(msg)
 
       pull(
         ssb.messagesByType('secret'),
@@ -63,11 +62,10 @@ module.exports = function (opts) {
         pull(
           ssb.links({dest: msg.key, type: 'msg', keys: false}),
           pull.collect(function (err, ary) {
-            console.log(ary)
-            t.deepEqual([{
+            t.deepEqual(ary, [{
               source: msg2.key, rel: 'reply',
               dest: msg.key
-            }], ary)
+            }])
             t.end()
           })
         )
@@ -87,7 +85,6 @@ module.exports = function (opts) {
       ), function (err, msg2) {
         ssb.relatedMessages({key: msg.key, rel: 'reply'},
           function (err, msgs) {
-            console.log(msgs)
             msg.related = [msg2]
             t.deepEqual(msgs, msg)
             t.end()
