@@ -33,7 +33,7 @@ module.exports = function (opts) {
       validate(msg, function (err) {
         console.log('HELLO', opts.hash('HELLLO'))
         if(_msg)
-          t.deepEqual(opts.hash(opts.codec.encode(_msg)), msg.previous)
+          t.deepEqual('%'+opts.hash(opts.codec.encode(_msg)), msg.previous)
         _msg = msg
         if(err) throw err
         if(msg.sequence === 3)
