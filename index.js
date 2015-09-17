@@ -337,19 +337,19 @@ module.exports = function (db, opts, keys) {
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
-    var live = opts.live || opts.tail
-    var _opts = {
-      gt : opts.gt || 0
-    }
+    var live = opts.live || opts.tail; delete opts.live
+    var keys = opts.keys; delete opts.keys
+    var values = opts.values; delete opts.values
+
     var old = pull(
-      pl.read(logDB, _opts),
+      pl.read(logDB, opts),
       paramap(function (data, cb) {
         if(data.sync) return cb(null, data)
         var key = data.value
         var seq = data.key
         db.get(key, function (err, value) {
           if (err) cb(err)
-          else cb(null, msgFmt(opts.keys, opts.values, {key: key, value: value, timestamp: seq}))
+          else cb(null, msgFmt(keys, values, {key: key, value: value, timestamp: seq}))
         })
       })
     )
