@@ -2,52 +2,65 @@
 
 A secure database with replication that is guaranteed to work.
 
-## stability: level 1, experimental - expect breaking changes.
+## Stability
 
-Following the [node.js stability index](https://github.com/dominictarr/stability#levels-of-stability),
-and the good parts of [semver](http://semver-ftw.org)
-v1 does not mean stability, it just means there has been a breaking change
-since v0.
+Stable: Expect patches, possible features additions.
 
 ### Documentation/wiki/FAQ
 
-[documentation is here](https://github.com/ssbc/ssb-docs)
+**[Documentation is here](https://github.com/ssbc/ssb-docs)**.
+
 We have shifted documentation from a github wiki to a repo,
 which means you can ask make pull requests, get notifications,
 ask questions in issues. If you have questions or get confused
 please post an issue!
 
-## example
+## Example
 
 
 ``` js
-// create a scuttlebutt instance and add a message to it.
+/**
+ * create a secure scuttlebutt instance and add a message to it.
+ */
 
 var pull = require('pull-stream')
+
+// paths:
+var pathToDB     = '/tmp/ssb1/'
+var pathToSecret = '/tmp/ssb1-secret'
+
+// ways to create keys:
+var keys = require('ssb-keys').generate()
+var keys = require('ssb-keys').loadSync(pathToSecret)
+var keys = require('ssb-keys').createSync(pathToSecret)
 var keys = require('ssb-keys').loadOrCreateSync(pathToSecret)
 
-var ssb = require('secure-scuttlebutt/create')('/tmp/ssb1')
+// create the db instance.
+//  - uses leveldb.
+//  - can only open one instance at a time.
 
-//create a feed.
-//this represents a write access / user.
-//you must pass in keys.
-//(see options section)
+var ssb = require('secure-scuttlebutt/create')(pathToDB)
+
+// create a feed.
+//  - this represents a write access / user.
+//  - you must pass in keys.
+//  (see options section)
 
 var feed = ssb.createFeed(keys)
 
-// the first message in the feed is always the public key.
-//add a message to your feed.
+// publish a message.
+//  - feed.add appends a message to your key's chain.
+//  - the `type` attribute is required.
 
-//feed.add appends a message to your key's chain.
-feed.add({type: 'msg', text:'FIRST POST'}, function (err, msg, hash) {
-  //the message as it appears in the database.
+feed.add({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
+  // the message as it appears in the database:
   console.log(msg)
 
-  //and it's hash
+  // and its hash:
   console.log(hash)
 })
 
-// stream all messages by all keys.
+// stream all messages for all keypairs.
 pull(
   ssb.createFeedStream(),
   pull.collect(function (err, ary) {
@@ -55,7 +68,7 @@ pull(
   })
 )
 
-// get all messages for a particular key.
+// stream all messages for a particular keypair.
 pull(
   ssb.createHistoryStream(feed.id),
   pull.collect(function (err, ary) {
@@ -91,13 +104,13 @@ request the chain for that id, since the latest item you know about.
 ### Replication
 
 replication has been moved into the networking layer:
-[scuttlebot](https://github.com/pfraze/scuttlebot)
+[scuttlebot](https://github.com/ssbc/scuttlebot)
 
 ### References
 
 There are 3 types of objects - messages, feeds, and attachments.
 messages and attachments are refered to by their hashes,
-but feeds (block-chains) are refered to by the hash of their
+but feeds (block-chains) are refered to by their
 signing public key. Thus, chains can both refer to other chains,
 and also to particular points _within_ other chains.
 
@@ -178,7 +191,7 @@ are allowed (start, end, reverse, tail)
 ### SecureScuttlebutt#createLogStream({gt: ts, tail: boolean}) -> PullSource
 
 create a stream of the messages that have been written to this instance
-in the order they arrived. This is mainly indended for building views.
+in the order they arrived. This is mainly intended for building views.
 The objects in this stream will be of the form:
 
 ``` js
@@ -204,35 +217,24 @@ Returns a source pull-stream. This function takes all the options from [pull-lev
 (gt, lt, gte, lte, limit, reverse, live)
 
 
-### SecureScuttlebutt#messagesLinkedToMessage ({id: hash, rel: string?}) -> PullSource
+### SecureScuttlebutt#links ({source: hash?, dest: hash?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
 
-Retrive all messages that link to the message identified by `hash`.
-Optionally, restrict the message to messages that link with `rel`.
+Get a stream of messages, feeds, or blobs that are linked to/from an id.
 
-Each item in the stream will be a message that links to <hash>.
+The objects in this stream will be of the form:
 
-### SecureScuttlebutt#feedsLinkedToFeed ({id: hash, rel: string?}) -> PullSource
-
-Retrive incoming links to a feed, optionally restricted to a `rel`.
-Each item is of the form:
-
-``` js
-{
-  source: hash1, //the feed that owns the link
-  dest: hash,    //the feed you asked for.
-  rel: rel,      //the rel of the feed.
-  message:       //hash of the message containing the link.
-}
 ```
-### SecureScuttlebutt#feedsLinkedFromFeed ({id: hash, rel: string?}) -> PullSource
+{ source: ID, rel: String, dest: ID, key: MsgID, value: Object }
+```
 
-Retrive outgoing links from a feed, optionally restricted to a `rel`.
-The same form as `feedsLinkedToFeed` except `source` is fixed,
-and dest will be different.
+ - `source` (string, optional): An id or filter, specifying where the link should originate from. To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs.
+ - `dest` (string, optional): An id or filter, specifying where the link should point to. To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs.
+ - `rel` (string, optional): Filters the links by the relation string.
+
 
 ### SecureScuttlebutt#relatedMessages ({id: hash, rel: string?, count: false?, parent: false?}, cb)
 
-retrive the tree of messages related to `id`.
+Retrieve the tree of messages related to `id`.
 This is ideal for collecting things like threaded replies.
 If `rel` is provided, only messages that link to the message with the given type are included.
 The output is a recursive structure like this:
