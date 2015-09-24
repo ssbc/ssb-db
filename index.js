@@ -145,20 +145,6 @@ module.exports = function (db, opts, keys) {
     return createFeed(db, keys, opts)
   }
 
-  db.getPublicKey = function (id, cb) {
-    function cont (cb) {
-      clockDB.get([id, 1], function (err, hash) {
-        if(err) return cb(explain(err, 'do not have first message in feed:' + id))
-
-        db.get(hash, function (err, msg) {
-          if(err) return cb(err)
-          cb(null, msg.content.public)
-        })
-      })
-    }
-    return cb ? cont(cb) : cont
-  }
-
   db.needsRebuild = function (cb) {
     sysDB.get('vmajor', function (err, dbvmajor) {
       dbvmajor = (dbvmajor|0) || 0
