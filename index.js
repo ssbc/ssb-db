@@ -397,105 +397,58 @@ module.exports = function (db, opts, keys) {
     }
   }
 
+  function type(t) { return {feed: '@', msg: '%', blob: '&'}[t] || t }
+
   db.links = function (opts) {
     if(!opts) throw new Error('opts *must* be provided')
     opts.meta = opts.meta !== false //default: true
     opts.keys = opts.keys !== false //default: true
     if(!opts.values&&!opts.meta&&!opts.keys)
-      throw new Error('makes no sense to return stream without resultts'
+      throw new Error('makes no sense to return stream without results'
         + 'set at least one of {keys, values, meta} to true')
 
-    function tofilter (v) {
-      if (v == '%' || v == 'msg') return 'msg'
-      if (v == '@' || v == 'feed') return 'feed'
-      if (v == '&' || v == 'blob') return 'blob'
-      return null
-    }
     function tolink (v) {
       return (ssbref.isLink(v)) ? v : null
     }
 
-    var type, rel, back
-    var src = tolink(opts.source)
-    var dst = tolink(opts.dest)
-    var srcfilter = tofilter(opts.source)
-    var dstfilter = tofilter(opts.dest)
-    var rel = opts.rel
+    var src = type(opts.source), dst = type(opts.dest), rel = opts.rel
 
-    if(dst && !src) back = true
+    var back = dst && !src
+    var from = back ? dst : src, to = back ? src : dst
+
+    function range(value, end, def) {
+      return !value ? def : /^[@%&]$/.test(value) ? value + end : value
+    }
+    function lo(value) { return range(value, "!", LO) }
+    function hi(value) { return range(value, "~", HI) }
+
 
     var index = back ? '_link' : 'link'
-    var gte = [index, LO, rel || LO, LO, LO, LO]
-    var lte = [index, HI, rel || HI, HI, HI, HI]
-    if (back) {
-      gte[1] = dst || LO
-      lte[1] = dst || HI
-      if (srcfilter) {
-        if (srcfilter == 'feed') {
-          gte[3] = '@!'
-          lte[3] = '@~'
-        } else {
-          gte[5] = '%!'
-          lte[5] = '%~'          
-        }
-      }
-    } else {
-      if (ssbref.type(src) == 'feed') {
-        gte[1] = src || LO
-        lte[1] = src || HI
-      } else {
-        gte[5] = src || LO
-        lte[5] = src || HI
-      }
-      if (dstfilter) {
-        if (dstfilter == 'msg') {
-          gte[3] = '%!'
-          lte[3] = '%~'        
-        } else if (dstfilter == 'feed') {
-          gte[3] = '@!'
-          lte[3] = '@~'
-        } else {
-          gte[3] = '&!'
-          lte[3] = '&~'          
-        }
-      } else {
-        gte[3] = dst || LO
-        lte[3] = dst || HI
-      }
+    var gte = [index, lo(from), rel || LO, lo(to), LO, LO]
+    var lte = [index, hi(from), rel || HI, hi(to), HI, HI]
+
+    function testLink (a, e) { //actual, expected
+      return e ? e.length === 1 ? a[0]==e[0] : a===e : true
     }
 
     return pull(
       pl.read(indexDB, { gte: gte, lte: lte, live: opts.live, reverse: opts.reverse }),
       pull.map(function (op) {
-        var srci, dsti
-        if (back) {
-          srci = (srcfilter == 'feed') ? 3 : 5
-          dsti = 1
-        } else {
-          srci = (ssbref.type(src) == 'feed') ? 1 : 5
-          dsti = 3
-        }
         return {
-          source: op.key[srci],
+          source: op.key[back?3:1],
           rel: op.key[2],
-          dest: op.key[dsti],
+          dest: op.key[back?1:3],
           key: op.key[5]
         }
+      }),      // apply any filters
+      pull.filter(function (data) {
+        if(rel && rel !== data.rel) return false
+        if(!testLink(data.dest, dst)) return false
+        if(!testLink(data.source, src)) return false
+        return true
       }),
-      // apply any filters
-      (srcfilter || dstfilter) ?
-        pull.filter(function (d) {
-          if (srcfilter && ssbref.type(d.source) != srcfilter)
-            return false
-          if (dstfilter && ssbref.type(d.dest) != dstfilter)
-            return false
-          return true
-        }) : null,
       //handle case where source and dest are known but not rel.
       //this will scan all links from the source. not so efficient.
-      src&&dst&&!rel ? pull.filter(function (d) {
-        return d.source === src && d.dest === dst
-      }): null,
       ! opts.values
       ? pull.map(function (op) {
           return format(opts, op, op.key, null)
