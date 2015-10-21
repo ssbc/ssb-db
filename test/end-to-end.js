@@ -63,7 +63,7 @@ module.exports = function (opts) {
           ssb.links({dest: msg.key, type: 'msg', keys: false}),
           pull.collect(function (err, ary) {
             t.deepEqual(ary, [{
-              source: msg2.key, rel: 'reply',
+              source: msg2.value.author, rel: 'reply',
               dest: msg.key
             }])
             t.end()

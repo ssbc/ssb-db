@@ -39,7 +39,6 @@ module.exports = function (opts) {
 
   function sortTS (ary) {
     return ary.sort(function (a, b) {
-      console.log(a, b)
       return (
           a.timestamp - b.timestamp
         || typewise(a.key, b.key)
@@ -70,8 +69,6 @@ module.exports = function (opts) {
                 meta: false, keys: false, values: true
               })) (function (err, ary) {
                 if(err) throw err
-                console.log(ary)
-                console.log(reply1, reply2)
                 t.deepEqual(sortTS(ary), sortTS([reply1.value, reply2.value]))
                 cb()
               })
@@ -93,12 +90,12 @@ module.exports = function (opts) {
                   if(err) throw err
                   t.deepEqual(sort(ary), sort([
                     {
-                      source: reply1.key, rel: 'reply',
+                      source: reply1.value.author, rel: 'reply',
                       dest: msg.key, key: reply1.key,
                       value: reply1.value
                     },
                     {
-                      source: reply2.key, rel: 'reply',
+                      source: reply2.value.author, rel: 'reply',
                       dest: msg.key, key: reply2.key,
                       value: reply2.value
                     }
