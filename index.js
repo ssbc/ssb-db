@@ -440,15 +440,17 @@ module.exports = function (db, opts, keys) {
           dest: op.key[back?1:3],
           key: op.key[5]
         }
-      }),      // apply any filters
+      }),
+      // in case source and dest are known but not rel,
+      // this will scan all links from the source
+      // and filter out those to the dest. not efficient
+      // but probably a rare query.
       pull.filter(function (data) {
         if(rel && rel !== data.rel) return false
         if(!testLink(data.dest, dst)) return false
         if(!testLink(data.source, src)) return false
         return true
       }),
-      //handle case where source and dest are known but not rel.
-      //this will scan all links from the source. not so efficient.
       ! opts.values
       ? pull.map(function (op) {
           return format(opts, op, op.key, null)
