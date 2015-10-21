@@ -219,17 +219,26 @@ Returns a source pull-stream. This function takes all the options from [pull-lev
 
 ### SecureScuttlebutt#links ({source: hash?, dest: hash?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
 
-Get a stream of messages, feeds, or blobs that are linked to/from an id.
+Get a stream of links from a feed to a blob/msg/feed id.
 
 The objects in this stream will be of the form:
 
 ```
-{ source: ID, rel: String, dest: ID, key: MsgID, value: Object }
+{ source: ID, rel: String, dest: ID, key: MsgID, value: Object? }
 ```
 
- - `source` (string, optional): An id or filter, specifying where the link should originate from. To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs.
- - `dest` (string, optional): An id or filter, specifying where the link should point to. To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs.
+ - `source` (string, optional): feed id..
+ - `dest` (string, optional): An id or filter, specifying where the link should point to.
+  To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs.
  - `rel` (string, optional): Filters the links by the relation string.
+
+If `opts.values` is set (default: false) `value` will be the message the link occurs in.
+If `opts.keys` is set (default: true) `key` will be the message id.
+If `opts.meta` is unset (default: true) `source, hash, rel` will be left off.
+
+> Note: if `source`, and `dest` is provided, but not `rel`, ssb will
+> have to scan all the links from source, and then filter by dest.
+> your query will be more efficient if you also provide `rel`.
 
 
 ### SecureScuttlebutt#relatedMessages ({id: hash, rel: string?, count: false?, parent: false?}, cb)
