@@ -28,6 +28,9 @@ var isBlobId = ssbref.isBlobId
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 
+function isNumber (n) {
+  return typeof n === 'number'
+}
 
 function isString (s) {
   return 'string' === typeof s
@@ -86,13 +89,13 @@ module.exports = function (db, opts, keys) {
       type: 'put', prefix: feedDB
     })
 
+    var localtime = timestamp()
+
     // index the latest message from each author
     add({
-      key: msg.author, value: msg.sequence,
+      key: msg.author, value: {sequence: msg.sequence, ts: localtime },
       type: 'put', prefix: lastDB
     })
-
-    var localtime = timestamp()
 
     // index messages in the order _received_
     // this will be used to pass to plugins which
@@ -221,11 +224,21 @@ module.exports = function (db, opts, keys) {
     )
   }
 
+  //latest was stored as author: seq
+  //but for the purposes of replication back pressure
+  //we need to know when we last replicated with someone.
+  //instead store as: {sequence: seq, ts: localtime}
+  //then, peers can request a max number of posts per feed.
+
+  function toSeq (latest) {
+    return isNumber(latest) ? latest : latest.sequence
+  }
+
   db.latest = function (opts) {
     return pull(
       pl.read(lastDB, opts),
       pull.map(function (data) {
-        var d = {id: data.key, sequence: data.value}
+        var d = {id: data.key, sequence: toSeq(data.value), ts: data.value.ts }
         return d
       })
     )
@@ -243,16 +256,16 @@ module.exports = function (db, opts, keys) {
   }
 
   db.createHistoryStream = function (id, seq, live) {
-    var _keys = true, _values = true
+    var _keys = true, _values = true, limit
     if(!isFeedId(id)) {
       var opts = stdopts(id)
       id       = opts.id
       seq      = opts.sequence || opts.seq || 0
       live     = !!opts.live
+      limit    = opts.limit
       _keys    = opts.keys !== false
       _values  = opts.values !== false
     }
-
     return pull(
       pl.read(clockDB, {
         gte:  [id, seq],
@@ -260,6 +273,7 @@ module.exports = function (db, opts, keys) {
         live: live,
         keys: false,
         sync: opts && opts.sync,
+        limit: limit,
         onAbort: opts && opts.onAbort
       }),
       lookup(_keys, _values)
@@ -303,19 +317,14 @@ module.exports = function (db, opts, keys) {
     return createFeed(db, keys, opts)
   }
 
-  db.createLatestLookupStream = function () {
-    return paramap(function (id, cb) {
-      if(id.sync) return cb(null, id)
-      return lastDB.get(id, function (err, seq) {
-        cb(null, {id: id, sequence: err ? 0 : seq})
-      })
-    })
+  db.latestSequence = function (id, cb) {
+    lastDB.get(id, cb)
   }
 
   db.getLatest = function (id, cb) {
     lastDB.get(id, function (err, v) {
       if(err) return cb(err)
-      clockDB.get([id, v], function (err, hash) {
+      clockDB.get([id, toSeq(v)], function (err, hash) {
         if(err) return cb(err)
         db.get(hash, function (err, msg) {
           cb(err, {key: hash, value: msg})
