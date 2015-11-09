@@ -270,3 +270,11 @@ it's decendant messages. If `parent` is true then each level will have
 ## License
 
 MIT
+
+## Other Projects
+
+Secure Scuttlebutt is not the only project working in a decentralised encrypted space. Here are a few other projects also working on solutions:
+
+- [Matrix](http://matrix.org/)
+- [Ethereum](https://www.ethereum.org/)
+- [MaidSafe](http://maidsafe.net/)
