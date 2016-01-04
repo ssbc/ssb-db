@@ -1,22 +1,23 @@
 # secure-scuttlebutt
 
-A secure database with replication that is guaranteed to work.
+A [Kappa Architecture](http://www.kappa-architecture.com/) database of unforgeable
+append-only message feeds.
 
-## Stability
+## What does it do?
 
-Stable: Expect patches, possible features additions.
+Secure-scuttlebutt provides tools for dealing with unforgeable append-only message 
+feeds. You can create a feed, post messages to that feed, verify a feed created by
+someone else, stream messages to and from feeds, and more (see [API](#API)).
 
-### Documentation/wiki/FAQ
-
-**[Documentation is here](https://github.com/ssbc/ssb-docs)**.
-
-We have shifted documentation from a github wiki to a repo,
-which means you can ask make pull requests, get notifications,
-ask questions in issues. If you have questions or get confused
-please post an issue!
+"Unforgeable" means that only the owner of a feed can modify that feed, as
+enforced by digital signing (see [Security properties](#security-properties)).
+This property makes secure-scuttlebutt useful for peer-to-peer applications.
+Note that this does *not* mean secure as in encrypted.
 
 ## Example
 
+In this example, we create a feed, post a signed message to it, then create a stream 
+that reads from the feed.
 
 ``` js
 /**
@@ -80,39 +81,88 @@ pull(
 ## Concepts
 
 Building upon secure-scuttlebutt requires understanding a few concepts
-that it uses to ensure security.
+that it uses to ensure the unforgeability of message feeds.
 
-### Identity
+### Identities
 
-Each node's identity is represented by the hash of their public
-key. Although they are not "human readable", this does
-guarantee that you get unique identifiers (without a central registry)
-and it's infeasible for anyone to forge your identity.
+An identity is simply a public/private key pair.
 
-### Secure Data Structures
+Even though there is no worldwide store of identities, it's infeasible
+for anyone to forge your identity. Identities are binary strings, so not
+particularly human-readable.
 
-SecureScuttlebutt uses a signed block-chain per identity.
-Each block points to the previous block,
-the signing key, and contains a short message
-and a signature. Every identity has their own block-chain.
+### Feeds
 
-Each block-chain is an append-only data structure that
-can be written to exclusively by the keys' owner.
-Since the chains are append only, replication is simple,
-request the chain for that id, since the latest item you know about.
+A feed is an append-only sequence of messages. Each feed is associated
+1:1 with an identity. The feed is identified by the hash of the public 
+key. This works because public keys are unique.
+
+Since feeds are append-only, replication is simple: request all messages
+in the feed that are newer than the latest message you know about.
+
+Note that append-only really means append-only: you cannot delete an
+existing message. If you want to enable entities to be deleted or 
+modified in your data model, that can be implemented in a layer on top 
+of secure-scuttlebutt using 
+[delta encoding](https://en.wikipedia.org/wiki/Delta_encoding). 
+
+### Messages
+
+Each message contains:
+
+- A message string. This is the thing that the end user cares about.
+- A reference to the previous message. This prevents a malicious party
+  from making a copy of a feed that omits messages in the middle.
+- The signing public key.
+- A signature. This prevents malicious parties from writing fake 
+  messages to a stream.
+  
+Since each message contains a reference to the previous message, a feed 
+must be replicated in order, starting with the first message. This is
+the only way that the feed can be verified. A feed can be *viewed* in
+any order after it's been replicated.
+
+### Entity References
+
+The text inside a message can refer to three types of secure-scuttlebutt
+entities: messages, feeds, and blobs (i.e. attachments). Messages and 
+blobs are referred to by their hashes, but a feed is referred to by its
+signing public key. Thus, a message within a feed can refer to another
+feed, or to a particular point _within_ a feed.
+
+Note that secure-scuttlebutt does not include facilities for retrieving
+a blob given the hash.
 
 ### Replication
 
-replication has been moved into the networking layer:
-[scuttlebot](https://github.com/ssbc/scuttlebot)
+It is possible to easily replicate data between two SecureScuttlebutts.
+First, they exchange maps of their newest data. Then, each one downloads
+all data newer than its newest data.
 
-### References
+[Scuttlebot](https://github.com/ssbc/scuttlebot) is a tool that
+makes it easy to replicate multiple SecureScuttlebutts using a
+decentralized network.
 
-There are 3 types of objects - messages, feeds, and attachments.
-messages and attachments are refered to by their hashes,
-but feeds (block-chains) are refered to by their
-signing public key. Thus, chains can both refer to other chains,
-and also to particular points _within_ other chains.
+### Security properties
+Secure-scuttlebutt maintains useful security properties even when it is
+connected to a malicious secure-scuttlebutt database. This makes it ideal
+as a store for peer-to-peer applications.
+
+Imagine that we want to read from a feed for which we know the identity,
+but we're connected to a malicious secure-scuttlebutt instance. As
+long as the malicious database does not have the private key:
+
+- The malicious database cannot create a new feed with the same identifier
+- The malicious database cannot write new fake messages to the feed
+- The malicious database cannot reorder the messages in the feed
+- The malicious database cannot send us a new copy of the feed that omits
+  messages from the middle
+- The malicious database *can* refuse to send us the feed, or only send
+  us the first *N* messages in the feed
+- Messages are not encrypted. The malicious database can read them. That
+  said, it is easy to implement encryption in a layer on top of 
+  secure-scuttlebutt (see `test/end-to-end.js`).
+
 
 ## API
 
@@ -144,12 +194,12 @@ The following methods apply to the Feed type.
 
 Adds a message of a given type to a feed.
 This is the recommended way to append messages.
-message is a javascript object. it must be a `{}` object with a `type`
+message is a javascript object. It must be a `{}` object with a `type`
 property that is a string between 3 and 32 chars long.
 
 #### Feed#id
 
-the id of the feed (which is the hash of the feeds public key)
+the id of the feed (which is the hash of the feed's public key)
 
 #### Feed#keys
 
@@ -159,7 +209,8 @@ the key pair for this feed.
 
 Retrieve the public key for `id`, if it is in the database.
 If you have replicated id's data then you will have the public key,
-as public keys are contained in the first message.
+as public keys are contained in the first message. `id` is the
+hash of a public key.
 
 ### SecureScuttlebutt#needsRebuild(cb)
 
@@ -184,7 +235,7 @@ Rebuilds the indexes by replaying history. See `needsRebuild`.
 ### SecureScuttlebutt#createFeedStream (opts) -> PullSource
 
 Create a [pull-stream](https://github.com/dominictarr/pull-stream)
-of the data in the database, ordered by timestamps.
+of all the feeds in the database, ordered by timestamps.
 All [pull-level](https://github.com/dominictarr/pull-level) options
 are allowed (start, end, reverse, tail)
 
@@ -264,8 +315,12 @@ The output is a recursive structure like this:
 ```
 
 If `count` option is true, then each message will contain a `count`
-it's decendant messages. If `parent` is true then each level will have 
+it's descendant messages. If `parent` is true then each level will have 
 `parent`, the `id/key` of it's parent message.
+
+## Stability
+
+Stable: Expect patches, possible features additions.
 
 ## License
 
