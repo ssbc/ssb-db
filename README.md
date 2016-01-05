@@ -12,7 +12,7 @@ someone else, stream messages to and from feeds, and more (see [API](#API)).
 "Unforgeable" means that only the owner of a feed can modify that feed, as
 enforced by digital signing (see [Security properties](#security-properties)).
 This property makes secure-scuttlebutt useful for peer-to-peer applications.
-Note that this does *not* mean secure as in encrypted.
+Secure-scuttlebutt also makes it easy to encrypt messages.
 
 ## Example
 
@@ -110,12 +110,18 @@ of secure-scuttlebutt using
 
 Each message contains:
 
-- A message string. This is the thing that the end user cares about.
-- A reference to the previous message. This prevents a malicious party
-  from making a copy of a feed that omits messages in the middle.
+- A message object. This is the thing that the end user cares about. If
+  there is no encryption, this is a `{}` object. If there is encryption,
+  this is an encrypted string.
+- A content-hash of the previous message. This prevents somebody with
+  the private key from changing the feed history after publishing, as a
+  newly-created message wouldn't match the "prev-hash" of later messages
+  which were already replicated.
 - The signing public key.
 - A signature. This prevents malicious parties from writing fake 
   messages to a stream.
+- A sequence number. This prevents a malicious party from making a copy
+  of the feed that omits or reorders messages.
   
 Since each message contains a reference to the previous message, a feed 
 must be replicated in order, starting with the first message. This is
@@ -159,9 +165,7 @@ long as the malicious database does not have the private key:
   messages from the middle
 - The malicious database *can* refuse to send us the feed, or only send
   us the first *N* messages in the feed
-- Messages are not encrypted. The malicious database can read them. That
-  said, it is easy to implement encryption in a layer on top of 
-  secure-scuttlebutt (see `test/end-to-end.js`).
+- Messages may optionally be encrypted. See `test/end-to-end.js`.
 
 
 ## API
