@@ -1,0 +1,242 @@
+<html>
+    <head>
+    <title>Secure Scuttlebutt - SSBC</title>
+    <link rel="stylesheet" href="normalize.css">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+    <body>
+      <div id="leftnav">
+    <div class="leftnav-item ">
+      <a href="/" title="Home">Home</a>
+    </div>
+    <div class="leftnav-item ">
+      <a href="/patchwork" title="Patchwork">Patchwork</a>
+    </div>
+    <div class="leftnav-item selected">
+      <a href="/secure-scuttlebutt" title="Secure Scuttlebutt">Secure Scuttlebutt</a>
+    </div>
+    <div class="leftnav-subitems">
+      <div class="leftnav-item ">
+      <a href="/docs/learn.html" title="Learn about the Protocol">Learn about the Protocol</a>
+    </div>
+    </div>
+    <div class="leftnav-item ">
+      <a href="/scuttlebot" title="Scuttlebot">Scuttlebot</a>
+    </div>
+    <div class="leftnav-subitems">
+      <div class="leftnav-item ">
+      <a href="/docs/intro-to-using-sbot.html" title="Introduction to Using Scuttlebot">Introduction to Using Scuttlebot</a>
+    </div>
+    </div>
+    <div class="leftnav-item ">
+      <a href="/docs" title="Documentation">Documentation</a>
+    </div>
+  </div>
+      <div id="content">
+        <h1 id="secure-scuttlebutt">secure-scuttlebutt</h1>
+<p>A secure database with replication that is guaranteed to work.</p>
+<h2 id="stability">Stability</h2>
+<p>Stable: Expect patches, possible features additions.</p>
+<h3 id="documentation-wiki-faq">Documentation/wiki/FAQ</h3>
+<p><strong><a href="https://github.com/ssbc/ssb-docs">Documentation is here</a></strong>.</p>
+<p>We have shifted documentation from a github wiki to a repo,
+which means you can ask make pull requests, get notifications,
+ask questions in issues. If you have questions or get confused
+please post an issue!</p>
+<h2 id="example">Example</h2>
+<pre><code class="lang-js">/**
+ * create a secure scuttlebutt instance and add a message to it.
+ */
+
+var pull = require(&#39;pull-stream&#39;)
+
+// paths:
+var pathToDB     = &#39;/tmp/ssb1/&#39;
+var pathToSecret = &#39;/tmp/ssb1-secret&#39;
+
+// ways to create keys:
+var keys = require(&#39;ssb-keys&#39;).generate()
+var keys = require(&#39;ssb-keys&#39;).loadSync(pathToSecret)
+var keys = require(&#39;ssb-keys&#39;).createSync(pathToSecret)
+var keys = require(&#39;ssb-keys&#39;).loadOrCreateSync(pathToSecret)
+
+// create the db instance.
+//  - uses leveldb.
+//  - can only open one instance at a time.
+
+var ssb = require(&#39;secure-scuttlebutt/create&#39;)(pathToDB)
+
+// create a feed.
+//  - this represents a write access / user.
+//  - you must pass in keys.
+//  (see options section)
+
+var feed = ssb.createFeed(keys)
+
+// publish a message.
+//  - feed.add appends a message to your key&#39;s chain.
+//  - the `type` attribute is required.
+
+feed.add({ type: &#39;post&#39;, text: &#39;My First Post!&#39; }, function (err, msg, hash) {
+  // the message as it appears in the database:
+  console.log(msg)
+
+  // and its hash:
+  console.log(hash)
+})
+
+// stream all messages for all keypairs.
+pull(
+  ssb.createFeedStream(),
+  pull.collect(function (err, ary) {
+    console.log(ary)
+  })
+)
+
+// stream all messages for a particular keypair.
+pull(
+  ssb.createHistoryStream(feed.id),
+  pull.collect(function (err, ary) {
+    console.log(ary)
+  })
+)
+</code></pre>
+<h2 id="concepts">Concepts</h2>
+<p>Building upon secure-scuttlebutt requires understanding a few concepts
+that it uses to ensure security.</p>
+<h3 id="identity">Identity</h3>
+<p>Each node&#39;s identity is represented by the hash of their public
+key. Although they are not &quot;human readable&quot;, this does
+guarantee that you get unique identifiers (without a central registry)
+and it&#39;s infeasible for anyone to forge your identity.</p>
+<h3 id="secure-data-structures">Secure Data Structures</h3>
+<p>SecureScuttlebutt uses a signed block-chain per identity.
+Each block points to the previous block,
+the signing key, and contains a short message
+and a signature. Every identity has their own block-chain.</p>
+<p>Each block-chain is an append-only data structure that
+can be written to exclusively by the keys&#39; owner.
+Since the chains are append only, replication is simple,
+request the chain for that id, since the latest item you know about.</p>
+<h3 id="replication">Replication</h3>
+<p>replication has been moved into the networking layer:
+<a href="https://github.com/ssbc/scuttlebot">scuttlebot</a></p>
+<h3 id="references">References</h3>
+<p>There are 3 types of objects - messages, feeds, and attachments.
+messages and attachments are refered to by their hashes,
+but feeds (block-chains) are refered to by their
+signing public key. Thus, chains can both refer to other chains,
+and also to particular points <em>within</em> other chains.</p>
+<h2 id="api">API</h2>
+<h3 id="ssb-require-secure-scuttlebutt-create-path-">ssb = require(&#39;secure-scuttlebutt/create&#39;)(path)</h3>
+<p>Create a secure-scuttlebutt database at the given path,
+returns an instance.</p>
+<h3 id="require-secure-scuttlebutt-db-opts-">require(&#39;secure-scuttlebutt&#39;)(db, opts)</h3>
+<p>Pass in a <a href="https://github.com/rvagg/node-levelup">levelup</a> instance
+(it must have <a href="https://github.com/dominictarr/level-sublevel">sublevel</a> installed),
+and an options object. The options object provides the crypto
+and encoding functions, that are not directly tied into how
+secure-scuttlebutt works.</p>
+<p>The following methods all apply to a <code>SecureScuttlebutt</code> instance</p>
+<h3 id="securescuttlebutt-createfeed-keys-">SecureScuttlebutt#createFeed (keys?)</h3>
+<p>Create a Feed object. A feed is a chain of messages signed
+by a single key (the identity of the feed).
+This handles the state needed to append valid messages to a feed.
+If keys are not provided, then a new key pair will be generated.</p>
+<p>The following methods apply to the Feed type.</p>
+<h4 id="feed-add-message-cb-">Feed#add (message, cb)</h4>
+<p>Adds a message of a given type to a feed.
+This is the recommended way to append messages.
+message is a javascript object. it must be a <code>{}</code> object with a <code>type</code>
+property that is a string between 3 and 32 chars long.</p>
+<h4 id="feed-id">Feed#id</h4>
+<p>the id of the feed (which is the hash of the feeds public key)</p>
+<h4 id="feed-keys">Feed#keys</h4>
+<p>the key pair for this feed.</p>
+<h3 id="securescuttlebutt-getpublickey-id-cb-">SecureScuttlebutt#getPublicKey(id, cb)</h3>
+<p>Retrieve the public key for <code>id</code>, if it is in the database.
+If you have replicated id&#39;s data then you will have the public key,
+as public keys are contained in the first message.</p>
+<h3 id="securescuttlebutt-needsrebuild-cb-">SecureScuttlebutt#needsRebuild(cb)</h3>
+<p>Checks the version stored in the database against the code version and
+calls back true/false accordingly. This keeps the database in sync with
+major breaking changes to secure-scuttlebutt when they occur.</p>
+<p>Should be run at startup. If true, you should call <code>rebuildIndex</code> before
+using the database.</p>
+<pre><code class="lang-js">ssb.needsRebuild(function (err, b) {
+  if (b)
+    ssb.rebuildIndex(next)
+})
+</code></pre>
+<h3 id="securescuttlebutt-rebuildindex-cb-">SecureScuttlebutt#rebuildIndex(cb)</h3>
+<p>Rebuilds the indexes by replaying history. See <code>needsRebuild</code>.</p>
+<h3 id="securescuttlebutt-createfeedstream-opts-pullsource">SecureScuttlebutt#createFeedStream (opts) -&gt; PullSource</h3>
+<p>Create a <a href="https://github.com/dominictarr/pull-stream">pull-stream</a>
+of the data in the database, ordered by timestamps.
+All <a href="https://github.com/dominictarr/pull-level">pull-level</a> options
+are allowed (start, end, reverse, tail)</p>
+<h3 id="securescuttlebutt-createlogstream-gt-ts-tail-boolean-pullsource">SecureScuttlebutt#createLogStream({gt: ts, tail: boolean}) -&gt; PullSource</h3>
+<p>create a stream of the messages that have been written to this instance
+in the order they arrived. This is mainly intended for building views.
+The objects in this stream will be of the form:</p>
+<pre><code class="lang-js">{
+  key: Hash, value: Message, timestamp: timestamp
+}
+</code></pre>
+<p><code>timestamp</code> is generated by
+<a href="https://github.com/dominictarr/monotonic-timestamp">monotonic-timestamp</a></p>
+<h3 id="securescuttlebutt-createhistorystream-id-hash-seq-int-live-bool-pullsource">SecureScuttlebutt#createHistoryStream ({id: hash, seq: int?, live: bool?}) -&gt; PullSource</h3>
+<p>Create a stream of the history of <code>id</code>. If <code>seq &gt; 0</code>, then
+only stream messages with sequence numbers greater than <code>seq</code>.
+if <code>live</code> is true, the stream will be a
+<a href="https://github.com/dominictarr/pull-level#example---reading">live mode</a></p>
+<h3 id="securescuttlebutt-messagesbytype-type-string-live-bool-pullsource">SecureScuttlebutt#messagesByType ({type: string, live: bool?}) -&gt; PullSource</h3>
+<p>retrive messages with a given type. All messages must have a type,
+so this is a good way to select messages that an application might use.
+Returns a source pull-stream. This function takes all the options from <a href="https://github.com/dominictarr/pull-level#example---reading">pull-level#read</a>
+(gt, lt, gte, lte, limit, reverse, live)</p>
+<h3 id="securescuttlebutt-links-source-hash-dest-hash-rel-string-meta-true-keys-true-values-false-live-false-reverse-false-pullsource">SecureScuttlebutt#links ({source: hash?, dest: hash?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -&gt; PullSource</h3>
+<p>Get a stream of links from a feed to a blob/msg/feed id.</p>
+<p>The objects in this stream will be of the form:</p>
+<pre><code>{ source: ID, rel: String, dest: ID, key: MsgID, value: Object? }
+</code></pre><ul>
+<li><code>source</code> (string, optional): feed id..</li>
+<li><code>dest</code> (string, optional): An id or filter, specifying where the link should point to.
+To filter, just use the sigil of the type you want: <code>@</code> for feeds, <code>%</code> for messages, and <code>&amp;</code> for blobs.</li>
+<li><code>rel</code> (string, optional): Filters the links by the relation string.</li>
+</ul>
+<p>If <code>opts.values</code> is set (default: false) <code>value</code> will be the message the link occurs in.
+If <code>opts.keys</code> is set (default: true) <code>key</code> will be the message id.
+If <code>opts.meta</code> is unset (default: true) <code>source, hash, rel</code> will be left off.</p>
+<blockquote>
+<p>Note: if <code>source</code>, and <code>dest</code> is provided, but not <code>rel</code>, ssb will
+have to scan all the links from source, and then filter by dest.
+your query will be more efficient if you also provide <code>rel</code>.</p>
+</blockquote>
+<h3 id="securescuttlebutt-relatedmessages-id-hash-rel-string-count-false-parent-false-cb-">SecureScuttlebutt#relatedMessages ({id: hash, rel: string?, count: false?, parent: false?}, cb)</h3>
+<p>Retrieve the tree of messages related to <code>id</code>.
+This is ideal for collecting things like threaded replies.
+If <code>rel</code> is provided, only messages that link to the message with the given type are included.
+The output is a recursive structure like this:</p>
+<pre><code class="lang-js">{
+  key: &lt;id&gt;,
+  value: &lt;msg&gt;,
+  related: [
+    &lt;recursive&gt;,...
+  ],
+  //number of messages below this point. (when opts.count = true)
+  count: &lt;int&gt;,
+  //the message this message links to. this will not appear on the bottom level.
+  //(when opts.parent = true)
+  parent: &lt;parent_id&gt;
+}
+</code></pre>
+<p>If <code>count</code> option is true, then each message will contain a <code>count</code>
+it&#39;s decendant messages. If <code>parent</code> is true then each level will have 
+<code>parent</code>, the <code>id/key</code> of it&#39;s parent message.</p>
+<h2 id="license">License</h2>
+<p>MIT</p>
+
+      </div>
+    </body>
+  </html>
