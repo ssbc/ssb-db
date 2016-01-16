@@ -40,24 +40,22 @@
       <a href="/docs/api/scuttlebot.html" title="API / CLI Reference">API / CLI Reference</a>
     </div>
       </div>
-      <div class="leftnav-item selected">
-      <a href="/secure-scuttlebutt" title="Secure Scuttlebutt">Secure Scuttlebutt<br><small>Global Database Protocol</small></a>
-    </div>
+      <div class="leftnav-item">Key Concepts</div>
       <div class="leftnav-subitems">
-        <div class="leftnav-item ">
-      <a href="/docs/ssb/key-concepts.html" title="Key Concepts">Key Concepts</a>
+        <div class="leftnav-item selected">
+      <a href="/secure-scuttlebutt" title="Secure Scuttlebutt: a global database protocol">Secure Scuttlebutt: a global database protocol</a>
     </div>
         <div class="leftnav-item ">
-      <a href="/docs/ssb/linking.html" title="Linking">Linking</a>
+      <a href="/docs/ssb/linking.html" title="Content-Hash Linking">Content-Hash Linking</a>
     </div>
         <div class="leftnav-item ">
-      <a href="/docs/ssb/faq.html" title="FAQ">FAQ</a>
+      <a href="/docs/ssb/secret-handshake.html" title="Secret Handshake: a secure channel protocol">Secret Handshake: a secure channel protocol</a>
     </div>
         <div class="leftnav-item ">
-      <a href="/docs/ssb/secret-handshake.html" title="Secret Handshake">Secret Handshake</a>
+      <a href="/docs/ssb/end-to-end-encryption.html" title="Private Box: metadata-free encryption">Private Box: metadata-free encryption</a>
     </div>
         <div class="leftnav-item ">
-      <a href="/docs/ssb/end-to-end-encryption.html" title="Private Box">Private Box</a>
+      <a href="/docs/ssb/faq.html" title="Frequently Asked Questions">Frequently Asked Questions</a>
     </div>
       </div>
       <div class="leftnav-item">Howto Guides</div>
@@ -101,209 +99,97 @@
       </div>
     </div>
         <div id="content">
-          <h1 id="secure-scuttlebutt">secure-scuttlebutt</h1>
-<p>A secure database with replication that is guaranteed to work.</p>
-<h2 id="stability">Stability</h2>
-<p>Stable: Expect patches, possible features additions.</p>
-<h3 id="documentation-wiki-faq">Documentation/wiki/FAQ</h3>
-<p><strong><a href="https://github.com/ssbc/ssb-docs">Documentation is here</a></strong>.</p>
-<p>We have shifted documentation from a github wiki to a repo,
-which means you can ask make pull requests, get notifications,
-ask questions in issues. If you have questions or get confused
-please post an issue!</p>
-<h2 id="example">Example</h2>
-<pre><code class="lang-js">/**
- * create a secure scuttlebutt instance and add a message to it.
- */
-
-var pull = require(&#39;pull-stream&#39;)
-
-// paths:
-var pathToDB     = &#39;/tmp/ssb1/&#39;
-var pathToSecret = &#39;/tmp/ssb1-secret&#39;
-
-// ways to create keys:
-var keys = require(&#39;ssb-keys&#39;).generate()
-var keys = require(&#39;ssb-keys&#39;).loadSync(pathToSecret)
-var keys = require(&#39;ssb-keys&#39;).createSync(pathToSecret)
-var keys = require(&#39;ssb-keys&#39;).loadOrCreateSync(pathToSecret)
-
-// create the db instance.
-//  - uses leveldb.
-//  - can only open one instance at a time.
-
-var ssb = require(&#39;secure-scuttlebutt/create&#39;)(pathToDB)
-
-// create a feed.
-//  - this represents a write access / user.
-//  - you must pass in keys.
-//  (see options section)
-
-var feed = ssb.createFeed(keys)
-
-// publish a message.
-//  - feed.add appends a message to your key&#39;s chain.
-//  - the `type` attribute is required.
-
-feed.add({ type: &#39;post&#39;, text: &#39;My First Post!&#39; }, function (err, msg, hash) {
-  // the message as it appears in the database:
-  console.log(msg)
-
-  // and its hash:
-  console.log(hash)
-})
-
-// stream all messages for all keypairs.
-pull(
-  ssb.createFeedStream(),
-  pull.collect(function (err, ary) {
-    console.log(ary)
-  })
-)
-
-// stream all messages for a particular keypair.
-pull(
-  ssb.createHistoryStream(feed.id),
-  pull.collect(function (err, ary) {
-    console.log(ary)
-  })
-)
-</code></pre>
+          <h1 id="secure-scuttlebutt">Secure Scuttlebutt</h1>
+<p>A <strong>global database protocol</strong> of unforgeable append-only message feeds.</p>
+<p>&quot;Unforgeable&quot; means that only the owner of a feed can update that feed, as enforced by digital signing (see <a href="#security-properties">Security properties</a>).
+This property makes Secure Scuttlebutt useful for peer-to-peer applications.
+Secure Scuttlebutt also makes it easy to encrypt messages.</p>
 <h2 id="concepts">Concepts</h2>
-<p>Building upon secure-scuttlebutt requires understanding a few concepts
-that it uses to ensure security.</p>
-<h3 id="identity">Identity</h3>
-<p>Each node&#39;s identity is represented by the hash of their public
-key. Although they are not &quot;human readable&quot;, this does
-guarantee that you get unique identifiers (without a central registry)
-and it&#39;s infeasible for anyone to forge your identity.</p>
-<h3 id="secure-data-structures">Secure Data Structures</h3>
-<p>SecureScuttlebutt uses a signed block-chain per identity.
-Each block points to the previous block,
-the signing key, and contains a short message
-and a signature. Every identity has their own block-chain.</p>
-<p>Each block-chain is an append-only data structure that
-can be written to exclusively by the keys&#39; owner.
-Since the chains are append only, replication is simple,
-request the chain for that id, since the latest item you know about.</p>
+<p>Building upon Secure Scuttlebutt requires understanding a few concepts that it uses to ensure the unforgeability of message feeds.</p>
+<h3 id="identities">Identities</h3>
+<p>An identity is simply a <a href="http://ed25519.cr.yp.to/">ed25519 key pair</a>.
+The public key is used as the identifier.</p>
+<p>There is no worldwide store of identities.
+Users must exchange pubkeys, either by publishing them on their feeds, or out-of-band.</p>
+<h3 id="feeds">Feeds</h3>
+<p>A feed is an append-only sequence of messages.
+Each identity has exactly one feed.</p>
+<p>Note that append-only means you cannot delete an existing message, or change your history.
+This is enforced by a per-feed blockchain.
+This is to ensure the entire network converges on the same state.</p>
 <h3 id="replication">Replication</h3>
-<p>replication has been moved into the networking layer:
-<a href="https://github.com/ssbc/scuttlebot">scuttlebot</a></p>
-<h3 id="references">References</h3>
-<p>There are 3 types of objects - messages, feeds, and attachments.
-messages and attachments are refered to by their hashes,
-but feeds (block-chains) are refered to by their
-signing public key. Thus, chains can both refer to other chains,
-and also to particular points <em>within</em> other chains.</p>
-<h2 id="api">API</h2>
-<h3 id="ssb-require-secure-scuttlebutt-create-path-">ssb = require(&#39;secure-scuttlebutt/create&#39;)(path)</h3>
-<p>Create a secure-scuttlebutt database at the given path,
-returns an instance.</p>
-<h3 id="require-secure-scuttlebutt-db-opts-">require(&#39;secure-scuttlebutt&#39;)(db, opts)</h3>
-<p>Pass in a <a href="https://github.com/rvagg/node-levelup">levelup</a> instance
-(it must have <a href="https://github.com/dominictarr/level-sublevel">sublevel</a> installed),
-and an options object. The options object provides the crypto
-and encoding functions, that are not directly tied into how
-secure-scuttlebutt works.</p>
-<p>The following methods all apply to a <code>SecureScuttlebutt</code> instance</p>
-<h3 id="securescuttlebutt-createfeed-keys-">SecureScuttlebutt#createFeed (keys?)</h3>
-<p>Create a Feed object. A feed is a chain of messages signed
-by a single key (the identity of the feed).
-This handles the state needed to append valid messages to a feed.
-If keys are not provided, then a new key pair will be generated.</p>
-<p>The following methods apply to the Feed type.</p>
-<h4 id="feed-add-message-cb-">Feed#add (message, cb)</h4>
-<p>Adds a message of a given type to a feed.
-This is the recommended way to append messages.
-message is a javascript object. it must be a <code>{}</code> object with a <code>type</code>
-property that is a string between 3 and 32 chars long.</p>
-<h4 id="feed-id">Feed#id</h4>
-<p>the id of the feed (which is the hash of the feeds public key)</p>
-<h4 id="feed-keys">Feed#keys</h4>
-<p>the key pair for this feed.</p>
-<h3 id="securescuttlebutt-getpublickey-id-cb-">SecureScuttlebutt#getPublicKey(id, cb)</h3>
-<p>Retrieve the public key for <code>id</code>, if it is in the database.
-If you have replicated id&#39;s data then you will have the public key,
-as public keys are contained in the first message.</p>
-<h3 id="securescuttlebutt-needsrebuild-cb-">SecureScuttlebutt#needsRebuild(cb)</h3>
-<p>Checks the version stored in the database against the code version and
-calls back true/false accordingly. This keeps the database in sync with
-major breaking changes to secure-scuttlebutt when they occur.</p>
-<p>Should be run at startup. If true, you should call <code>rebuildIndex</code> before
-using the database.</p>
-<pre><code class="lang-js">ssb.needsRebuild(function (err, b) {
-  if (b)
-    ssb.rebuildIndex(next)
-})
-</code></pre>
-<h3 id="securescuttlebutt-rebuildindex-cb-">SecureScuttlebutt#rebuildIndex(cb)</h3>
-<p>Rebuilds the indexes by replaying history. See <code>needsRebuild</code>.</p>
-<h3 id="securescuttlebutt-createfeedstream-opts-pullsource">SecureScuttlebutt#createFeedStream (opts) -&gt; PullSource</h3>
-<p>Create a <a href="https://github.com/dominictarr/pull-stream">pull-stream</a>
-of the data in the database, ordered by timestamps.
-All <a href="https://github.com/dominictarr/pull-level">pull-level</a> options
-are allowed (start, end, reverse, tail)</p>
-<h3 id="securescuttlebutt-createlogstream-gt-ts-tail-boolean-pullsource">SecureScuttlebutt#createLogStream({gt: ts, tail: boolean}) -&gt; PullSource</h3>
-<p>create a stream of the messages that have been written to this instance
-in the order they arrived. This is mainly intended for building views.
-The objects in this stream will be of the form:</p>
-<pre><code class="lang-js">{
-  key: Hash, value: Message, timestamp: timestamp
-}
-</code></pre>
-<p><code>timestamp</code> is generated by
-<a href="https://github.com/dominictarr/monotonic-timestamp">monotonic-timestamp</a></p>
-<h3 id="securescuttlebutt-createhistorystream-id-hash-seq-int-live-bool-pullsource">SecureScuttlebutt#createHistoryStream ({id: hash, seq: int?, live: bool?}) -&gt; PullSource</h3>
-<p>Create a stream of the history of <code>id</code>. If <code>seq &gt; 0</code>, then
-only stream messages with sequence numbers greater than <code>seq</code>.
-if <code>live</code> is true, the stream will be a
-<a href="https://github.com/dominictarr/pull-level#example---reading">live mode</a></p>
-<h3 id="securescuttlebutt-messagesbytype-type-string-live-bool-pullsource">SecureScuttlebutt#messagesByType ({type: string, live: bool?}) -&gt; PullSource</h3>
-<p>retrive messages with a given type. All messages must have a type,
-so this is a good way to select messages that an application might use.
-Returns a source pull-stream. This function takes all the options from <a href="https://github.com/dominictarr/pull-level#example---reading">pull-level#read</a>
-(gt, lt, gte, lte, limit, reverse, live)</p>
-<h3 id="securescuttlebutt-links-source-hash-dest-hash-rel-string-meta-true-keys-true-values-false-live-false-reverse-false-pullsource">SecureScuttlebutt#links ({source: hash?, dest: hash?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -&gt; PullSource</h3>
-<p>Get a stream of links from a feed to a blob/msg/feed id.</p>
-<p>The objects in this stream will be of the form:</p>
-<pre><code>{ source: ID, rel: String, dest: ID, key: MsgID, value: Object? }
-</code></pre><ul>
-<li><code>source</code> (string, optional): feed id..</li>
-<li><code>dest</code> (string, optional): An id or filter, specifying where the link should point to.
-To filter, just use the sigil of the type you want: <code>@</code> for feeds, <code>%</code> for messages, and <code>&amp;</code> for blobs.</li>
-<li><code>rel</code> (string, optional): Filters the links by the relation string.</li>
+<p>Since feeds are append-only, replication is simple: request all messages in the feed that are newer than the latest message you know about.</p>
+<p><a href="https://ssbc.github.io/scuttlebot/">Scuttlebot</a> does this with the <code>createHistoryStream</code> api call.
+It maintains a table of known peers, which is cycles through, asking for updates for all &quot;followed&quot; feeds.</p>
+<h3 id="following">Following</h3>
+<p>Users choose which feeds to synchronize by following them.
+Presently, <a href="https://ssbc.github.io/docs/api/scuttlebot-replicate.html">Scuttlebot&#39;s replicate plugin</a>, which is enabled by default, looks on the master user&#39;s feed for <a href="https://ssbc.github.io/docs/api/ssb-msg-schemas.html">type: contact</a> messages to know which users are currently followed.</p>
+<h3 id="messages">Messages</h3>
+<p>Each message contains:</p>
+<ul>
+<li>A content-hash of the previous message.
+This prevents somebody with the private key from changing the feed history after publishing, as a newly-created message wouldn&#39;t match the &quot;prev-hash&quot; of later messages which were already replicated.</li>
+<li>The signing public key.</li>
+<li>A sequence number.
+This prevents a malicious party from making a copy of the feed that omits or reorders messages.</li>
+<li>A timestamp.
+Note, this timestamp is asserted by the publishing user, and may not be trustworthy.</li>
+<li>An identifier of the hashing algorithm in use (currently only &quot;sha256&quot; is supported).</li>
+<li>A content object.
+This is the thing that the end user cares about.
+If there is no encryption, this is an object.
+If there is encryption, this is an encrypted string.</li>
+<li>A signature.
+This prevents malicious parties from writing fake messages to a stream.</li>
 </ul>
-<p>If <code>opts.values</code> is set (default: false) <code>value</code> will be the message the link occurs in.
-If <code>opts.keys</code> is set (default: true) <code>key</code> will be the message id.
-If <code>opts.meta</code> is unset (default: true) <code>source, hash, rel</code> will be left off.</p>
-<blockquote>
-<p>Note: if <code>source</code>, and <code>dest</code> is provided, but not <code>rel</code>, ssb will
-have to scan all the links from source, and then filter by dest.
-your query will be more efficient if you also provide <code>rel</code>.</p>
-</blockquote>
-<h3 id="securescuttlebutt-relatedmessages-id-hash-rel-string-count-false-parent-false-cb-">SecureScuttlebutt#relatedMessages ({id: hash, rel: string?, count: false?, parent: false?}, cb)</h3>
-<p>Retrieve the tree of messages related to <code>id</code>.
-This is ideal for collecting things like threaded replies.
-If <code>rel</code> is provided, only messages that link to the message with the given type are included.
-The output is a recursive structure like this:</p>
+<p>Here&#39;s an example message:</p>
 <pre><code class="lang-js">{
-  key: &lt;id&gt;,
-  value: &lt;msg&gt;,
-  related: [
-    &lt;recursive&gt;,...
-  ],
-  //number of messages below this point. (when opts.count = true)
-  count: &lt;int&gt;,
-  //the message this message links to. this will not appear on the bottom level.
-  //(when opts.parent = true)
-  parent: &lt;parent_id&gt;
+  &quot;previous&quot;: &quot;%26AC+gU0t74jRGVeDY013cVghlZRc0nfUAnMnutGGHM=.sha256&quot;,
+  &quot;author&quot;: &quot;@hxGxqPrplLjRG2vtjQL87abX4QKqeLgCwQpS730nNwE=.ed25519&quot;,
+  &quot;sequence&quot;: 216,
+  &quot;timestamp&quot;: 1442590513298,
+  &quot;hash&quot;: &quot;sha256&quot;,
+  &quot;content&quot;: {
+    &quot;type&quot;: &quot;vote&quot;,
+    &quot;vote&quot;: {
+      &quot;link&quot;: &quot;%WbQ4dq0m/zu5jxll9zUbe0iGmDOajCx1ZkLKjZ80JvI=.sha256&quot;,
+      &quot;value&quot;: 1
+    }
+  },
+  &quot;signature&quot;: &quot;Sjq1C3yiKdmi1TWvNqxIk1ZQBf4pPJYl0HHRDVf/xjm5tWJHBaW4kXo6mHPcUMbJYUtc03IvPwVqB+BMnBgmAQ==.sig.ed25519&quot;
 }
 </code></pre>
-<p>If <code>count</code> option is true, then each message will contain a <code>count</code>
-it&#39;s decendant messages. If <code>parent</code> is true then each level will have 
-<code>parent</code>, the <code>id/key</code> of it&#39;s parent message.</p>
-<h2 id="license">License</h2>
-<p>MIT</p>
+<h3 id="entity-references-links-">Entity References (Links)</h3>
+<p>The text inside a message can refer to three types of Secure Scuttlebutt entities: messages, feeds, and blobs (i.e. attachments).
+Messages and blobs are referred to by their hashes, but a feed is referred to by its signing public key.
+Thus, a message within a feed can refer to another feed, or to a particular point <em>within</em> a feed.</p>
+<p><a href="https://ssbc.github.io/docs/ssb/linking.html">Read more about links here.</a></p>
+<h3 id="lan-and-internet-connectivity">LAN and Internet connectivity</h3>
+<p>SSB is hostless: each computer installs the same copy of software and has equal rights in the network.
+Devices discover each other over the LAN with multicast UDP and sync automatically.</p>
+<p>To sync across the Internet, &quot;Pub&quot; nodes run at public IPs and follow users.
+They are essentially mail-bots which improve uptime and availability.
+Users generate invite-codes to command Pubs to follow their friends.
+The SSB team runs some Pubs, but anybody can create and introduce their own.</p>
+<h2 id="security-properties">Security properties</h2>
+<p>Secure Scuttlebutt maintains useful security properties even when it is connected to a malicious Secure Scuttlebutt database.
+This makes it ideal as a store for peer-to-peer applications.</p>
+<p>Imagine that we want to read from a feed for which we know the identity, but we&#39;re connected to a malicious Secure Scuttlebutt instance.
+As long as the malicious database does not have the private key:</p>
+<ul>
+<li>The malicious database cannot create a new feed with the same identifier</li>
+<li>The malicious database cannot write new fake messages to the feed</li>
+<li>The malicious database cannot reorder the messages in the feed</li>
+<li>The malicious database cannot send us a new copy of the feed that omits messages from the middle</li>
+<li>The malicious database <em>can</em> refuse to send us the feed, or only send us the first <em>N</em> messages in the feed</li>
+<li>Messages may optionally be encrypted</li>
+</ul>
+<h2 id="further-reading">Further Reading</h2>
+<ul>
+<li><a href="https://ssbc.github.io/docs/articles/design-challenge-avoid-centralization-and-singletons.html">Design Challenge: Avoid Centralization and Singletons</a></li>
+<li><a href="https://ssbc.github.io/docs/articles/design-challenge-sybil-attack.html">Design Challenge: Sybil Attacks</a></li>
+<li><a href="https://ssbc.github.io/docs/articles/using-trust-in-open-networks.html">Using Trust in Open Networks</a></li>
+</ul>
 
         </div>
       </div>
