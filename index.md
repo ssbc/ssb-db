@@ -1,6 +1,6 @@
 # Secure Scuttlebutt
 
-A **global database protocol** of unforgeable append-only message feeds.
+Secure Scuttlebutt is a database protocol for unforgeable append-only message feeds.
 
 "Unforgeable" means that only the owner of a feed can update that feed, as enforced by digital signing (see [Security properties](#security-properties)).
 This property makes Secure Scuttlebutt useful for peer-to-peer applications.
