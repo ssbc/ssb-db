@@ -61,7 +61,7 @@ Here's an example message:
 
 ### Entity References (Links)
 
-Messages can reference three types of Secure Scuttlebutt entities: messages, feeds, and blobs (i.e. files).
+Messages can reference three types of Secure Scuttlebutt objects: messages, feeds, and blobs (i.e. files).
 Messages and blobs are referred to by their hashes, but a feed is referred to by its signing public key.
 
 [&raquo; Content-Hash Links](https://ssbc.github.io/docs/ssb/linking.html)
