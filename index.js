@@ -57,13 +57,20 @@ function getVMajor () {
 
 module.exports = function (db, opts, keys) {
   db = mynosql(db)
+  //small data
   var sysDB   = db.sublevel('sys')
+  //append only
   var logDB   = db.sublevel('log')
-  var feedDB  = db.sublevel('fd')
+  //sorted
+  var feedDB  = db.sublevel('fd') //NOT USED.
+  //sorted: [author, seq] => id //immutable
   var clockDB = db.sublevel('clk')
+  //hash table: [author] => {seq, localtime}. mutable.
   var lastDB  = db.sublevel('lst')
+  //sorted: [{source, dest, rel}]: id
   var indexDB = db.sublevel('idx')
-  var appsDB  = db.sublevel('app')
+
+  var appsDB  = db.sublevel('app') //NOT USED.
 
   function get (db, key) {
     return function (cb) { db.get(key, cb) }
@@ -101,7 +108,7 @@ module.exports = function (db, opts, keys) {
     // this will be used to pass to plugins which
     // must create their indexes asyncly.
 
-// local time is now handled by 
+// local time is now handled by mynosql
 //    add({
 //      key: localtime, value: id,
 //      type: 'put', prefix: logDB
@@ -142,6 +149,16 @@ module.exports = function (db, opts, keys) {
         type: 'put', prefix: indexDB
       })
     })
+  }
+  var get = db.get
+  db.get = function (key, cb) {
+    if(isNumber(key))
+      logDB.get(key, function (err, key) {
+        if(err) cb(err)
+        else get(key, cb)
+      })
+    else
+      get(key, cb)
   }
 
   db.createFeed = function (keys) {
@@ -527,3 +544,4 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
+
