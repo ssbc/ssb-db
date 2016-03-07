@@ -89,7 +89,7 @@ module.exports = function (db, opts, keys) {
       type: 'put', prefix: feedDB
     })
 
-    var localtime = timestamp()
+    var localtime = op.timestamp = timestamp()
 
     // index the latest message from each author
     add({
