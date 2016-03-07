@@ -141,9 +141,43 @@ module.exports = function (opts) {
     })
 
   })
+
+  tape('live', function (t) {
+    t.plan(3)
+
+    var db = sublevel(level('test-ssb-log6', {
+      valueEncoding: opts.codec
+    }))
+
+    var ssb = require('../')(db, opts)
+
+    var feed = createFeed(ssb, opts.generate(), opts)
+
+      var ts = Date.now()
+
+      pull(
+        ssb.createLogStream({ live: true }),
+
+        pull.drain(function (op) {
+          if(op.sync) return t.ok(true)
+          t.ok(op.timestamp > ts)
+          t.equal(op.value.content.type, 'msg')
+          t.end()
+        })
+      )
+
+
+    feed.add('msg', 'hello there!', function (err, msg) {
+      if(err) throw err
+    })
+
+  })
+
 }
 
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
 
