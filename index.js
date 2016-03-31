@@ -483,12 +483,15 @@ module.exports = function (db, opts, keys) {
     var msgs = {key: key, value: null}
     db.get(key, function (err, msg) {
       msgs.value = msg
+      if (err && err.notFound)
+        err = null // ignore not found
       done(err)
     })
 
     related(msgs)
 
     function related (msg) {
+      if (n<0) return
       n++
       all(db.links({dest: msg.key, rel: opts.rel, keys: true, values:true, meta: false, type:'msg'}))
       (function (err, ary) {

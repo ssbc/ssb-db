@@ -178,6 +178,54 @@ module.exports = function (opts) {
   })
 
 
+  tape('missing root message', function (t) {
+
+    var msg1Key = '%HH88p+bzbBxVdse9gihlylVvM7uqswKXxcQfYCR5DGU=.sha256'
+    // alice.add({
+    //   type: 'post',
+    //   text: 'hello, world 2'
+    // }, function (err, msg) {
+    //   if(err) throw err
+    //   console.log(msg)
+
+      bob.add({
+        type: 'post',
+        text: 'welcome! 2',
+        'replies-to': msg1Key
+      }, function (err, msg2) {
+        if(err) throw err
+
+        charlie.add({
+          type: 'post',
+          text: 'hey hey 2',
+          'replies-to': msg2.key
+        }, function (err, msg3) {
+
+          ssb.relatedMessages({id: msg1Key, count: true}, function (err, msgs) {
+
+            console.log(JSON.stringify(msgs, null, 2))
+
+            t.deepEqual(msgs, {
+              key: msg1Key, value: undefined,
+              related: [
+                {
+                  key: msg2.key, value: msg2.value,
+                  related: [
+                    msg3
+                  ],
+                  count: 1
+                }
+              ],
+              count: 2
+            })
+
+            t.end()
+
+          })
+        })
+      })
+    })
+  // })
 
 }
 
