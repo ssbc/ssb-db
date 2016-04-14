@@ -9,11 +9,9 @@ var assert    = require('assert')
 var ltgt      = require('ltgt')
 var mlib      = require('ssb-msgs')
 var explain   = require('explain-error')
-var mynosql   = require('mynosql')
 var pdotjson  = require('./package.json')
 var createFeed = require('ssb-feed')
 var cat       = require('pull-cat')
-var mynosql   = require('mynosql')
 var ssbref    = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 
@@ -56,7 +54,6 @@ function getVMajor () {
 }
 
 module.exports = function (db, opts, keys) {
-  db = mynosql(db)
   var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
   var feedDB  = db.sublevel('fd')
@@ -101,11 +98,10 @@ module.exports = function (db, opts, keys) {
     // this will be used to pass to plugins which
     // must create their indexes asyncly.
 
-// local time is now handled by 
-//    add({
-//      key: localtime, value: id,
-//      type: 'put', prefix: logDB
-//    })
+    add({
+      key: localtime, value: id,
+      type: 'put', prefix: logDB
+    })
 
     indexMsg(add, localtime, id, msg)
 
@@ -530,3 +526,7 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
+
+
+
+
