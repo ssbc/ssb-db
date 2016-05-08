@@ -474,7 +474,7 @@ module.exports = function (db, opts, keys) {
     if(isString(opts)) opts = {key: opts}
     if(!opts) throw new Error('opts *must* be object')
     var key = opts.id || opts.key
-
+    var depth = opts.depth || Infinity
     var n = 1
     var msgs = {key: key, value: null}
     db.get(key, function (err, msg) {
@@ -484,9 +484,10 @@ module.exports = function (db, opts, keys) {
       done(err)
     })
 
-    related(msgs)
+    related(msgs, depth)
 
-    function related (msg) {
+    function related (msg, depth) {
+      if(depth <= 0) return
       if (n<0) return
       n++
       all(db.links({dest: msg.key, rel: opts.rel, keys: true, values:true, meta: false, type:'msg'}))
@@ -496,7 +497,7 @@ module.exports = function (db, opts, keys) {
             return compare(a.value.timestamp, b.value.timestamp) || compare(a.key, b.key)
           })
           msg.related = ary
-          ary.forEach(related)
+          ary.forEach(function (msg) { related (msg, depth - 1) })
         }
         done(err)
       })
