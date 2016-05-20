@@ -14,6 +14,7 @@ var createFeed = require('ssb-feed')
 var cat       = require('pull-cat')
 var ssbref    = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
+var Live      = require('pull-live')
 
 var Validator = require('ssb-feed/validator')
 
@@ -187,10 +188,8 @@ module.exports = function (db, opts, keys) {
   // opts standardized to work like levelup api
   function stdopts (opts) {
     opts = opts || {}
-    if (opts.keys !== false)
-      opts.keys = true
-    if (opts.values !== false)
-      opts.values = true
+    opts.keys   = opts.keys   !== false //default keys to true
+    opts.values = opts.values !== false //default values to true
     return opts
   }
   function msgFmt (keys, values, obj) {
@@ -216,7 +215,7 @@ module.exports = function (db, opts, keys) {
 
     return pull(
       pl.read(feedDB, opts),
-      lookup(_keys, _values)
+      lookup(_keys, _values) //XXX
     )
   }
 
@@ -246,7 +245,9 @@ module.exports = function (db, opts, keys) {
       if(!values) return cb(null, key)
       db.get(key, function (err, msg) {
         if (err) cb(err)
-        else cb(null, msgFmt(keys, values, { key: key, value: msg }))
+        else {
+          cb(null, msgFmt(keys, values, { key: key, value: msg }))
+        }
       })
     })
   }
@@ -262,6 +263,7 @@ module.exports = function (db, opts, keys) {
       _keys    = opts.keys !== false
       _values  = opts.values !== false
     }
+
     return pull(
       pl.read(clockDB, {
         gte:  [id, seq],
@@ -275,7 +277,6 @@ module.exports = function (db, opts, keys) {
       lookup(_keys, _values)
     )
   }
-
 
   db.createUserStream = function (opts) {
     opts = stdopts(opts)
@@ -329,16 +330,15 @@ module.exports = function (db, opts, keys) {
     })
   }
 
-  db.createLogStream = function (opts) {
+//  var createLive = 
+  db.createLogStream = Live(function (opts) {
     opts = stdopts(opts)
-    var live = opts.live || opts.tail; delete opts.live
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-
-    var old = pull(
-      pl.read(logDB, opts),
+    return pull(
+      pl.old(logDB, stdopts(opts)),
+      //lookup2(keys, values, 'timestamp')
       paramap(function (data, cb) {
-        if(data.sync) return cb(null, data)
         var key = data.value
         var seq = data.key
         db.get(key, function (err, value) {
@@ -347,11 +347,9 @@ module.exports = function (db, opts, keys) {
         })
       })
     )
-    if(!live) return old
-
-    return cat([old, pull.values([{sync: true}]), pl.live(db)])
-
-  }
+  }, function (opts) {
+    return pl.live(db, stdopts(opts))
+  })
 
   var HI = undefined, LO = null
 
@@ -527,6 +525,16 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
