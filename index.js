@@ -15,6 +15,8 @@ var cat       = require('pull-cat')
 var ssbref    = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Live      = require('pull-live')
+var Notify    = require('pull-notify')
+var compare   = require('typewiselite')
 
 var Validator = require('ssb-feed/validator')
 
@@ -71,10 +73,18 @@ module.exports = function (db, opts, keys) {
 
   db.add = Validator(db)
 
-  db.pre(function (op, add, _batch) {
+  var realtime = Notify()
+
+  db.pre(function (op, _add, _batch) {
     var msg = op.value
     var id = op.key
     // index by sequence number
+
+    function add (kv) {
+      _add(kv);
+      kv._value = op.value
+      realtime(kv)
+    }
 
     add({
       key: [msg.author, msg.sequence], value: id,
@@ -205,9 +215,6 @@ module.exports = function (db, opts, keys) {
   //TODO: eventually, this should filter out authors you do not follow.
   db.createFeedStream = function (opts) {
     opts = stdopts(opts)
-    ltgt.toLtgt(opts, opts, function (value) {
-      return [value, LO]
-    }, LO, HI)
     var _keys = opts.keys
     var _values = opts.values
     opts.keys = false
@@ -330,7 +337,6 @@ module.exports = function (db, opts, keys) {
     })
   }
 
-//  var createLive = 
   db.createLogStream = Live(function (opts) {
     opts = stdopts(opts)
     var keys = opts.keys; delete opts.keys
@@ -402,17 +408,15 @@ module.exports = function (db, opts, keys) {
 
   function type(t) { return {feed: '@', msg: '%', blob: '&'}[t] || t }
 
-  db.links = function (opts) {
+  function linksOpts (opts) {
     if(!opts) throw new Error('opts *must* be provided')
-    opts.meta = opts.meta !== false //default: true
-    opts.keys = opts.keys !== false //default: true
-    if(!opts.values&&!opts.meta&&!opts.keys)
+    
+    if(  !(opts.values === true)
+      && !(opts.meta !== false)
+      && !(opts.keys !== false)
+    )
       throw new Error('makes no sense to return stream without results'
         + 'set at least one of {keys, values, meta} to true')
-
-    function tolink (v) {
-      return (ssbref.isLink(v)) ? v : null
-    }
 
     var src = type(opts.source), dst = type(opts.dest), rel = opts.rel
 
@@ -425,47 +429,77 @@ module.exports = function (db, opts, keys) {
     function lo(value) { return range(value, "!", LO) }
     function hi(value) { return range(value, "~", HI) }
 
-
     var index = back ? '_link' : 'link'
     var gte = [index, lo(from), rel || LO, lo(to), LO, LO]
     var lte = [index, hi(from), rel || HI, hi(to), HI, HI]
-
-    function testLink (a, e) { //actual, expected
-      return e ? e.length === 1 ? a[0]==e[0] : a===e : true
+    return {
+      gte: gte, lte: lte, reverse: opts.reverse,
+      back: back, rel: rel, source: src, dest: dst,
+      props: {
+        keys: opts.keys !== false, //default: true
+        meta: opts.meta !== false, //default: true
+        values: opts.values === true, //default: false
+      }
     }
+  }
 
+  function testLink (a, e) { //actual, expected
+    return e ? e.length === 1 ? a[0]==e[0] : a===e : true
+  }
+
+  function lookupLinks (opts) {
     return pull(
-      pl.read(indexDB, { gte: gte, lte: lte, live: opts.live, reverse: opts.reverse }),
       pull.map(function (op) {
         return {
-          source: op.key[back?3:1],
+          source: op.key[opts.back?3:1],
           rel: op.key[2],
-          dest: op.key[back?1:3],
+          dest: op.key[opts.back?1:3],
           key: op.key[5]
         }
       }),
+      pull.through(console.log),
       // in case source and dest are known but not rel,
       // this will scan all links from the source
       // and filter out those to the dest. not efficient
       // but probably a rare query.
       pull.filter(function (data) {
-        if(rel && rel !== data.rel) return false
-        if(!testLink(data.dest, dst)) return false
-        if(!testLink(data.source, src)) return false
+        if(opts.rel && opts.rel !== data.rel) return false
+        if(!testLink(data.dest, opts.dest)) return false
+        if(!testLink(data.source, opts.source)) return false
         return true
       }),
-      ! opts.values
+      ! opts.props.values
       ? pull.map(function (op) {
-          return format(opts, op, op.key, null)
+          return format(opts.props, op, op.key, null)
         })
       : paramap(function (op, cb) {
+          if(op._value)
+            return cb(null, opts.props, op, op.key, op._value)
           db.get(op.key, function (err, msg) {
             if(err) return cb(err)
-            cb(null, format(opts, op, op.key, msg))
+            cb(null, format(opts.props, op, op.key, msg))
           })
       })
     )
   }
+
+
+  db.links = Live(function (opts) {
+    opts = linksOpts(opts)
+    return pull(
+      pl.old(indexDB, opts),
+      lookupLinks(opts)
+    )
+  }, function (opts) {
+    opts = linksOpts(opts)
+    return pull(
+      realtime.listen(),
+      pull.filter(function (msg) {
+        return ltgt.contains(opts, msg.key, compare)
+      }),
+      lookupLinks(opts)
+    )
+  })
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
@@ -525,17 +559,6 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
