@@ -215,6 +215,11 @@ module.exports = function (db, opts, keys) {
   //TODO: eventually, this should filter out authors you do not follow.
   db.createFeedStream = function (opts) {
     opts = stdopts(opts)
+    //mutates opts
+    ltgt.toLtgt(opts, opts, function (value) {
+      return [value, LO]
+    }, LO, HI)
+
     var _keys = opts.keys
     var _values = opts.values
     opts.keys = false
@@ -287,6 +292,7 @@ module.exports = function (db, opts, keys) {
 
   db.createUserStream = function (opts) {
     opts = stdopts(opts)
+    //mutates opts
     ltgt.toLtgt(opts, opts, function (value) {
       return [opts.id, value]
     }, LO, HI)
