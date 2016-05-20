@@ -8,6 +8,15 @@ var ssbKeys    = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var cont       = require('cont')
 
+function cmpstr (a, b) {
+  return a < b ? -1 : a === b ? 0 : 1
+}
+
+function compare (a, b) {
+  return cmpstr(a.key, b.key) || cmpstr(a.dest, b.dest) || cmpstr(a.rel, b.rel)
+//  return a.key < b.key ? -1 : a.key === b.key ? 0 : -1
+}
+
 module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
@@ -21,6 +30,13 @@ module.exports = function (opts) {
   var bob = db.createFeed(opts.generate())
 
   var msgs = []
+
+  var from_alice = []
+
+  pull(
+    db.links({source: alice.id, old: false, live: true}),
+    pull.drain(from_alice.push.bind(from_alice))
+  )
 
   tape('initialize', function (t) {
 
@@ -90,6 +106,19 @@ module.exports = function (opts) {
       {dest: msgs[2].key}, [mention])
     test('equal, query dest: %..., rel: mentions',
       {dest: msgs[2].key, rel: 'mentions'}, [mention])
+  })
+
+  tape('realtime', function (t){
+    console.log(from_alice, alice.id)
+    t.equal(from_alice.length, 3)
+    pull(
+      db.links({source: alice.id, old: true}),
+      pull.collect(function (err, ary) {
+        if(err) throw err
+        t.deepEqual(from_alice.sort(compare), ary.sort(compare))
+        t.end()
+      })
+    )
   })
 
 }
