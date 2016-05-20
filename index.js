@@ -463,7 +463,6 @@ module.exports = function (db, opts, keys) {
           key: op.key[5]
         }
       }),
-      pull.through(console.log),
       // in case source and dest are known but not rel,
       // this will scan all links from the source
       // and filter out those to the dest. not efficient
@@ -565,6 +564,7 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
+
 
 
 
