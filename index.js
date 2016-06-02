@@ -16,7 +16,6 @@ var ssbref    = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Live      = require('pull-live')
 var Notify    = require('pull-notify')
-var compare   = require('typewiselite')
 
 var Validator = require('ssb-feed/validator')
 
@@ -416,7 +415,7 @@ module.exports = function (db, opts, keys) {
 
   function linksOpts (opts) {
     if(!opts) throw new Error('opts *must* be provided')
-    
+
     if(  !(opts.values === true)
       && !(opts.meta !== false)
       && !(opts.keys !== false)
