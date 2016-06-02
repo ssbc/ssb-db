@@ -16,7 +16,6 @@ var ssbref    = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Live      = require('pull-live')
 var Notify    = require('pull-notify')
-var compare   = require('typewiselite')
 
 var Validator = require('ssb-feed/validator')
 
@@ -416,7 +415,7 @@ module.exports = function (db, opts, keys) {
 
   function linksOpts (opts) {
     if(!opts) throw new Error('opts *must* be provided')
-    
+
     if(  !(opts.values === true)
       && !(opts.meta !== false)
       && !(opts.keys !== false)
@@ -568,3 +567,114 @@ module.exports = function (db, opts, keys) {
 
 
 
+inks from the source
+            // and filter out those to the dest. not efficient
+            // but probably a rare query.
+            pull.filter(function(data) {
+                if (opts.rel && opts.rel !== data.rel) return false
+                if (!testLink(data.dest, opts.dest)) return false
+                if (!testLink(data.source, opts.source)) return false
+                return true
+            }), !opts.props.values ? pull.map(function(op) {
+                return format(opts.props, op, op.key, null)
+            }) : paramap(function(op, cb) {
+                if (op._value)
+                    return cb(null, opts.props, op, op.key, op._value)
+                db.get(op.key, function(err, msg) {
+                    if (err) return cb(err)
+                    cb(null, format(opts.props, op, op.key, msg))
+                })
+            })
+        )
+    }
+
+
+    db.links = Live(function(opts) {
+        opts = linksOpts(opts)
+        return pull(
+            pl.old(indexDB, opts),
+            lookupLinks(opts)
+        )
+    }, function(opts) {
+        opts = linksOpts(opts)
+        return pull(
+            realtime.listen(),
+            pull.filter(function(msg) {
+                return ltgt.contains(opts, msg.key, compare)
+            }),
+            lookupLinks(opts)
+        )
+    })
+
+    //get all messages that link to a given message.
+    db.relatedMessages = function(opts, cb) {
+        if (isString(opts)) opts = {
+            key: opts
+        }
+        if (!opts) throw new Error('opts *must* be object')
+        var key = opts.id || opts.key
+        var depth = opts.depth || Infinity
+        var n = 1
+        var msgs = {
+            key: key,
+            value: null
+        }
+        db.get(key, function(err, msg) {
+            msgs.value = msg
+            if (err && err.notFound)
+                err = null // ignore not found
+            done(err)
+        })
+
+        related(msgs, depth)
+
+        function related(msg, depth) {
+            if (depth <= 0) return
+            if (n < 0) return
+            n++
+            all(db.links({
+                    dest: msg.key,
+                    rel: opts.rel,
+                    keys: true,
+                    values: true,
+                    meta: false,
+                    type: 'msg'
+                }))
+                (function(err, ary) {
+                    if (ary && ary.length) {
+                        ary.sort(function(a, b) {
+                            return compare(a.value.timestamp, b.value.timestamp) || compare(a.key, b.key)
+                        })
+                        msg.related = ary
+                        ary.forEach(function(msg) {
+                            related(msg, depth - 1)
+                        })
+                    }
+                    done(err)
+                })
+        }
+
+        function count(msg) {
+            if (!msg.related)
+                return msg
+            var c = 0
+            msg.related.forEach(function(_msg) {
+                if (opts.parent) _msg.parent = msg.key
+                c += 1 + (count(_msg).count || 0)
+            })
+            if (opts.count) msg.count = c
+            return msg
+        }
+
+        function done(err) {
+            if (err && n > 0) {
+                n = -1
+                return cb(err)
+            }
+            if (--n) return
+            cb(null, count(msgs))
+        }
+    }
+
+    return db
+}
