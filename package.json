@@ -24,7 +24,8 @@
     "ssb-feed": "^2.0.0",
     "ssb-keys": "^5.0.0",
     "ssb-msgs": "^5.0.0",
-    "ssb-ref": "^2.0.0"
+    "ssb-ref": "^2.0.0",
+    "typewiselite": "^1.0.0"
   },
   "devDependencies": {
     "deep-equal": "^0.2.1",

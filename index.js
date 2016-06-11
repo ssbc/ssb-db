@@ -16,6 +16,7 @@ var ssbref    = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Live      = require('pull-live')
 var Notify    = require('pull-notify')
+var compare   = require('typewiselite')
 
 var Validator = require('ssb-feed/validator')
 
@@ -44,10 +45,6 @@ function all (stream) {
   return function (cb) {
     pull(stream, pull.collect(cb))
   }
-}
-
-function compare(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0
 }
 
 function getVMajor () {
@@ -499,6 +496,7 @@ module.exports = function (db, opts, keys) {
     return pull(
       realtime.listen(),
       pull.filter(function (msg) {
+        console.log("RT", msg, opts, msg.key)
         return ltgt.contains(opts, msg.key, compare)
       }),
       lookupLinks(opts)
@@ -563,6 +561,7 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
+
 
 
 
