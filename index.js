@@ -161,7 +161,7 @@ module.exports = function (db, opts, keys) {
   db.rebuildIndex = function (cb) {
     // remove all entries from the index
     pull(
-      pl.read(indexDB, { keys: true, values: false }),
+      pl.read(indexDB, { keys: true, values: false, old: true }),
       paramap(function (key, cb) { indexDB.del(key, cb) }),
       pull.drain(null, next)
     )
@@ -266,7 +266,6 @@ module.exports = function (db, opts, keys) {
       var opts = stdopts(id)
       id       = opts.id
       seq      = opts.sequence || opts.seq || 0
-      live     = !!opts.live
       limit    = opts.limit
       _keys    = opts.keys !== false
       _values  = opts.values !== false
@@ -276,11 +275,11 @@ module.exports = function (db, opts, keys) {
       pl.read(clockDB, {
         gte:  [id, seq],
         lte:  [id, MAX_INT],
-        live: live,
+        live: opts && opts.live,
+        old: opts && opts.old,
         keys: false,
-        sync: opts && opts.sync,
-        limit: limit,
-        onAbort: opts && opts.onAbort
+        sync: false === (opts && opts.sync),
+        limit: limit
       }),
       lookup(_keys, _values)
     )
@@ -380,6 +379,7 @@ module.exports = function (db, opts, keys) {
     return pull(
       pl.read(indexDB, opts),
       paramap(function (data, cb) {
+        if(data.sync) return cb()
         var id = _keys ? data.value : data
         db.get(id, function (err, msg) {
           var ts = opts.keys ? data.key[2] : undefined
@@ -496,7 +496,6 @@ module.exports = function (db, opts, keys) {
     return pull(
       realtime.listen(),
       pull.filter(function (msg) {
-        console.log("RT", msg, opts, msg.key)
         return ltgt.contains(opts, msg.key, compare)
       }),
       lookupLinks(opts)
@@ -561,6 +560,8 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
+
+
 
 
 
