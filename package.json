@@ -16,7 +16,7 @@
     "ltgt": "~2.0.0",
     "monotonic-timestamp": "~0.0.8",
     "pull-cat": "~1.1.5",
-    "pull-level": "^1.5.1",
+    "pull-level": "^2.0.1",
     "pull-live": "^1.0.1",
     "pull-notify": "^0.1.0",
     "pull-paramap": "~1.1.3",
