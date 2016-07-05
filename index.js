@@ -404,6 +404,7 @@ module.exports = function (db, opts, keys) {
     else {
       if(vals)  op.value = value
       if(!keys) delete op.key
+      delete op._value
       return op
     }
   }
@@ -453,6 +454,7 @@ module.exports = function (db, opts, keys) {
     return pull(
       pull.map(function (op) {
         return {
+          _value: op._value,
           source: op.key[opts.back?3:1],
           rel: op.key[2],
           dest: op.key[opts.back?1:3],
