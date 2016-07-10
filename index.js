@@ -477,7 +477,7 @@ module.exports = function (db, opts, keys) {
         })
       : paramap(function (op, cb) {
           if(op._value)
-            return cb(null, opts.props, op, op.key, op._value)
+            return cb(null, format(opts.props, op, op.key, op._value))
           db.get(op.key, function (err, msg) {
             if(err) return cb(err)
             cb(null, format(opts.props, op, op.key, msg))
