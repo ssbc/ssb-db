@@ -121,6 +121,24 @@ module.exports = function (opts) {
     )
   })
 
+
+  tape('live link values', function (t) {
+    var links = []
+    pull(
+      db.links({old: false, live: true, values: true}),
+      pull.drain(links.push.bind(links))
+    )
+
+    alice.publish({type: 'foo', foo: bob.id}, function (err, msg) {
+      t.error(err, 'publish')
+      t.deepEqual(links, [
+        {key: msg.key, value: msg.value,
+          source: alice.id, dest: bob.id, rel: 'foo'}
+      ])
+      t.end()
+    })
+  })
+
 }
 
 if(!module.parent)
