@@ -409,7 +409,7 @@ module.exports = function (db, opts, keys) {
     }
   }
 
-  function type(t) { return {feed: '@', msg: '%', blob: '&'}[t] || t }
+  function type(t) { return {feed: '@', msg: '%', blob: '&', tag: '#'}[t] || t }
 
   function linksOpts (opts) {
     if(!opts) throw new Error('opts *must* be provided')
