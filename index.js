@@ -147,7 +147,7 @@ module.exports = function (db, opts, keys) {
     })
   }
 
-  db.createFeed = function (keys) {
+  db.createFeed = function (keys, opts) {
     return createFeed(db, keys, opts)
   }
 
@@ -329,10 +329,12 @@ module.exports = function (db, opts, keys) {
   db.getLatest = function (id, cb) {
     lastDB.get(id, function (err, v) {
       if(err) return cb(err)
+      //callback null there is no latest
       clockDB.get([id, toSeq(v)], function (err, hash) {
-        if(err) return cb(err)
+        if(err) return cb()
         db.get(hash, function (err, msg) {
-          cb(err, {key: hash, value: msg})
+          if(err) cb()
+          else cb(null, {key: hash, value: msg})
         })
       })
     })
@@ -562,6 +564,7 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
+
 
 
 
