@@ -328,7 +328,7 @@ module.exports = function (db, opts, keys) {
 
   db.getLatest = function (id, cb) {
     lastDB.get(id, function (err, v) {
-      if(err) return cb(err)
+      if(err) return cb()
       //callback null there is no latest
       clockDB.get([id, toSeq(v)], function (err, hash) {
         if(err) return cb()
