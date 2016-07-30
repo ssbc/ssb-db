@@ -10,7 +10,7 @@ module.exports = function (opts) {
 
     var message = {
       author: opts.hash(keys.public),
-      previous: opts.hash(''),
+      previous: opts.hash('whatever'),
       sequence: 5,
       timestamp: 1239435349,
       timezone: 120,

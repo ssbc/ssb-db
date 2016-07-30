@@ -41,7 +41,7 @@ module.exports = function (opts) {
 
 //  var validation = require('../validation')({sublevel: noop}, opts)
 
-  var empty = opts.hash(new Buffer(0))
+  var empty = opts.hash(new Buffer('hello'))
 
   tape('encode/decode', function (t) {
     var keys = opts.keys.generate()
