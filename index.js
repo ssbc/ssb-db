@@ -12,7 +12,7 @@ var explain   = require('explain-error')
 var pdotjson  = require('./package.json')
 var createFeed = require('ssb-feed')
 var cat       = require('pull-cat')
-var ssbref    = require('ssb-ref')
+var ref       = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Live      = require('pull-live')
 var Notify    = require('pull-notify')
@@ -20,11 +20,13 @@ var compare   = require('typewiselite')
 
 var Validator = require('ssb-feed/validator')
 
-var isFeedId = ssbref.isFeedId
-var isMsgId  = ssbref.isMsgId
-var isBlobId = ssbref.isBlobId
+var isFeedId = ref.isFeedId
+var isMsgId  = ref.isMsgId
+var isBlobId = ref.isBlobId
 
-//var u         = require('./util')
+var u         = require('./util')
+var stdopts   = u.options
+var msgFmt    = u.format
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
@@ -52,11 +54,13 @@ function getVMajor () {
   return (version.split('.')[0])|0
 }
 
-module.exports = function (db, opts, keys) {
+module.exports = function (db, opts, keys, path) {
+  
   var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
   var feedDB  = db.sublevel('fd')
-  var clockDB = db.sublevel('clk')
+  var clockDB = require('./indexes/clock')(db, {path: db.location})
+    //db.sublevel('clk')
   var lastDB  = db.sublevel('lst')
   var indexDB = db.sublevel('idx')
   var appsDB  = db.sublevel('app')
@@ -71,6 +75,11 @@ module.exports = function (db, opts, keys) {
 
   var realtime = Notify()
 
+  db.seen = 0
+  db.post(function (op) {
+    db.seen = op.ts || op.timestamp
+  })
+
   db.pre(function (op, _add, _batch) {
     var msg = op.value
     var id = op.key
@@ -82,10 +91,10 @@ module.exports = function (db, opts, keys) {
       realtime(kv)
     }
 
-    add({
-      key: [msg.author, msg.sequence], value: id,
-      type: 'put', prefix: clockDB
-    })
+//    add({
+//      key: [msg.author, msg.sequence], value: id,
+//      type: 'put', prefix: clockDB
+//    })
 
     // index my timestamp, used to generate feed.
     add({
@@ -191,23 +200,6 @@ module.exports = function (db, opts, keys) {
     }
   }
 
-  // opts standardized to work like levelup api
-  function stdopts (opts) {
-    opts = opts || {}
-    opts.keys   = opts.keys   !== false //default keys to true
-    opts.values = opts.values !== false //default values to true
-    return opts
-  }
-  function msgFmt (keys, values, obj) {
-    if (keys && values)
-      return obj
-    if (keys)
-      return obj.key
-    if (values)
-      return obj.value
-    return null // i guess?
-  }
-
   //TODO: eventually, this should filter out authors you do not follow.
   db.createFeedStream = function (opts) {
     opts = stdopts(opts)
@@ -260,19 +252,22 @@ module.exports = function (db, opts, keys) {
     })
   }
 
-  db.createHistoryStream = function (id, seq, live) {
+  db.lookup = lookup
+
+  db.createHistoryStream = function (id, seq, limit) {
     var _keys = true, _values = true, limit
-    if(!isFeedId(id)) {
-      var opts = stdopts(id)
-      id       = opts.id
-      seq      = opts.sequence || opts.seq || 0
-      limit    = opts.limit
-      _keys    = opts.keys !== false
-      _values  = opts.values !== false
+    var opts
+    if(!ref.isFeedId(id)) {
+      opts    = u.options(id)
+      id      = opts.id
+      seq     = opts.sequence || opts.seq || 0
+      limit   = opts.limit
+      _keys   = opts.keys !== false
+      _values = opts.values !== false
     }
 
     return pull(
-      pl.read(clockDB, {
+      clockDB.read({
         gte:  [id, seq],
         lte:  [id, MAX_INT],
         live: opts && opts.live,
@@ -281,8 +276,10 @@ module.exports = function (db, opts, keys) {
         sync: false === (opts && opts.sync),
         limit: limit
       }),
-      lookup(_keys, _values)
+      db.lookup(_keys, _values)
     )
+
+//    return clockDB.createHistoryStream(opts)
   }
 
   db.createUserStream = function (opts) {
@@ -297,7 +294,8 @@ module.exports = function (db, opts, keys) {
     opts.keys = false
     opts.values = true
     return pull(
-      pl.read(clockDB, opts),
+      clockDB.read(opts),
+//      pl.read(clockDB, opts),
       lookup(_keys, _values)
     )
   }
@@ -564,11 +562,4 @@ module.exports = function (db, opts, keys) {
 
   return db
 }
-
-
-
-
-
-
-
 
