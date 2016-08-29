@@ -33,6 +33,7 @@ module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
   function createDB(name) {
+    console.log('name', name)
     return SSB(sublevel(level(name, {
       valueEncoding: opts.codec
     })), opts)
@@ -109,6 +110,8 @@ module.exports = function (opts) {
     pull(
       ssb.createHistoryStream({ id: id, seq: 1, keys: true }),
       pull.collect(function (err, ary) {
+        if(err) throw err
+        console.log(ary)
         t.equal(ary.length, 8)
         t.ok(!!ary[0].key)
         t.ok(!!ary[1].key)
@@ -117,7 +120,6 @@ module.exports = function (opts) {
     )
   })
 
-  return
   tape('user stream', function (t) {
     pull(
       ssb.createUserStream({id: id, gt: 3, lte: 7, reverse: true}),
@@ -131,7 +133,6 @@ module.exports = function (opts) {
       })
     )
   })
-
   tape('keys only', function (t) {
     pull(
       ssb.createHistoryStream({ id: id, values: false }),
@@ -160,10 +161,6 @@ module.exports = function (opts) {
     pull(
       ssb.createHistoryStream({
         id: id, keys: false, live: true,
-        onAbort: function (_err) {
-          t.equal(_err, err)
-          t.end()
-        }
       }),
       abortable,
       pull.through(function (data) {
@@ -172,6 +169,9 @@ module.exports = function (opts) {
             abortable.abort(err)
           }, 100)
         console.log(data)
+      }, function (_err) {
+        t.equal(_err, err)
+        t.end()
       }),
       pull.collect(function (err, ary) {
         t.equal(ary.length, 8)
@@ -197,3 +197,9 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
+
+
+
