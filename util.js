@@ -19,3 +19,6 @@
 
 exports.options = stdopts
 exports.format = msgFmt
+
+exports.lo = null
+exports.hi = undefined
