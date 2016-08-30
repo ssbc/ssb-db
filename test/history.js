@@ -80,7 +80,7 @@ module.exports = function (opts) {
 
   tape('since', function (t) {
     pull(
-      ssb.createHistoryStream(id, 1),
+      ssb.createHistoryStream({id: id, seq:1}),
       pull.collect(function (err, ary) {
         t.equal(ary.length, 8)
         t.end()
