@@ -41,10 +41,13 @@ module.exports = function (_db, path, version, map) {
     waiting.push({ts: _db.seen, cb: ready})
   }
 
+  var reader, closed
+
   function next () {
     pull(
-      _db.createLogStream({gt: since, live: true, sync: false}),
+      reader = _db.createLogStream({gt: since, live: true, sync: false}),
       Write(function (batch, cb) {
+        if(closed) return cb(new Error('database closed while index was building'))
         db.batch(batch, function (err) {
           if(err) return cb(err)
           since = batch[0].value.since
@@ -68,7 +71,10 @@ module.exports = function (_db, path, version, map) {
         batch = batch.concat(map(data))
         batch[0].value.since = Math.max(batch[0].value.since, ts)
         return batch
-      }, 512)
+      }, 512, function (err) {
+        //probably a fatal database error
+        if(err) console.error(err.stack)
+      })
     )
   }
 
@@ -89,9 +95,19 @@ module.exports = function (_db, path, version, map) {
       return source
     },
     close: function (cb) {
-      db.close(cb)
+      closed = true
+      //todo: move this bit into pull-write
+      if(reader)
+        reader(true, function () {
+          db.close(cb)
+        })
+      else db.close(cb)
     }
     //put, del, batch - leave these out for now, since the indexes just map.
   }
 }
+
+
+
+
 
