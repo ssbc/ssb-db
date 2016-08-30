@@ -15,22 +15,13 @@ module.exports = function (db, opts) {
       key: [data.value.author, data.value.sequence], value: data.key, type: 'put'
     }
   })
-
-  index.createHistoryStream = function (id, seq, limit) {
-//    var _keys = true, _values = true, limit
-    var _keys = true, _values = true
-    var opts
-    if(!ref.isFeedId(id)) {
-      opts    = u.options(id)
-      id      = opts.id
-      seq     = opts.sequence || opts.seq || 0
-      limit   = opts.limit
-      _keys   = opts.keys !== false
-      _values = opts.values !== false
-    }
-
+  index.createHistoryStream = function (opts) {
+    var opts    = u.options(opts)
+    var id      = opts.id
+    var seq     = opts.sequence || opts.seq || 0
+    var limit   = opts.limit
     return pull(
-      clockDB.read({
+      index.read({
         gte:  [id, seq],
         lte:  [id, MAX_INT],
         live: opts && opts.live,
@@ -39,18 +30,20 @@ module.exports = function (db, opts) {
         sync: false === (opts && opts.sync),
         limit: limit
       }),
-      db.lookup(_keys, _values)
+      db.lookup(opts.keys !== false, opts.values !== false)
     )
 
-
-
-    return index.read(opts)
+//    return clockDB.createHistoryStream(opts)
   }
 
   return index
 
 
 }
+
+
+
+
 
 
 

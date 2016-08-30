@@ -17,7 +17,7 @@ var ssbKeys   = require('ssb-keys')
 var Live      = require('pull-live')
 var Notify    = require('pull-notify')
 var compare   = require('typewiselite')
-
+var peek      = require('level-peek')
 var Validator = require('ssb-feed/validator')
 
 var isFeedId = ref.isFeedId
@@ -79,7 +79,9 @@ module.exports = function (db, opts, keys, path) {
   db.post(function (op) {
     db.seen = op.ts || op.timestamp
   })
-
+  peek.last(logDB, {keys: true}, function (err, key) {
+    db.seen = key
+  })
   db.pre(function (op, _add, _batch) {
     var msg = op.value
     var id = op.key
@@ -254,32 +256,8 @@ module.exports = function (db, opts, keys, path) {
 
   db.lookup = lookup
 
-  db.createHistoryStream = function (id, seq, limit) {
-    var _keys = true, _values = true, limit
-    var opts
-    if(!ref.isFeedId(id)) {
-      opts    = u.options(id)
-      id      = opts.id
-      seq     = opts.sequence || opts.seq || 0
-      limit   = opts.limit
-      _keys   = opts.keys !== false
-      _values = opts.values !== false
-    }
-
-    return pull(
-      clockDB.read({
-        gte:  [id, seq],
-        lte:  [id, MAX_INT],
-        live: opts && opts.live,
-        old: opts && opts.old,
-        keys: false,
-        sync: false === (opts && opts.sync),
-        limit: limit
-      }),
-      db.lookup(_keys, _values)
-    )
-
-//    return clockDB.createHistoryStream(opts)
+  db.createHistoryStream = function (opts) {
+    return clockDB.createHistoryStream(opts)
   }
 
   db.createUserStream = function (opts) {
@@ -560,6 +538,31 @@ module.exports = function (db, opts, keys, path) {
     }
   }
 
+  var _close = db.close
+
+  db.close = function (cb) {
+    var n = 2
+    clockDB.close(next)
+    _close.call(db, next)
+    function next (err) {
+      if(n < 0) return
+      if(err) return n = -1, cb(err)
+      if(--n) return
+      db && cb()
+    }
+  }
+
   return db
 }
+
+
+
+
+
+
+
+
+
+
+
 

@@ -14,13 +14,15 @@ module.exports = function (_db, path, version, map) {
 
   var META = '\x00', since
 
-  db.get(META, function (err, value) {
+  var start = Date.now()
+  db.get(META, {keyEncoding: 'utf8'}, function (err, value) {
+    console.log('follower', path, value)
     since = value && value.since || 0
     if(err) // new database
       next()
     else if (value.version !== version) {
       db.close(function () {
-        level.destroy(path, function (err) {
+        Level.destroy(path, function (err) {
           if(err) throw err //just die?
           db = create(path)
           since = 0
@@ -28,12 +30,14 @@ module.exports = function (_db, path, version, map) {
         })
       })
     }
+    else
+      next()
   })
 
   var written = 0, waiting = []
 
   function await(ready) {
-    if(_db.seen === written) return ready()
+    if(_db.seen === since) return ready()
     waiting.push({ts: _db.seen, cb: ready})
   }
 
@@ -43,11 +47,11 @@ module.exports = function (_db, path, version, map) {
       Write(function (batch, cb) {
         db.batch(batch, function (err) {
           if(err) return cb(err)
-          written = batch[0].value.since
+          since = batch[0].value.since
           //callback to anyone waiting for this point.
-          while(waiting.length && waiting[0].ts <= written)
+          while(waiting.length && waiting[0].ts <= since) {
             waiting.shift().cb()
-
+          }
           cb()
         })
       }, function reduce (batch, data) {
@@ -63,9 +67,8 @@ module.exports = function (_db, path, version, map) {
 
         batch = batch.concat(map(data))
         batch[0].value.since = Math.max(batch[0].value.since, ts)
-        console.log(batch)
         return batch
-      })
+      }, 512)
     )
   }
 
@@ -77,23 +80,18 @@ module.exports = function (_db, path, version, map) {
       })
     },
     read: function (opts) {
-      if(written === _db.seen) return pl.read(db, opts)
+      if(since === _db.seen) return pl.read(db, opts)
 
       var source = defer.source()
       await(function () {
         source.resolve(pl.read(db, opts))
       })
       return source
+    },
+    close: function (cb) {
+      db.close(cb)
     }
     //put, del, batch - leave these out for now, since the indexes just map.
   }
 }
-
-
-
-
-
-
-
-
 
