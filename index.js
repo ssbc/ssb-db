@@ -58,9 +58,8 @@ module.exports = function (db, opts, keys, path) {
   
   var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
-  var feedDB  = db.sublevel('fd')
-  var clockDB = require('./indexes/clock')(db, {path: db.location})
-    //db.sublevel('clk')
+  var feedDB  = require('./indexes/feed')(db)
+  var clockDB = require('./indexes/clock')(db)
   var lastDB  = db.sublevel('lst')
   var indexDB = db.sublevel('idx')
   var appsDB  = db.sublevel('app')
@@ -92,17 +91,6 @@ module.exports = function (db, opts, keys, path) {
       kv._value = op.value
       realtime(kv)
     }
-
-//    add({
-//      key: [msg.author, msg.sequence], value: id,
-//      type: 'put', prefix: clockDB
-//    })
-
-    // index my timestamp, used to generate feed.
-    add({
-      key: [msg.timestamp, msg.author], value: id,
-      type: 'put', prefix: feedDB
-    })
 
     var localtime = op.timestamp = timestamp()
 
@@ -158,10 +146,6 @@ module.exports = function (db, opts, keys, path) {
     })
   }
 
-  db.createFeed = function (keys, opts) {
-    return createFeed(db, keys, opts)
-  }
-
   db.needsRebuild = function (cb) {
     sysDB.get('vmajor', function (err, dbvmajor) {
       dbvmajor = (dbvmajor|0) || 0
@@ -203,24 +187,7 @@ module.exports = function (db, opts, keys, path) {
   }
 
   //TODO: eventually, this should filter out authors you do not follow.
-  db.createFeedStream = function (opts) {
-    opts = stdopts(opts)
-    //mutates opts
-    ltgt.toLtgt(opts, opts, function (value) {
-      return [value, LO]
-    }, LO, HI)
-
-    var _keys = opts.keys
-    var _values = opts.values
-    opts.keys = false
-    opts.values = true
-
-    return pull(
-      pl.read(feedDB, opts),
-      lookup(_keys, _values) //XXX
-    )
-  }
-
+  db.createFeedStream = feedDB.createFeedStream
   //latest was stored as author: seq
   //but for the purposes of replication back pressure
   //we need to know when we last replicated with someone.
@@ -256,27 +223,9 @@ module.exports = function (db, opts, keys, path) {
 
   db.lookup = lookup
 
-  db.createHistoryStream = function (opts) {
-    return clockDB.createHistoryStream(opts)
-  }
+  db.createHistoryStream = clockDB.createHistoryStream
 
-  db.createUserStream = function (opts) {
-    opts = stdopts(opts)
-    //mutates opts
-    ltgt.toLtgt(opts, opts, function (value) {
-      return [opts.id, value]
-    }, LO, HI)
-    var _keys = opts.keys
-    var _values = opts.values
-
-    opts.keys = false
-    opts.values = true
-    return pull(
-      clockDB.read(opts),
-//      pl.read(clockDB, opts),
-      lookup(_keys, _values)
-    )
-  }
+  db.createUserStream = clockDB.createUserStream
 
 
   //writeStream - used in replication.
@@ -541,8 +490,9 @@ module.exports = function (db, opts, keys, path) {
   var _close = db.close
 
   db.close = function (cb) {
-    var n = 2
+    var n = 3
     clockDB.close(next)
+    feedDB.close(next)
     _close.call(db, next)
     function next (err) {
       if(n < 0) return
@@ -554,15 +504,6 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
-
-
-
-
-
-
-
-
-
 
 
 
