@@ -22,3 +22,22 @@ exports.format = msgFmt
 
 exports.lo = null
 exports.hi = undefined
+
+exports.await = function () {
+  var waiting = [], value
+  return {
+    get: function () { return value },
+    set: function (_value) {
+      value = _value
+      if(waiting.length)
+        waiting.shift()(null, value)
+    },
+    await: function (cb) {
+      if(value !== undefined) cb(null, value)
+      else waiting.push(cb)
+    }
+  }
+}
+
+
+
