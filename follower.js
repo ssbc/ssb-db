@@ -14,9 +14,7 @@ module.exports = function (_db, path, version, map) {
 
   var META = '\x00', since
 
-  var start = Date.now()
   db.get(META, {keyEncoding: 'utf8'}, function (err, value) {
-    console.log('follower', path, value)
     since = value && value.since || 0
     if(err) // new database
       next()
@@ -37,13 +35,19 @@ module.exports = function (_db, path, version, map) {
   var written = 0, waiting = []
 
   function await(ready) {
-    if(_db.seen === since) return ready()
-    waiting.push({ts: _db.seen, cb: ready})
+    _db.seen.await(function () {
+      if(_db.seen.get() === since) return ready()
+      waiting.push({ts: _db.seen.get(), cb: ready})
+    })
   }
 
   var reader, closed
 
   function next () {
+    while(waiting.length && waiting[0].ts <= since) {
+      waiting.shift().cb()
+    }
+
     pull(
       reader = _db.createLogStream({gt: since, live: true, sync: false}),
       Write(function (batch, cb) {
@@ -86,7 +90,8 @@ module.exports = function (_db, path, version, map) {
       })
     },
     read: function (opts) {
-      if(since === _db.seen) return pl.read(db, opts)
+      opts = opts || {}
+      if(since === _db.seen.get()) return pl.read(db, opts)
 
       var source = defer.source()
       await(function () {
@@ -106,7 +111,6 @@ module.exports = function (_db, path, version, map) {
     //put, del, batch - leave these out for now, since the indexes just map.
   }
 }
-
 
 
 
