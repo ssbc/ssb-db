@@ -60,7 +60,7 @@ module.exports = function (db, opts, keys, path) {
   var logDB   = db.sublevel('log')
   var feedDB  = require('./indexes/feed')(db)
   var clockDB = require('./indexes/clock')(db)
-  var lastDB  = db.sublevel('lst')
+  var lastDB  = require('./indexes/last')(db)
   var indexDB = db.sublevel('idx')
   var appsDB  = db.sublevel('app')
 
@@ -74,13 +74,19 @@ module.exports = function (db, opts, keys, path) {
 
   var realtime = Notify()
 
-  db.seen = 0
+  var await = u.await()
+  var set = await.set
+  await.set = null
+  var waiting = []
+  db.seen = await
   db.post(function (op) {
-    db.seen = op.ts || op.timestamp
+    set(Math.max(op.ts || op.timestamp, await.get()||0))
   })
+
   peek.last(logDB, {keys: true}, function (err, key) {
-    db.seen = key
+    set(Math.max(key || 0, await.get()||0))
   })
+
   db.pre(function (op, _add, _batch) {
     var msg = op.value
     var id = op.key
@@ -93,16 +99,6 @@ module.exports = function (db, opts, keys, path) {
     }
 
     var localtime = op.timestamp = timestamp()
-
-    // index the latest message from each author
-    add({
-      key: msg.author, value: {sequence: msg.sequence, ts: localtime },
-      type: 'put', prefix: lastDB
-    })
-
-    // index messages in the order _received_
-    // this will be used to pass to plugins which
-    // must create their indexes asyncly.
 
     add({
       key: localtime, value: id,
@@ -198,16 +194,6 @@ module.exports = function (db, opts, keys, path) {
     return isNumber(latest) ? latest : latest.sequence
   }
 
-  db.latest = function (opts) {
-    return pull(
-      pl.read(lastDB, opts),
-      pull.map(function (data) {
-        var d = {id: data.key, sequence: toSeq(data.value), ts: data.value.ts }
-        return d
-      })
-    )
-  }
-
   function lookup(keys, values) {
     return paramap(function (key, cb) {
       if(key.sync) return cb(null, key)
@@ -215,7 +201,7 @@ module.exports = function (db, opts, keys, path) {
       db.get(key, function (err, msg) {
         if (err) cb(err)
         else {
-          cb(null, msgFmt(keys, values, { key: key, value: msg }))
+          cb(null, u.format(keys, values, { key: key, value: msg }))
         }
       })
     })
@@ -246,6 +232,8 @@ module.exports = function (db, opts, keys, path) {
       keys = opts.keys.generate()
     return createFeed(db, keys, opts)
   }
+
+  db.latest = lastDB.latest
 
   db.latestSequence = function (id, cb) {
     lastDB.get(id, cb)
@@ -490,9 +478,10 @@ module.exports = function (db, opts, keys, path) {
   var _close = db.close
 
   db.close = function (cb) {
-    var n = 3
+    var n = 4
     clockDB.close(next)
     feedDB.close(next)
+    lastDB.close(next)
     _close.call(db, next)
     function next (err) {
       if(n < 0) return
@@ -504,6 +493,4 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
-
-
 
