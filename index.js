@@ -244,119 +244,7 @@ module.exports = function (db, opts, keys, path) {
 
   db.messagesByType = indexDB.messagesByType
 
-  function format(opts, op, key, value) {
-    var meta = opts.meta !== false  //default: true
-    var keys = opts.keys !== false  //default: true
-    var vals = opts.values === true //default: false
-    if(!meta&&!keys&&!vals)
-      throw new Error('a stream without any values does not make sense')
-    if(!meta) return (
-          keys && vals  ? {key: op.key, value: value}
-        : keys          ? op.key
-                        : value
-      )
-    else {
-      if(vals)  op.value = value
-      if(!keys) delete op.key
-      delete op._value
-      return op
-    }
-  }
-
-  function type(t) { return {feed: '@', msg: '%', blob: '&'}[t] || t }
-
-  function linksOpts (opts) {
-    if(!opts) throw new Error('opts *must* be provided')
-
-    if(  !(opts.values === true)
-      && !(opts.meta !== false)
-      && !(opts.keys !== false)
-    )
-      throw new Error('makes no sense to return stream without results'
-        + 'set at least one of {keys, values, meta} to true')
-
-    var src = type(opts.source), dst = type(opts.dest), rel = opts.rel
-
-    var back = dst && !src
-    var from = back ? dst : src, to = back ? src : dst
-
-    function range(value, end, def) {
-      return !value ? def : /^[@%&]$/.test(value) ? value + end : value
-    }
-    function lo(value) { return range(value, "!", LO) }
-    function hi(value) { return range(value, "~", HI) }
-
-    var index = back ? '_link' : 'link'
-    var gte = [index, lo(from), rel || LO, lo(to), LO, LO]
-    var lte = [index, hi(from), rel || HI, hi(to), HI, HI]
-    return {
-      gte: gte, lte: lte, reverse: opts.reverse,
-      back: back, rel: rel, source: src, dest: dst,
-      props: {
-        keys: opts.keys !== false, //default: true
-        meta: opts.meta !== false, //default: true
-        values: opts.values === true, //default: false
-      }
-    }
-  }
-
-  function testLink (a, e) { //actual, expected
-    return e ? e.length === 1 ? a[0]==e[0] : a===e : true
-  }
-
-  function lookupLinks (opts) {
-    return pull(
-      pull.map(function (op) {
-        return {
-          _value: op._value,
-          source: op.key[opts.back?3:1],
-          rel: op.key[2],
-          dest: op.key[opts.back?1:3],
-          key: op.key[5]
-        }
-      }),
-      // in case source and dest are known but not rel,
-      // this will scan all links from the source
-      // and filter out those to the dest. not efficient
-      // but probably a rare query.
-      pull.filter(function (data) {
-        if(opts.rel && opts.rel !== data.rel) return false
-        if(!testLink(data.dest, opts.dest)) return false
-        if(!testLink(data.source, opts.source)) return false
-        return true
-      }),
-      ! opts.props.values
-      ? pull.map(function (op) {
-          return format(opts.props, op, op.key, null)
-        })
-      : paramap(function (op, cb) {
-          if(op._value)
-            return cb(null, format(opts.props, op, op.key, op._value))
-          db.get(op.key, function (err, msg) {
-            if(err) return cb(err)
-            cb(null, format(opts.props, op, op.key, msg))
-          })
-      })
-    )
-  }
-
-
-  db.links = Live(function (opts) {
-    opts = linksOpts(opts)
-    return pull(
-      pl.old(indexDB, opts),
-      lookupLinks(opts)
-    )
-  }, function (opts) {
-    opts = linksOpts(opts)
-    return pull(
-      realtime.listen(),
-      pull.filter(function (msg) {
-        return ltgt.contains(opts, msg.key, compare)
-      }),
-      lookupLinks(opts)
-    )
-  })
+  db.links = indexDB.links
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
@@ -432,6 +320,7 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
+
 
 
 
