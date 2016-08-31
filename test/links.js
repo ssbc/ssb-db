@@ -110,32 +110,34 @@ module.exports = function (opts) {
 
   tape('realtime', function (t){
     console.log(from_alice, alice.id)
-    t.equal(from_alice.length, 3)
     pull(
       db.links({source: alice.id, old: true}),
       pull.collect(function (err, ary) {
         if(err) throw err
+        t.equal(ary.length, 3)
+        t.equal(from_alice.length, 3)
         t.deepEqual(from_alice.sort(compare), ary.sort(compare))
         t.end()
       })
     )
   })
 
-
   tape('live link values', function (t) {
+    var msg
     var links = []
     pull(
       db.links({old: false, live: true, values: true}),
-      pull.drain(links.push.bind(links))
+      pull.drain(function (data) {
+        t.deepEqual(data,
+          {key: msg.key, value: msg.value,
+            source: alice.id, dest: bob.id, rel: 'foo'})
+        t.end()
+      })
     )
 
-    alice.publish({type: 'foo', foo: bob.id}, function (err, msg) {
+    alice.publish({type: 'foo', foo: bob.id}, function (err, _msg) {
+      msg = _msg
       t.error(err, 'publish')
-      t.deepEqual(links, [
-        {key: msg.key, value: msg.value,
-          source: alice.id, dest: bob.id, rel: 'foo'}
-      ])
-      t.end()
     })
   })
 
