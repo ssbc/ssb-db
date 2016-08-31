@@ -33,7 +33,6 @@ module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
   function createDB(name) {
-    console.log('name', name)
     return SSB(sublevel(level(name, {
       valueEncoding: opts.codec
     })), opts)
@@ -197,6 +196,9 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
 
 
 

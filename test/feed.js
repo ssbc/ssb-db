@@ -37,7 +37,6 @@ module.exports = function (opts) {
         })
       )
     })
-
   })
 
   tape('tail', function (t) {
@@ -186,3 +185,4 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
