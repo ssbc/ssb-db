@@ -111,41 +111,35 @@ module.exports = function (db, opts, keys, path) {
   db.needsRebuild = function (cb) {
     sysDB.get('vmajor', function (err, dbvmajor) {
       dbvmajor = (dbvmajor|0) || 0
+      console.log('REBUILD', dbvmajor, getVMajor())
       cb(null, dbvmajor < getVMajor())
     })
   }
 
   db.rebuildIndex = function (cb) {
-    throw new Error('removed rebulid - temporary')
-    // remove all entries from the index
-    pull(
-      pl.read(indexDB, { keys: true, values: false, old: true }),
-      paramap(function (key, cb) { indexDB.del(key, cb) }),
-      pull.drain(null, next)
-    )
+    var n = 4, m = 4, ended
+    feedDB.rebuild(next)
+    clockDB.rebuild(next)
+    lastDB.rebuild(next)
+    indexDB.rebuild(next)
 
     function next (err) {
-      if (err)
-        return cb(err)
+      if(err && !ended) cb(ended = err)
+    }
 
-      // replay the log
-      pull(
-        db.createLogStream({ keys: true, values: true }),
-        pull.map(function (msg) {
-          var ops = []
-          function add (item) { ops.push(item) }
-          indexMsg(add, msg.timestamp, msg.key, msg.value)
-          return ops
-        }),
-        pull.flatten(),
-        pl.write(indexDB, next2)
-      )
-      function next2 (err) {
-        if (err)
-          return cb(err)
+    var m = 4
+    console.log("await")
+    feedDB.await(next2)
+    clockDB.await(next2)
+    lastDB.await(next2)
+    indexDB.await(next2)
 
-        sysDB.put('vmajor', getVMajor(), cb)
-      }
+    function next2 () {
+      console.log('rebuild!', m)
+      if(ended) return
+      if(--m) return
+      ended = true
+      sysDB.put('vmajor', getVMajor(), cb)
     }
   }
 
@@ -305,10 +299,11 @@ module.exports = function (db, opts, keys, path) {
   var _close = db.close
 
   db.close = function (cb) {
-    var n = 4
+    var n = 5
     clockDB.close(next)
     feedDB.close(next)
     lastDB.close(next)
+    indexDB.close(next)
     _close.call(db, next)
     function next (err) {
       if(n < 0) return
@@ -320,9 +315,5 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
-
-
-
-
 
 
