@@ -36,7 +36,7 @@ module.exports = function (_db, path, version, map) {
 
 
   function build (rebuild, cb) {
-    since = null
+    since = undefined
     if(rebuild)
       destroy()
     else
@@ -64,7 +64,6 @@ module.exports = function (_db, path, version, map) {
       while(waiting.length && waiting[0].ts <= since) {
         waiting.shift().cb()
       }
-
       if(closed) return
 
       pull(
@@ -129,4 +128,7 @@ module.exports = function (_db, path, version, map) {
   }
 
 }
+
+
+
 
