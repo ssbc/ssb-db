@@ -45,7 +45,7 @@ module.exports = function (db, opts) {
     var keys = opts.keys, values = opts.values
     opts.keys = false
     opts.values = true
-    console.log(opts)
+
     return pull(
       index.read(opts),
       db.lookup(keys, values)
@@ -56,6 +56,7 @@ module.exports = function (db, opts) {
 
 
 }
+
 
 
 

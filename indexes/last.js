@@ -16,10 +16,7 @@ module.exports = function (db) {
   var indexPath = path.join(db.location, 'last')
   var index = Follower(db, indexPath, 1, function (data) {
     if(data.sync) return
-    console.log({
-      key: data.value.author, value: {sequence: data.value.sequence, ts: data.timestamp },
-      type: 'put'
-    })
+
     return {
       key: data.value.author, value: {sequence: data.value.sequence, ts: data.timestamp },
       type: 'put'
@@ -42,4 +39,5 @@ module.exports = function (db) {
   return index
 
 }
+
 

@@ -29,7 +29,6 @@ module.exports = function (db) {
 
     return pull(
       index.read(opts),
-      pull.through(console.log),
       db.lookup(_keys, _values) //XXX
     )
   }
@@ -37,6 +36,7 @@ module.exports = function (db) {
   return index
 
 }
+
 
 
 
