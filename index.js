@@ -111,7 +111,6 @@ module.exports = function (db, opts, keys, path) {
   db.needsRebuild = function (cb) {
     sysDB.get('vmajor', function (err, dbvmajor) {
       dbvmajor = (dbvmajor|0) || 0
-      console.log('REBUILD', dbvmajor, getVMajor())
       cb(null, dbvmajor < getVMajor())
     })
   }
@@ -128,14 +127,12 @@ module.exports = function (db, opts, keys, path) {
     }
 
     var m = 4
-    console.log("await")
     feedDB.await(next2)
     clockDB.await(next2)
     lastDB.await(next2)
     indexDB.await(next2)
 
     function next2 () {
-      console.log('rebuild!', m)
       if(ended) return
       if(--m) return
       ended = true
@@ -315,5 +312,4 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
-
 
