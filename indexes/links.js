@@ -157,6 +157,7 @@ module.exports = function (db, keys) {
   function lookupLinks (opts) {
     return pull(
       pull.map(function (op) {
+        if(op.sync) return op
         return {
           _value: op._value,
           source: op.key[opts.back?3:1],
@@ -170,6 +171,7 @@ module.exports = function (db, keys) {
       // and filter out those to the dest. not efficient
       // but probably a rare query.
       pull.filter(function (data) {
+        if(data.sync) return true
         if(opts.rel && opts.rel !== data.rel) return false
         if(!testLink(data.dest, opts.dest)) return false
         if(!testLink(data.source, opts.source)) return false
@@ -202,6 +204,7 @@ module.exports = function (db, keys) {
   return index
 
 }
+
 
 
 
