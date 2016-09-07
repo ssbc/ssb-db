@@ -179,9 +179,11 @@ module.exports = function (db, keys) {
       }),
       ! opts.props.values
       ? pull.map(function (op) {
+          if(op.sync) return op
           return format(opts.props, op, op.key, null)
         })
       : paramap(function (op, cb) {
+          if(op.sync) return cb(null, op)
           if(op._value)
             return cb(null, format(opts.props, op, op.key, op._value))
           db.get(op.key, function (err, msg) {
@@ -204,8 +206,4 @@ module.exports = function (db, keys) {
   return index
 
 }
-
-
-
-
 
