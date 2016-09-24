@@ -39,6 +39,8 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+var isArray = Array.isArray
+
 function isObject (o) {
   return o && 'object' === typeof o && !Array.isArray(o)
 }
@@ -140,8 +142,26 @@ module.exports = function (db, opts, keys, path) {
     }
   }
 
+  function Limit (fn) {
+    return function (opts) {
+      if(opts && opts.limit && opts.limit > 0) {
+        var limit = opts.limit
+        var read = fn(opts)
+        return function (abort, cb) {
+          if(limit--) return read(abort, function (err, data) {
+            if(data && data.sync) limit ++
+            cb(err, data)
+          })
+          else read(true, cb)
+        }
+      }
+      else
+        return fn(opts)
+    }
+  }
+
   //TODO: eventually, this should filter out authors you do not follow.
-  db.createFeedStream = feedDB.createFeedStream
+  db.createFeedStream = Limit(feedDB.createFeedStream)
   //latest was stored as author: seq
   //but for the purposes of replication back pressure
   //we need to know when we last replicated with someone.
@@ -167,9 +187,9 @@ module.exports = function (db, opts, keys, path) {
 
   db.lookup = lookup
 
-  db.createHistoryStream = clockDB.createHistoryStream
+  db.createHistoryStream = Limit(clockDB.createHistoryStream)
 
-  db.createUserStream = clockDB.createUserStream
+  db.createUserStream = Limit(clockDB.createUserStream)
 
 
   //writeStream - used in replication.
@@ -191,7 +211,7 @@ module.exports = function (db, opts, keys, path) {
     return createFeed(db, keys, opts)
   }
 
-  db.latest = lastDB.latest
+  db.latest = Limit(lastDB.latest)
 
   db.latestSequence = function (id, cb) {
     lastDB.get(id, cb)
@@ -211,7 +231,7 @@ module.exports = function (db, opts, keys, path) {
     })
   }
 
-  db.createLogStream = Live(function (opts) {
+  db.createLogStream = Limit(Live(function (opts) {
     opts = stdopts(opts)
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
@@ -229,13 +249,13 @@ module.exports = function (db, opts, keys, path) {
     )
   }, function (opts) {
     return pl.live(db, stdopts(opts))
-  })
+  }))
 
   var HI = undefined, LO = null
 
-  db.messagesByType = indexDB.messagesByType
+  db.messagesByType = Limit(indexDB.messagesByType)
 
-  db.links = indexDB.links
+  db.links = Limit(indexDB.links)
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
@@ -243,6 +263,10 @@ module.exports = function (db, opts, keys, path) {
     if(!opts) throw new Error('opts *must* be object')
     var key = opts.id || opts.key
     var depth = opts.depth || Infinity
+    var seen = {}
+
+    //filter a list of rel, used to avoid 'branch' rel in patchwork,
+    //which causes messages to be queried twice.
     var n = 1
     var msgs = {key: key, value: null}
     db.get(key, function (err, msg) {
@@ -261,10 +285,12 @@ module.exports = function (db, opts, keys, path) {
       all(db.links({dest: msg.key, rel: opts.rel, keys: true, values:true, meta: false, type:'msg'}))
       (function (err, ary) {
         if(ary && ary.length) {
-          ary.sort(function (a, b) {
+          msg.related = ary = ary.sort(function (a, b) {
             return compare(a.value.timestamp, b.value.timestamp) || compare(a.key, b.key)
+          }).filter(function (msg) {
+            if(seen[msg.key]) return
+            return seen[msg.key] = true
           })
-          msg.related = ary
           ary.forEach(function (msg) { related (msg, depth - 1) })
         }
         done(err)
@@ -312,4 +338,11 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
+
+
+
+
+
+
+
 
