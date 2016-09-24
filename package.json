@@ -23,7 +23,7 @@
     "pull-notify": "^0.1.0",
     "pull-paramap": "^1.1.6",
     "pull-stream": "^3.4.0",
-    "pull-write": "^1.0.2",
+    "pull-write": "^1.1.0",
     "ssb-feed": "^2.2.0",
     "ssb-keys": "^6.0.0",
     "ssb-msgs": "^5.0.0",
