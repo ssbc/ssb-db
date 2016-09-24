@@ -1,7 +1,7 @@
 {
   "name": "secure-scuttlebutt",
   "description": "a secure, replicatable database",
-  "version": "15.2.9",
+  "version": "15.3.0",
   "homepage": "https://github.com/ssbc/secure-scuttlebutt",
   "repository": {
     "type": "git",
@@ -12,7 +12,8 @@
     "deep-equal": "~0.2.1",
     "explain-error": "~1.0.1",
     "level": "^1.3.0",
-    "level-sublevel": "^6.5.2",
+    "level-peek": "^2.0.0",
+    "level-sublevel": "^6.6.0",
     "ltgt": "~2.0.0",
     "monotonic-timestamp": "~0.0.8",
     "pull-cat": "~1.1.5",
@@ -62,4 +63,3 @@
     "files": "test/defaults.js"
   }
 }
-
