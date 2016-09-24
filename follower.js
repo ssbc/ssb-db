@@ -98,9 +98,7 @@ module.exports = function (_db, path, version, map) {
     }
   }
 
-  build(null, function (err) {
-    //console.error(err)
-  })
+  build(null, function (err) {})
 
   return {
     get: function (key, cb) {
@@ -128,7 +126,6 @@ module.exports = function (_db, path, version, map) {
   }
 
 }
-
 
 
 
