@@ -29,7 +29,7 @@ exports.await = function () {
     get: function () { return value },
     set: function (_value) {
       value = _value
-      if(waiting.length)
+      while(waiting.length)
         waiting.shift()(null, value)
     },
     await: function (cb) {
