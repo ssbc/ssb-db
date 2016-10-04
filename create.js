@@ -8,6 +8,6 @@ module.exports = function (path, opts, keys) {
   opts = opts || require('./defaults')
   return SSB(
     sublevel(level(path, {
-      valueEncoding: opts.codec
+      valueEncoding: require('./codec')
     })), opts, keys)
 }
