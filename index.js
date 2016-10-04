@@ -57,7 +57,6 @@ function getVMajor () {
 }
 
 module.exports = function (db, opts, keys, path) {
-  
   var sysDB   = db.sublevel('sys')
   var logDB   = db.sublevel('log')
   var feedDB  = require('./indexes/feed')(db)
@@ -72,7 +71,7 @@ module.exports = function (db, opts, keys, path) {
 
   db.opts = opts
 
-  db.add = Validator(db)
+  db.add = Validator(db, opts)
 
   var realtime = Notify()
 
@@ -197,7 +196,8 @@ module.exports = function (db, opts, keys, path) {
     return pull(
       paramap(function (data, cb) {
         db.add(data, function (err, msg) {
-          db.emit('invalid', err, msg)
+          if(err)
+            db.emit('invalid', err, msg)
           cb()
         })
       }),
@@ -206,8 +206,7 @@ module.exports = function (db, opts, keys, path) {
   }
 
   db.createFeed = function (keys) {
-    if(!keys)
-      keys = opts.keys.generate()
+    if(!keys) keys = ssbKeys.generate()
     return createFeed(db, keys, opts)
   }
 
@@ -338,6 +337,9 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
+
+
+
 
 
 
