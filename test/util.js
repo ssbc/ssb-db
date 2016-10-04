@@ -25,7 +25,7 @@ module.exports = function (opts) {
 
   function createDB(name) {
     return SSB(sublevel(level(name, {
-      valueEncoding: opts.codec
+      valueEncoding: require('../codec')
     })), opts)
   }
 

@@ -22,7 +22,7 @@ function sort (a) {
 module.exports = function (opts) {
 
   var db = sublevel(level('test-ssb-rebuild', {
-    valueEncoding: opts.codec
+    valueEncoding: require('../codec')
   }))
 
   var ssb = require('../')(db, opts)

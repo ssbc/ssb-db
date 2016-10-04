@@ -21,7 +21,7 @@ module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
   var db = sublevel(level('test-ssb-feed', {
-    valueEncoding: opts.codec
+    valueEncoding: require('../codec')
   }))
 
   var db = require('../')(db, opts)

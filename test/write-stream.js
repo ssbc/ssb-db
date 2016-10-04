@@ -8,7 +8,7 @@ var ssbKeys  = require('ssb-keys')
 
 module.exports = function (opts) {
   var db = sublevel(level('test-ssb-feed', {
-    valueEncoding: opts.codec
+    valueEncoding: require('../codec')
   }))
 
   var ssb = require('../')(db, opts)

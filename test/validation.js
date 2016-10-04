@@ -4,11 +4,15 @@ var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var explain  = require('explain-error')
+var generate = require('ssb-keys').generate
+var hash     = require('ssb-keys').hash
+
+var codec = require('../codec')
 
 module.exports = function (opts) {
 
   var db = sublevel(level('test-ssb-validate', {
-    valueEncoding: opts.codec
+    valueEncoding: codec
   }))
 
   var create = require('ssb-feed/util').create
@@ -17,8 +21,7 @@ module.exports = function (opts) {
   var validate = require('ssb-feed/validator')(ssb)
 
   tape('simple', function (t) {
-    var keys = opts.keys.generate()
-    var id = opts.hash(keys.public)
+    var keys = generate()
     var prev
     var messages = [
       prev = create(keys, null, {type: 'init', public: keys.public}),
@@ -31,9 +34,9 @@ module.exports = function (opts) {
     var _msg = null
     messages.forEach(function (msg) {
       validate(msg, function (err) {
-        console.log('HELLO', opts.hash('HELLLO'))
+        console.log('HELLO', hash('HELLLO'))
         if(_msg)
-          t.deepEqual('%'+opts.hash(opts.codec.encode(_msg)), msg.previous)
+          t.deepEqual('%'+hash(codec.encode(_msg)), msg.previous)
         _msg = msg
         if(err) throw err
         if(msg.sequence === 3)
@@ -43,8 +46,7 @@ module.exports = function (opts) {
   })
 
   tape('add & validate', function (t) {
-    var keys = opts.keys.generate()
-    var id = opts.hash(keys.public)
+    var keys = generate()
     var prev
     ssb.add(
       prev = create(keys, null, {type: 'init', public: keys.public}),
@@ -77,8 +79,7 @@ module.exports = function (opts) {
   })
 
   tape('race: should queue', function (t) {
-    var keys = opts.keys.generate()
-    var id = opts.hash(keys.public)
+    var keys = generate()
     var prev, calls = 0
     ssb.add(
       prev = create(keys,null, {type:  'init', public: keys.public}),
@@ -120,7 +121,7 @@ module.exports = function (opts) {
   //message if you wait until it has returned.
 
   tape('too big', function (t) {
-    var keys = opts.keys.generate()
+    var keys = generate()
     var feed = ssb.createFeed(keys)
     var str = ''
     for (var i=0; i < 808; i++) str += '1234567890'
@@ -137,3 +138,6 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+

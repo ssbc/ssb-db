@@ -10,6 +10,7 @@ var Abortable = require('pull-abortable')
 var SSB       = require('../')
 
 var compare   = require('ltgt').compare
+var generate  = require('ssb-keys').generate
 
 //create a instance with a feed
 //then have another instance follow it.
@@ -33,15 +34,13 @@ module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
   function createDB(name) {
-    return SSB(sublevel(level(name, {
-      valueEncoding: opts.codec
-    })), opts)
+    return SSB(sublevel(level(name, {valueEncoding: require('../codec')})), opts)
   }
 
   var MESSAGE = new Buffer('msg')
 
   function init (ssb, n, cb) {
-    var keys = opts.keys.generate()
+    var keys = generate()
     var prev
 
     ssb.add(prev = create(keys, null, {type: 'init', public: keys.public}), function () {
@@ -196,6 +195,7 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
 
 
 

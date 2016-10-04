@@ -11,11 +11,12 @@ var generate = ssbKeys.generate
 
 module.exports = function (opts) {
 
+  var level_opts = {
+      valueEncoding: require('../codec')
+  }
   tape('simple', function (t) {
 
-    var db = sublevel(level('test-ssb-log', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-log', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -40,9 +41,7 @@ module.exports = function (opts) {
 
   tape('gt', function (t) {
 
-    var db = sublevel(level('test-ssb-log2', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-log2', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -69,9 +68,7 @@ module.exports = function (opts) {
 
   tape('gt 0', function (t) {
 
-    var db = sublevel(level('test-ssb-log3', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-log3', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -94,9 +91,7 @@ module.exports = function (opts) {
 
   tape('keys only', function (t) {
 
-    var db = sublevel(level('test-ssb-log4', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-log4', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -120,9 +115,7 @@ module.exports = function (opts) {
 
   tape('values only', function (t) {
 
-    var db = sublevel(level('test-ssb-log5', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-log5', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -147,9 +140,7 @@ module.exports = function (opts) {
   tape('live', function (t) {
     t.plan(3)
 
-    var db = sublevel(level('test-ssb-log6', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-log6', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -180,6 +171,18 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -9,7 +9,7 @@ var createFeed = require('ssb-feed')
 module.exports = function (opts) {
 
   var db = sublevel(level('test-ssb-feed', {
-    valueEncoding: opts.codec
+    valueEncoding: require('../codec')
   }))
 
   var alice = ssbKeys.generate()

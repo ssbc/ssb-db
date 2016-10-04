@@ -13,7 +13,7 @@ var create = require('ssb-feed/util').create
 var opts = require('../defaults')
 
 var db = require('../')(
-    sublevel(level('test-ssb-feed', { valueEncoding: opts.codec })),
+    sublevel(level('test-ssb-feed', { valueEncoding: require('../codec') })),
     opts
   )
 

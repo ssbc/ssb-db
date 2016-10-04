@@ -6,13 +6,12 @@ var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var hexpp    = require('hexpp')
+var codec = require('../codec')
 
 var generate = ssbKeys.generate
 var hash = ssbKeys.hash
 
 module.exports = function (opts) {
-
-  var codec = opts.codec
 
   var content = {
       "type":"post",
@@ -92,5 +91,6 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
 
 

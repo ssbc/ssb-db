@@ -6,13 +6,14 @@ var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
 
+var level_opts = {valueEncoding: require('../codec')}
+
 module.exports = function (opts) {
 
   tape('simple', function (t) {
 
-    var db = sublevel(level('test-ssb-feed', {
-      valueEncoding: opts.codec
-    }))
+
+    var db = sublevel(level('test-ssb-feed', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -41,9 +42,7 @@ module.exports = function (opts) {
 
   tape('tail', function (t) {
 
-    var db = sublevel(level('test-ssb-feed2', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-feed2', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -88,9 +87,7 @@ module.exports = function (opts) {
 
   tape('tail, parallel add', function (t) {
 
-    var db = sublevel(level('test-ssb-feed3', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-feed3', level_opts))
 
     var ssb = require('../')(db, opts)
 
@@ -135,9 +132,7 @@ module.exports = function (opts) {
   })
 
   tape('keys only', function (t) {
-    var db = sublevel(level('test-ssb-feed5', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-feed5', level_opts))
     var ssb = require('../')(db, opts)
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
@@ -158,9 +153,7 @@ module.exports = function (opts) {
   })
 
   tape('values only', function (t) {
-    var db = sublevel(level('test-ssb-feed6', {
-      valueEncoding: opts.codec
-    }))
+    var db = sublevel(level('test-ssb-feed6', level_opts))
     var ssb = require('../')(db, opts)
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
@@ -185,4 +178,15 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
+
+
+
+
+
+
+
+
 
