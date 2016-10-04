@@ -17,9 +17,9 @@ var db = require('../')(
     opts
   )
 
-var alice = db.createFeed(opts.generate())
-var bob = db.createFeed(opts.generate())
-var carol = db.createFeed(opts.generate())
+var alice = db.createFeed()
+var bob = db.createFeed()
+var carol = db.createFeed()
 
 var start = Date.now()
 

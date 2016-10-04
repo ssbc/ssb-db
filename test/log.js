@@ -7,6 +7,8 @@ var timestamp = require('monotonic-timestamp')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
 
+var generate = ssbKeys.generate
+
 module.exports = function (opts) {
 
   tape('simple', function (t) {
@@ -17,7 +19,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -44,7 +46,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -73,7 +75,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -98,7 +100,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -124,7 +126,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -151,7 +153,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, generate(), opts)
 
       var ts = Date.now()
 

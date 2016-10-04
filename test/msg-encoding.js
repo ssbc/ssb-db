@@ -5,8 +5,10 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
-
 var hexpp    = require('hexpp')
+
+var generate = ssbKeys.generate
+var hash = ssbKeys.hash
 
 module.exports = function (opts) {
 
@@ -28,8 +30,8 @@ module.exports = function (opts) {
     }
 
   var msg = {
-    author: opts.hash('TEST_AUTHOR'),
-    previous: opts.hash('TEST_PREVIOUS'),
+    author: hash('TEST_AUTHOR'),
+    previous: hash('TEST_PREVIOUS'),
     timestamp: Date.now(),
     sequence: 10,
     content: content
@@ -66,7 +68,7 @@ module.exports = function (opts) {
       valueEncoding: codec
     }))
     var ssb = require('../')(db, opts)
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, generate(), opts)
 
     feed.add(content, function (err, msg) {
       if(err) throw err
@@ -90,3 +92,5 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+

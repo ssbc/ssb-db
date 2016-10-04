@@ -26,8 +26,8 @@ module.exports = function (opts) {
 
   var db = require('../')(db, opts)
 
-  var alice = db.createFeed(opts.generate())
-  var bob = db.createFeed(opts.generate())
+  var alice = db.createFeed()
+  var bob = db.createFeed()
 
   var msgs = []
 

@@ -16,9 +16,9 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-//    var feed = createFeed(ssb, opts.generate(), opts)
+//    var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
-    var feed = ssb.createFeed(opts.generate())
+    var feed = ssb.createFeed(ssbKeys.generate())
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -47,7 +47,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2;
@@ -94,7 +94,7 @@ module.exports = function (opts) {
 
     var ssb = require('../')(db, opts)
 
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2, l = 7
@@ -139,7 +139,7 @@ module.exports = function (opts) {
       valueEncoding: opts.codec
     }))
     var ssb = require('../')(db, opts)
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
@@ -162,7 +162,7 @@ module.exports = function (opts) {
       valueEncoding: opts.codec
     }))
     var ssb = require('../')(db, opts)
-    var feed = createFeed(ssb, opts.generate(), opts)
+    var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       if(err) throw err
