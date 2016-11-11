@@ -1,6 +1,6 @@
 # secure-scuttlebutt
 
-A database of unforgable append-only feeds, optimized for efficient replication for peer to peer protocols.
+A database of unforgeable append-only feeds, optimized for efficient replication for peer to peer protocols.
 
 ## What does it do?
 
