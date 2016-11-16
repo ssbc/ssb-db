@@ -56,14 +56,10 @@ function getVMajor () {
   return (version.split('.')[0])|0
 }
 
-module.exports = function (db, opts, keys, path) {
-  var sysDB   = db.sublevel('sys')
-  var logDB   = db.sublevel('log')
-  var feedDB  = require('./indexes/feed')(db)
-  var clockDB = require('./indexes/clock')(db)
-  var lastDB  = require('./indexes/last')(db)
-  var indexDB = require('./indexes/links')(db, keys)
-  var appsDB  = db.sublevel('app')
+module.exports = function (_, opts, keys, path) {
+  path = path || _.location
+
+  var db = require('./db')(path)
 
   function get (db, key) {
     return function (cb) { db.get(key, cb) }
@@ -71,42 +67,42 @@ module.exports = function (db, opts, keys, path) {
 
   db.opts = opts
 
-  db.add = Validator(db, opts)
+  //just the api which is passed into ssb-feed
+  var _ssb = {
+    getLatest: function (key, cb) {
+      db.last.get(key, function (err, seq) {
+        if(err) return cb()
+        db.get(seq, cb)
+      })
+    },
+    batch: function (batch, cb) {
+      db.append(batch.map(function (e) {
+        return {
+          key: e.key,
+          value: e.value,
+          timestamp: timestamp()
+        }
+      }), function (err, offsets) {
+        cb(err)
+      })
+    }
+  }
+
+  var _get = db.get
+
+  db.get = function (key, cb) {
+    if(ref.isMsg(key)) return db.keys.get(key, function (err, seq) {
+      if(err) cb(err)
+      else _get(seq, function (err, data) {
+        cb(err, data && data.value)
+      })
+    })
+    else _get(key, cb) //seq
+  }
+
+  _ssb.add = db.add = Validator(_ssb, opts)
 
   var realtime = Notify()
-
-  var wait = u.wait()
-  var set = wait.set
-  wait.set = null
-  var waiting = []
-  db.seen = wait
-  db.post(function (op) {
-    set(Math.max(op.ts || op.timestamp, wait.get()||0))
-  })
-
-  peek.last(logDB, {keys: true}, function (err, key) {
-    set(Math.max(key || 0, wait.get()||0))
-  })
-
-  db.pre(function (op, _add, _batch) {
-    var msg = op.value
-    var id = op.key
-    // index by sequence number
-
-    function add (kv) {
-      _add(kv);
-      kv._value = op.value
-      realtime(kv)
-    }
-
-    var localtime = op.timestamp = timestamp()
-
-    add({
-      key: localtime, value: id,
-      type: 'put', prefix: logDB
-    })
-
-  })
 
   function Limit (fn) {
     return function (opts) {
@@ -127,7 +123,8 @@ module.exports = function (db, opts, keys, path) {
   }
 
   //TODO: eventually, this should filter out authors you do not follow.
-  db.createFeedStream = Limit(feedDB.createFeedStream)
+//  db.createFeedStream = Limit(feedDB.createFeedStream)
+
   //latest was stored as author: seq
   //but for the purposes of replication back pressure
   //we need to know when we last replicated with someone.
@@ -153,9 +150,9 @@ module.exports = function (db, opts, keys, path) {
 
   db.lookup = lookup
 
-  db.createHistoryStream = Limit(clockDB.createHistoryStream)
+//  db.createHistoryStream = Limit(clockDB.createHistoryStream)
 
-  db.createUserStream = Limit(clockDB.createUserStream)
+//  db.createUserStream = Limit(clockDB.createUserStream)
 
 
   //writeStream - used in replication.
@@ -174,54 +171,57 @@ module.exports = function (db, opts, keys, path) {
 
   db.createFeed = function (keys) {
     if(!keys) keys = ssbKeys.generate()
-    return createFeed(db, keys, opts)
+    return createFeed(_ssb, keys, opts)
   }
 
-  db.latest = Limit(lastDB.latest)
+//  db.latest = Limit(lastDB.latest)
+//
+//  db.latestSequence = function (id, cb) {
+//    lastDB.get(id, cb)
+//  }
 
-  db.latestSequence = function (id, cb) {
-    lastDB.get(id, cb)
-  }
-
-  db.getLatest = function (id, cb) {
-    lastDB.get(id, function (err, v) {
-      if(err) return cb()
-      //callback null there is no latest
-      clockDB.get([id, toSeq(v)], function (err, hash) {
-        if(err) return cb()
-        db.get(hash, function (err, msg) {
-          if(err) cb()
-          else cb(null, {key: hash, value: msg})
-        })
-      })
-    })
-  }
-
-  db.createLogStream = Limit(Live(function (opts) {
+//  db.getLatest = function (id, cb) {
+//    lastDB.get(id, function (err, v) {
+//      if(err) return cb()
+//      //callback null there is no latest
+//      clockDB.get([id, toSeq(v)], function (err, hash) {
+//        if(err) return cb()
+//        db.get(hash, function (err, msg) {
+//          if(err) cb()
+//          else cb(null, {key: hash, value: msg})
+//        })
+//      })
+//    })
+//  }
+//
+  db.createLogStream = function (opts) {
     opts = stdopts(opts)
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(
-      pl.old(logDB, stdopts(opts)),
-      //lookup2(keys, values, 'timestamp')
-      paramap(function (data, cb) {
-        var key = data.value
-        var seq = data.key
-        db.get(key, function (err, value) {
-          if (err) cb(err)
-          else cb(null, msgFmt(keys, values, {key: key, value: value, timestamp: seq}))
-        })
-      })
-    )
-  }, function (opts) {
-    return pl.live(db, stdopts(opts))
-  }))
+    return db.stream({values: true, seqs: false, live: opts.live})
+//    return pull(
+//      db.stream({values: true, seqs: false, live: opts.live})
+////,
+////      pl.old(logDB, stdopts(opts)),
+//      //lookup2(keys, values, 'timestamp')
+////      paramap(function (data, cb) {
+////        var key = data.value
+////        var seq = data.key
+////        db.get(key, function (err, value) {
+////          if (err) cb(err)
+////          else cb(null, msgFmt(keys, values, {key: key, value: value, timestamp: seq}))
+////        })
+////      })
+//    )
+//  }, function (opts) {
+//    return pl.live(db, stdopts(opts))
+  }
 
   var HI = undefined, LO = null
 
-  db.messagesByType = Limit(indexDB.messagesByType)
+//  db.messagesByType = Limit(indexDB.messagesByType)
 
-  db.links = Limit(indexDB.links)
+//  db.links = Limit(indexDB.links)
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
@@ -304,6 +304,17 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
+
+
+
+<<<<<<< HEAD
+=======
+
+
+
+
+>>>>>>> begin rewrite to use flumedb
+
 
 
 
