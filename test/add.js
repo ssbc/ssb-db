@@ -13,6 +13,8 @@ module.exports = function (opts) {
     valueEncoding: require('../codec')
   }))
 
+  console.log(db.location)
+
   var ssb = require('../')(db, opts)
 
   tape('add invalid message', function (t) {
@@ -34,6 +36,38 @@ module.exports = function (opts) {
       t.end()
 
     })
+
+  })
+  tape('add okay message', function (t) {
+    var f = ssb.createFeed()
+
+    f.add({type: 'okay'}, function (err, msg, key) {
+      if(err) throw err
+      console.log(msg, key)
+      ssb.get(msg.key, function (err, _msg) {
+        if(err) throw err
+
+        t.deepEqual(_msg, msg.value)
+        f.add({type: 'wtf'}, function (err, msg) {
+          console.log(msg)
+          ssb.get(msg.key, function (err, _msg) {
+            t.deepEqual(_msg, msg.value)
+            t.end()
+          })
+        })
+      })
+    })
+  })
+
+  tape('log', function (t) {
+
+    pull(ssb.createLogStream({keys: true, values: true}), pull.collect(function (err, ary) {
+      console.log(err, ary)
+      if(err) throw err
+      console.log(ary)
+      t.equal(ary.length, 2)
+      t.end()
+    }))
 
   })
 
