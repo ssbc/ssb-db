@@ -108,39 +108,6 @@ module.exports = function (db, opts, keys, path) {
 
   })
 
-
-  db.needsRebuild = function (cb) {
-    sysDB.get('vmajor', function (err, dbvmajor) {
-      dbvmajor = (dbvmajor|0) || 0
-      cb(null, dbvmajor < getVMajor())
-    })
-  }
-
-  db.rebuildIndex = function (cb) {
-    var n = 4, m = 4, ended
-    feedDB.rebuild(next)
-    clockDB.rebuild(next)
-    lastDB.rebuild(next)
-    indexDB.rebuild(next)
-
-    function next (err) {
-      if(err && !ended) cb(ended = err)
-    }
-
-    var m = 4
-    feedDB.wait(next2)
-    clockDB.wait(next2)
-    lastDB.wait(next2)
-    indexDB.wait(next2)
-
-    function next2 () {
-      if(ended) return
-      if(--m) return
-      ended = true
-      sysDB.put('vmajor', getVMajor(), cb)
-    }
-  }
-
   function Limit (fn) {
     return function (opts) {
       if(opts && opts.limit && opts.limit > 0) {
@@ -337,14 +304,6 @@ module.exports = function (db, opts, keys, path) {
 
   return db
 }
-
-
-
-
-
-
-
-
 
 
 
