@@ -15,6 +15,7 @@ module.exports = function (opts) {
     valueEncoding: codec
   }))
 
+
   var create = require('ssb-feed/util').create
   var ssb = require('../')(db, opts)
 
@@ -22,14 +23,13 @@ module.exports = function (opts) {
 
   tape('simple', function (t) {
     var keys = generate()
+    console.log('keys', keys)
     var prev
     var messages = [
       prev = create(keys, null, {type: 'init', public: keys.public}),
       prev = create(keys, 'msg', 'hello', prev),
       prev = create(keys, 'msg', 'hello2', prev)
     ]
-
-    console.log(messages)
 
     var _msg = null
     messages.forEach(function (msg) {
@@ -63,7 +63,7 @@ module.exports = function (opts) {
               function (err) {
                 if(err) throw explain(err, 'hello2 failed')
                 pull(
-                  db.createFeedStream({ keys: false }),
+                  ssb.createFeedStream({ keys: false }),
                   pull.collect(function (err, ary) {
                     if(err) throw explain(err, 'createFeedStream failed')
                     t.deepEqual(ary.pop(), prev)
@@ -138,6 +138,9 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
 
 
 
