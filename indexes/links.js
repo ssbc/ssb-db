@@ -19,7 +19,7 @@ function isString (s) {
   return 'string' === typeof s
 }
 
-module.exports = function (db, keys) {
+module.exports = function (keys) {
 
   function indexMsg (localtime, id, msg) {
     //DECRYPT the message, if possible
@@ -180,6 +180,7 @@ module.exports = function (db, keys) {
     return index
   }
 }
+
 
 
 

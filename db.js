@@ -4,7 +4,7 @@ var OffsetLog = require('flumelog-offset')
 //var LevelView = require('flumeview-level')
 var codex = require('level-codec/lib/encodings')
 var ViewLevel = require('flumeview-level')
-module.exports = function (dir) {
+module.exports = function (dir, keys) {
   var log = OffsetLog(path.join(dir, 'log.offset'), 4096, codex.json)
 
   return Flume(log)
@@ -14,7 +14,7 @@ module.exports = function (dir) {
     }))
     .use('clock', require('./indexes/clock')())
     .use('feed', require('./indexes/feed')())
-    .use('links', require('./indexes/links')())
+    .use('links', require('./indexes/links')(keys))
     .use('time', ViewLevel(1, function (data) {
       return [data.timestamp]
     }))

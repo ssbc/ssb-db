@@ -61,7 +61,9 @@ function getVMajor () {
 module.exports = function (_, opts, keys, path) {
   path = path || _.location
 
-  var db = require('./db')(path)
+  keys = keys || ssbKeys.generate()
+
+  var db = require('./db')(path, keys)
 
   //fairly sure that something up the stack expects ssb to be an event emitter.
   db.__proto__ = new EventEmitter()
@@ -73,11 +75,14 @@ module.exports = function (_, opts, keys, path) {
   db.opts = opts
 
   //just the api which is passed into ssb-feed
-  var _ssb = {
-    getLatest: function (key, cb) {
-      db.getLatest(key, cb)
-    },
-    batch: function (batch, cb) {
+//  var _ssb = {
+//    getLatest: function (key, cb) {
+//      db.getLatest(key, cb)
+//    },
+//    batch: 
+//  }
+
+  db.batch = function (batch, cb) {
       db.append(batch.map(function (e) {
         return {
           key: e.key,
@@ -88,7 +93,6 @@ module.exports = function (_, opts, keys, path) {
         cb(err)
       })
     }
-  }
 
   var _get = db.get
 
@@ -102,7 +106,7 @@ module.exports = function (_, opts, keys, path) {
     else _get(key, cb) //seq
   }
 
-  _ssb.add = db.add = Validator(_ssb, opts)
+  db.add = Validator(db, opts)
 
   var realtime = Notify()
 
@@ -169,7 +173,7 @@ module.exports = function (_, opts, keys, path) {
 
   db.createFeed = function (keys) {
     if(!keys) keys = ssbKeys.generate()
-    return createFeed(_ssb, keys, opts)
+    return createFeed(db, keys, opts)
   }
 
   db.latest = db.last.latest
@@ -191,7 +195,13 @@ module.exports = function (_, opts, keys, path) {
     opts = stdopts(opts)
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return db.time.read(opts)
+    return pull(
+      db.time.read(opts),
+      pull.map(function (e) {
+        if(e.sync) return e
+        return keys && values ? e.value : keys ? e.value.key : e.value.value
+      })
+    )
     //return db.stream({values: true, seqs: false, live: opts.live})
   }
 
