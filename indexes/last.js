@@ -26,8 +26,6 @@ module.exports = function () {
 
     index.latest = function (opts) {
       opts = opts || {}
-      if(opts.gt == null)
-        opts.gt = new Buffer([0])
       return pull(
         index.read(opts),
         pull.map(function (data) {
@@ -41,5 +39,6 @@ module.exports = function () {
 
   }
 }
+
 
 
