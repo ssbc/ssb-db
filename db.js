@@ -12,6 +12,9 @@ module.exports = function (dir) {
     .use('keys', require('flumeview-level')(1, function (data) {
       return [data.key]
     }))
+    .use('clock', require('./indexes/clock')())
+
+
 }
 
 
