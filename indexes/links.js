@@ -47,22 +47,10 @@ module.exports = function (db, keys) {
     return a
   }
 
-
-//  var indexPath = path.join(db.location, 'links')
-
   var createIndex = ViewLevel(1, function (data) {
     return indexMsg(data.timestamp, data.key, data.value)
   })
-//  var index = Follower(db, indexPath, 1, function (data) {
-//    if(data.sync) return
-//    var msg = data.value
-//    var id = data.key
-//
-//    var a = []
-//    indexMsg(function (op) { a.push(op) }, data.timestamp, id, msg)
-//    return a
-//  })
-//
+
   return function (log, name) {
     var index = createIndex(log, name)
 
@@ -87,22 +75,11 @@ module.exports = function (db, keys) {
         return ['type', opts.type, value]
       }, u.lo, u.hi)
 
-      console.log(opts)
       return pull(
         index.read(opts),
         pull.map(function (e) {
           return keys && values ? e.value : keys ? e.value.key : e.value.value
         })
-
-//        paramap(function (data, cb) {
-//          if(data.sync) return cb()
-//          var id = _keys ? data.value : data
-//          db.get(id, function (err, msg) {
-//            var ts = opts.keys ? data.key[2] : undefined
-//            cb(null, u.format(_keys, _values, {key: id, ts: ts, value: msg}))
-//          })
-//        }),
-//        pull.filter()
       )
     }
 
@@ -167,16 +144,19 @@ module.exports = function (db, keys) {
       return e ? e.length === 1 ? a[0]==e[0] : a===e : true
     }
 
-    function lookupLinks (opts) {
+    index.links = function (opts) {
+      opts = linksOpts(opts)
       return pull(
+        index.read(opts),
         pull.map(function (op) {
           if(op.sync) return op
           return {
-            _value: op._value,
             source: op.key[opts.back?3:1],
             rel: op.key[2],
             dest: op.key[opts.back?1:3],
-            key: op.key[5]
+            key: op.key[5],
+            _value: op.value.value,
+            //timestamp: op.value.timestamp
           }
         }),
         // in case source and dest are known but not rel,
@@ -190,38 +170,16 @@ module.exports = function (db, keys) {
           if(!testLink(data.source, opts.source)) return false
           return true
         }),
-        ! opts.props.values
-        ? pull.map(function (op) {
-            if(op.sync) return op
-            return format(opts.props, op, op.key, null)
-          })
-        : paramap(function (op, cb) {
-            if(op.sync) return cb(null, op)
-            if(op._value)
-              return cb(null, format(opts.props, op, op.key, op._value))
-            db.get(op.key, function (err, msg) {
-              if(err) return cb(err)
-              cb(null, format(opts.props, op, op.key, msg))
-            })
+        pull.map(function (op) {
+          if(op.sync) return op
+          return format(opts.props, op, op.key, op._value)
         })
-      )
-    }
-
-
-    index.links = function (opts) {
-      opts = linksOpts(opts)
-      return pull(
-        index.read(opts),
-        lookupLinks(opts)
       )
     }
 
     return index
   }
 }
-
-
-
 
 
 

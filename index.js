@@ -196,7 +196,7 @@ module.exports = function (_, opts, keys, path) {
 
   //Limit(indexDB.messagesByType)
 
-//  db.links = Limit(indexDB.links)
+  db.links = db.links.links
 
   //get all messages that link to a given message.
   db.relatedMessages = function (opts, cb) {
