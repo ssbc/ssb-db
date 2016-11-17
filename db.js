@@ -13,8 +13,10 @@ module.exports = function (dir) {
       return [data.key]
     }))
     .use('clock', require('./indexes/clock')())
+    .use('feed', require('./indexes/feed')())
 
 
 }
+
 
 

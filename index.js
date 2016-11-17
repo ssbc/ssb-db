@@ -70,10 +70,7 @@ module.exports = function (_, opts, keys, path) {
   //just the api which is passed into ssb-feed
   var _ssb = {
     getLatest: function (key, cb) {
-      db.last.get(key, function (err, seq) {
-        if(err) return cb()
-        db.get(seq, cb)
-      })
+      db.getLatest(key, cb)
     },
     batch: function (batch, cb) {
       db.append(batch.map(function (e) {
@@ -123,7 +120,7 @@ module.exports = function (_, opts, keys, path) {
   }
 
   //TODO: eventually, this should filter out authors you do not follow.
-//  db.createFeedStream = Limit(feedDB.createFeedStream)
+  db.createFeedStream = db.feed.createFeedStream
 
   //latest was stored as author: seq
   //but for the purposes of replication back pressure
@@ -177,20 +174,15 @@ module.exports = function (_, opts, keys, path) {
 //    lastDB.get(id, cb)
 //  }
 
-//  db.getLatest = function (id, cb) {
-//    lastDB.get(id, function (err, v) {
-//      if(err) return cb()
-//      //callback null there is no latest
-//      clockDB.get([id, toSeq(v)], function (err, hash) {
-//        if(err) return cb()
-//        db.get(hash, function (err, msg) {
-//          if(err) cb()
-//          else cb(null, {key: hash, value: msg})
-//        })
-//      })
-//    })
-//  }
-//
+
+  db.getLatest = function (key, cb) {
+    db.last.get(key, function (err, seq) {
+      if(err) return cb()
+      db.get(seq, cb)
+    })
+  }
+
+
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
     var keys = opts.keys; delete opts.keys
@@ -269,4 +261,6 @@ module.exports = function (_, opts, keys, path) {
 
   return db
 }
+
+
 
