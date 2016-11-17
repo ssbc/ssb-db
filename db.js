@@ -14,7 +14,7 @@ module.exports = function (dir) {
     }))
     .use('clock', require('./indexes/clock')())
     .use('feed', require('./indexes/feed')())
-
+    .use('links', require('./indexes/links')())
 
 }
 

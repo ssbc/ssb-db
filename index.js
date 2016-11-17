@@ -192,7 +192,9 @@ module.exports = function (_, opts, keys, path) {
 
   var HI = undefined, LO = null
 
-//  db.messagesByType = Limit(indexDB.messagesByType)
+  db.messagesByType = db.links.messagesByType
+
+  //Limit(indexDB.messagesByType)
 
 //  db.links = Limit(indexDB.links)
 
