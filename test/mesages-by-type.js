@@ -37,13 +37,15 @@ module.exports = function (opts) {
           {type: 'foo', foo: 3}
         ])
 
-        var since = ary[1].ts
-        
+        var since = ary[1].timestamp
+
         alice.add({type: 'foo', foo: 6}, function (err) {
           all(dbA.messagesByType({
             type: 'foo',
             gt: since
           }), function (err, ary) {
+            if(err) throw err
+            console.log(ary)
             t.equal(ary.length, 1)
             t.equal(typeof ary[0].key, 'string')
             t.deepEqual(ary[0].value.content, {type: 'foo', foo: 6})
@@ -78,3 +80,6 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
