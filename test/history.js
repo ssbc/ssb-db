@@ -60,12 +60,12 @@ module.exports = function (opts) {
   var ssb = createDB('ssb-history')
   var keys, id, keys2, id2
   tape('history', function (t) {
-
     keys = init(ssb, 7, function (err) {
       if(err) throw err
       pull(ssb.latest(), pull.collect(function (err, ary) {
         if(err) throw err
         delete ary[0].ts
+        console.log(ary)
         t.deepEqual(ary, [
           {id: keys.id, sequence: 8}
         ])
@@ -122,6 +122,7 @@ module.exports = function (opts) {
     pull(
       ssb.createUserStream({id: id, gt: 3, lte: 7, reverse: true}),
       pull.collect(function (err, ary) {
+        console.log('UserStream', ary)
         t.equal(ary.length, 4)
         t.equal(ary[3].value.sequence, 4)
         t.equal(ary[2].value.sequence, 5)
@@ -135,6 +136,7 @@ module.exports = function (opts) {
     pull(
       ssb.createHistoryStream({ id: id, values: false }),
       pull.collect(function (err, ary) {
+        console.log(ary)
         t.equal(ary.length, 8)
         ary.forEach(function (v) { t.equal(typeof v, 'string') })
         t.end()
@@ -195,6 +197,8 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
 
 
 
