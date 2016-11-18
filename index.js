@@ -28,8 +28,7 @@ var isBlobId = ref.isBlobId
 
 var u         = require('./util')
 var stdopts   = u.options
-var msgFmt    = u.format
-
+var Format    = u.formatStream
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 
@@ -73,14 +72,6 @@ module.exports = function (_, opts, keys, path) {
   }
 
   db.opts = opts
-
-  //just the api which is passed into ssb-feed
-//  var _ssb = {
-//    getLatest: function (key, cb) {
-//      db.getLatest(key, cb)
-//    },
-//    batch: 
-//  }
 
   db.batch = function (batch, cb) {
       db.append(batch.map(function (e) {
@@ -177,10 +168,14 @@ module.exports = function (_, opts, keys, path) {
   }
 
   db.latest = db.last.latest
-//
-//  db.latestSequence = function (id, cb) {
-//    lastDB.get(id, cb)
-//  }
+
+  //used by sbot replication plugin
+  db.latestSequence = function (id, cb) {
+    db.getLatest(id, function (err, data) {
+      if(err || !data) cb(null, 0)
+      else cb(null, data.value.sequence)
+    })
+  }
 
 
   db.getLatest = function (key, cb) {
@@ -195,14 +190,7 @@ module.exports = function (_, opts, keys, path) {
     opts = stdopts(opts)
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(
-      db.time.read(opts),
-      pull.map(function (e) {
-        if(e.sync) return e
-        return keys && values ? e.value : keys ? e.value.key : e.value.value
-      })
-    )
-    //return db.stream({values: true, seqs: false, live: opts.live})
+    return pull(db.time.read(opts), Format(keys, values))
   }
 
   db.messagesByType = db.links.messagesByType
@@ -273,9 +261,6 @@ module.exports = function (_, opts, keys, path) {
     }
   }
 
-
   return db
 }
-
-
 

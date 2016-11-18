@@ -5,6 +5,7 @@ var ltgt = require('ltgt')
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 var u = require('../util')
+var Format = u.formatStream
 
 var ViewLevel = require('flumeview-level')
 
@@ -55,16 +56,14 @@ module.exports = function (db, opts) {
       opts.keys = false
       opts.values = true
 
-      return pull(
-        index.read(opts),
-        pull.map(function (e) {
-          return keys && values ? e.value : keys ? e.value.key : e.value.value
-        })
-      )
+      return pull(index.read(opts), Format(keys, values))
     }
 
     return index
 
   }
 }
+
+
+
 

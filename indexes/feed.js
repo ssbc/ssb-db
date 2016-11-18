@@ -2,6 +2,7 @@ var pull = require('pull-stream')
 var path = require('path')
 var ltgt = require('ltgt')
 var u = require('../util')
+var Format = u.formatStream
 
 var ViewLevel = require('flumeview-level')
 
@@ -26,18 +27,17 @@ module.exports = function (db) {
       opts.keys = false
       opts.values = true
 
-      return pull(
-        index.read(opts),
-        pull.map(function (e) {
-          return keys && values ? e.value : keys ? e.value.key : e.value.value
-        })
-      )
+      return pull(index.read(opts), Format(keys, values))
     }
 
     return index
 
   }
 }
+
+
+
+
 
 
 

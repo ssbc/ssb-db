@@ -4,7 +4,7 @@ var pull      = require('pull-stream')
 var ltgt      = require('ltgt')
 var ssbKeys   = require('ssb-keys')
 var paramap   = require('pull-paramap')
-
+var Format    = require('../util').formatStream
 var ViewLevel = require('flumeview-level')
 
 
@@ -77,9 +77,7 @@ module.exports = function (keys) {
 
       return pull(
         index.read(opts),
-        pull.map(function (e) {
-          return keys && values ? e.value : keys ? e.value.key : e.value.value
-        })
+        Format(keys, values)
       )
     }
 
@@ -180,6 +178,9 @@ module.exports = function (keys) {
     return index
   }
 }
+
+
+
 
 
 
