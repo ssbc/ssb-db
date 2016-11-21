@@ -57,13 +57,43 @@ function getVMajor () {
   return (version.split('.')[0])|0
 }
 
-module.exports = function (_, opts, keys, path) {
-  path = path || _.location
+module.exports = function (_db, opts, keys, path) {
+  path = path || _db.location
 
   keys = keys || ssbKeys.generate()
 
   var db = require('./db')(path, keys)
 
+  if(_db) { //legacy database
+    require('./legacy')(_db)
+    db.since.once(function (v) {
+      if(v === -1) load(null)
+      else db.get(v, function (err, data) {
+        if(err) throw err
+        load(data.timestamp)
+      })
+    })
+
+    function load(since) {
+      pull(
+        _db.createLogStream({gt: since}),
+        paramap(function (data, cb) {
+          if(Math.random() < 0.001)
+            console.log(data.timestamp)
+          db.append(data, cb)
+        }),
+        pull.drain(null, function () {
+          console.log('loaded!')
+        })
+      )
+
+    }
+
+//    pull(db.time.read(), pull.drain(console.log))
+  }
+  db.sublevel = function (a, b) {
+    return _db.sublevel(a, b)
+  }
   //fairly sure that something up the stack expects ssb to be an event emitter.
   db.__proto__ = new EventEmitter()
 
@@ -91,7 +121,8 @@ module.exports = function (_, opts, keys, path) {
     if(ref.isMsg(key)) return db.keys.get(key, function (err, seq) {
       if(err) cb(err)
       else _get(seq, function (err, data) {
-        cb(err, data && data.value)
+        if(err) cb(err)
+        else    cb(err, data && data.value)
       })
     })
     else _get(key, cb) //seq
@@ -188,9 +219,13 @@ module.exports = function (_, opts, keys, path) {
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
+    console.log('createLogStream', opts)
+    if(opts.raw)
+      return db.stream()
+
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), Format(keys, values))
+    return pull(db.time.read(opts), /*pull.through(console.log), */Format(keys, values))
   }
 
   db.messagesByType = db.links.messagesByType
@@ -263,4 +298,14 @@ module.exports = function (_, opts, keys, path) {
 
   return db
 }
+
+
+
+
+
+
+
+
+
+
 
