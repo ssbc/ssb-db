@@ -5,7 +5,7 @@ var OffsetLog = require('flumelog-offset')
 var codex = require('level-codec/lib/encodings')
 var ViewLevel = require('flumeview-level')
 module.exports = function (dir, keys) {
-  var log = OffsetLog(path.join(dir, 'log.offset'), 4096, codex.json)
+  var log = OffsetLog(path.join(dir, 'log.offset'), 1024*16, codex.json)
 
   return Flume(log)
     .use('last', require('./indexes/last')())
