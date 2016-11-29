@@ -16,7 +16,7 @@ function toSeq (latest) {
 module.exports = function () {
 
   //TODO: rewrite as a flumeview-reduce
-  var createIndex = Reduce(1, sfunction (acc, data) {
+  var createIndex = Reduce(1, function (acc, data) {
     if(!acc) acc = {}
     acc[data.value.author] = {id: data.key, sequence: data.value.sequence, ts: data.value.timestamp}
     return acc
