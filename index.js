@@ -183,9 +183,12 @@ module.exports = function (_db, opts, keys, path) {
   //writeStream - used in replication.
   db.createWriteStream = function (cb) {
     return pull(
-      paramap(function (data, cb) {
+      pull.asyncMap(function (data, cb) {
         db.add(data, function (err, msg) {
-          if(err) db.emit('invalid', err, msg)
+          if(err) {
+            console.error(err.message, data)
+            db.emit('invalid', err, msg)
+          }
           cb()
         })
       }),
@@ -202,24 +205,30 @@ module.exports = function (_db, opts, keys, path) {
 
   //used by sbot replication plugin
   db.latestSequence = function (id, cb) {
-    db.getLatest(id, function (err, data) {
-      if(err || !data) cb(null, 0)
-      else cb(null, data.value.sequence)
+    db.last.get(function (err, val) {
+      if(err) cb(err)
+      else if(!val[id]) cb(new Error('not found:'+id))
+      else cb(null, val[id].sequence)
     })
   }
 
 
   db.getLatest = function (key, cb) {
-    db.last.get(key, function (err, seq) {
-      if(err) return cb()
-      db.get(seq, cb)
+    db.last.get(function (err, value) {
+      if(err || !value || !value[key]) cb()
+      //Currently, this retrives the previous message.
+      //but, we could rewrite validation to only use
+      //data the reduce view, so that no disk read is necessary.
+//      else cb(null, {key: value.id, value: {sequence: value.sequence, timestamp: value.ts}})
+      else db.get(value[key].id, function (err, msg) {
+        cb(err, {key: value[key].id, value: msg})
+      })
     })
   }
 
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
-    console.log('createLogStream', opts)
     if(opts.raw)
       return db.stream()
 
@@ -298,11 +307,6 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
-
-
-
-
-
 
 
 

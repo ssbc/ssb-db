@@ -2,9 +2,9 @@ var pull = require('pull-stream')
 var path = require('path')
 var ltgt = require('ltgt')
 var u = require('../util')
-
-var ViewLevel = require('flumeview-level')
-
+var pCont = require('pull-cont')
+//var ViewLevel = require('flumeview-level')
+var Reduce = require('flumeview-reduce')
 function isNumber (n) {
   return typeof n === 'number'
 }
@@ -16,8 +16,10 @@ function toSeq (latest) {
 module.exports = function () {
 
   //TODO: rewrite as a flumeview-reduce
-  var createIndex = ViewLevel(1, function (data) {
-    return [data.value.author]
+  var createIndex = Reduce(1, sfunction (acc, data) {
+    if(!acc) acc = {}
+    acc[data.value.author] = {id: data.key, sequence: data.value.sequence, ts: data.value.timestamp}
+    return acc
   })
 
   return function (log, name) {
@@ -25,20 +27,23 @@ module.exports = function () {
     index.methods.latest = 'source'
 
     index.latest = function (opts) {
-      opts = opts || {}
-      return pull(
-        index.read(opts),
-        pull.map(function (data) {
-          var d = {id: data.key, sequence: toSeq(data.value.value), ts: data.value.timestamp }
-          return d
+      return pCont(function (cb) {
+        index.get([], function (err, val) {
+          if(err) return cb(err)
+          cb(null, pull.values(Object.keys(val).map(function (author) {
+            return {id: author, sequence: val[author].sequence, ts: val[author].ts}
+          })))
         })
-      )
+      })
     }
 
     return index
 
   }
 }
+
+
+
 
 
 
