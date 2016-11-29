@@ -17,6 +17,13 @@ module.exports = function (opts) {
 
   var ssb = require('../')(db, opts)
 
+
+  var db2 = sublevel(level('test-ssb-feed2', {
+    valueEncoding: require('../codec')
+  }))
+
+  var ssb2 = require('../')(db2, opts)
+
   tape('add invalid message', function (t) {
 
     ssb.add({}, function (err) {
@@ -71,9 +78,25 @@ module.exports = function (opts) {
 
   })
 
+  tape('log', function (t) {
+
+    pull(
+      ssb.createLogStream({keys: false, values: true}),
+      ssb2.createWriteStream(function (err, ary) {
+        if(err) throw err
+        t.end()
+      })
+    )
+
+  })
+
+
 
 }
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
 
