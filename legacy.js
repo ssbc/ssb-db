@@ -7,9 +7,9 @@ var stdopts   = u.options
 var Format    = u.formatStream
 var msgFmt    = u.format
 
-module.exports = function (db) {
+module.exports = function (db, flumedb) {
 
-  var logDB   = db.sublevel('log')
+  var logDB = db.sublevel('log')
   db.pre(function (op, _add, _batch) {
     var msg = op.value
     var id = op.key
@@ -29,7 +29,6 @@ module.exports = function (db) {
     })
 
   })
-
 
   function Limit (fn) {
     return function (opts) {
@@ -69,5 +68,29 @@ module.exports = function (db) {
     return pl.live(db, stdopts(opts))
   }))
 
+  if(flumedb) {
+    flumedb.since.once(function (v) {
+      if(v === -1) load(null)
+      else flumedb.get(v, function (err, data) {
+        if(err) throw err
+        load(data.timestamp)
+      })
+    })
+
+    function load(since) {
+      pull(
+        db.createLogStream({gt: since}),
+        paramap(function (data, cb) {
+          if(Math.random() < 0.001)
+            console.log(data.timestamp)
+          flumedb.append(data, cb)
+        }),
+        pull.drain(null, function () {
+          console.log('loaded!')
+        })
+      )
+    }
+  }
 }
+
 
