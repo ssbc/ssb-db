@@ -158,7 +158,7 @@ module.exports = function (_db, opts, keys, path) {
   db.latestSequence = function (id, cb) {
     db.last.get(function (err, val) {
       if(err) cb(err)
-      else if(!val[id]) cb(new Error('not found:'+id))
+      else if (!val || !val[id]) cb(new Error('not found:'+id))
       else cb(null, val[id].sequence)
     })
   }
