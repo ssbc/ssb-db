@@ -23,7 +23,7 @@ exports.format = msgFmt
 exports.lo = null
 exports.hi = undefined
 
-exports.await = function () {
+exports.wait = function () {
   var waiting = [], value
   return {
     get: function () { return value },
@@ -32,7 +32,7 @@ exports.await = function () {
       while(waiting.length)
         waiting.shift()(null, value)
     },
-    await: function (cb) {
+    wait: function (cb) {
       if(value !== undefined) cb(null, value)
       else waiting.push(cb)
     }

@@ -75,17 +75,17 @@ module.exports = function (db, opts, keys, path) {
 
   var realtime = Notify()
 
-  var await = u.await()
-  var set = await.set
-  await.set = null
+  var wait = u.wait()
+  var set = wait.set
+  wait.set = null
   var waiting = []
-  db.seen = await
+  db.seen = wait
   db.post(function (op) {
-    set(Math.max(op.ts || op.timestamp, await.get()||0))
+    set(Math.max(op.ts || op.timestamp, wait.get()||0))
   })
 
   peek.last(logDB, {keys: true}, function (err, key) {
-    set(Math.max(key || 0, await.get()||0))
+    set(Math.max(key || 0, wait.get()||0))
   })
 
   db.pre(function (op, _add, _batch) {
@@ -128,10 +128,10 @@ module.exports = function (db, opts, keys, path) {
     }
 
     var m = 4
-    feedDB.await(next2)
-    clockDB.await(next2)
-    lastDB.await(next2)
-    indexDB.await(next2)
+    feedDB.wait(next2)
+    clockDB.wait(next2)
+    lastDB.wait(next2)
+    indexDB.wait(next2)
 
     function next2 () {
       if(ended) return

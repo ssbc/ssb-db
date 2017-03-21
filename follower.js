@@ -17,8 +17,8 @@ module.exports = function (_db, path, version, map) {
     return Level(path, {keyEncoding: bytewise, valueEncoding: 'json'})
   }
 
-  function await(ready) {
-    _db.seen.await(function () {
+  function wait(ready) {
+    _db.seen.wait(function () {
       if(_db.seen.get() === since) return ready()
       waiting.push({ts: _db.seen.get(), cb: ready})
     })
@@ -103,17 +103,17 @@ module.exports = function (_db, path, version, map) {
   return {
     get: function (key, cb) {
       //wait until the log has been processed up to the current point.
-      await(function () {
+      wait(function () {
         db.get(key, cb)
       })
     },
-    await: await,
+    wait: wait,
     read: function (opts) {
       opts = opts || {}
       if(since === _db.seen.get()) return pl.read(db, opts)
 
       var source = defer.source()
-      await(function () {
+      wait(function () {
         source.resolve(pl.read(db, opts))
       })
       return source
