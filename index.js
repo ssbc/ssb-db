@@ -87,13 +87,17 @@ module.exports = function (_db, opts, keys, path) {
   var _get = db.get
 
   db.get = function (key, cb) {
-    if(ref.isMsg(key)) return db.keys.get(key, function (err, seq) {
-      if(err) cb(err)
-      else _get(seq, function (err, data) {
+    if(ref.isMsg(key))
+      return db.keys.get(key, function (err, seq) {
         if(err) cb(err)
-        else    cb(err, data && data.value)
+//        else if(Number.isInteger(seq)) _get(seq, function (err, data) {
+//          if(err) cb(err)
+//          else    cb(err, data && data.value)
+//        })
+        else
+          cb(err, seq && seq.value)
       })
-    })
+//    else cb(null, seq)
     else _get(key, cb) //seq
   }
 
@@ -184,7 +188,7 @@ module.exports = function (_db, opts, keys, path) {
 
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), /*pull.through(console.log), */Format(keys, values))
+    return pull(db.time.read(opts), Format(keys, values))
   }
 
   db.messagesByType = db.links.messagesByType
@@ -196,6 +200,23 @@ module.exports = function (_db, opts, keys, path) {
   //get all messages that link to a given message.
 
   db.relatedMessages = Related(db)
+
+  //called with [id, seq] or "<id>:<seq>"
+  db.getAtSequence = function (seqid, cb) {
+    db.clock.get(isString(seqid) ? seqid.split(':') : seqid, cb)
+  }
+
+  db.getVectorClock = function (_, cb) {
+    if(!cb) cb = _
+    db.last.get(function (err, h) {
+      if(err) return cb(err)
+      var clock = {}
+      for(var k in h)
+        clock[k] = h[k].sequence
+      cb(null, clock)
+    })
+
+  }
 
   return db
 }
