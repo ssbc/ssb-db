@@ -1,7 +1,7 @@
 {
   "name": "secure-scuttlebutt",
   "description": "a secure, replicatable database",
-  "version": "16.0.0-flume",
+  "version": "16.1.0-flume",
   "homepage": "https://github.com/ssbc/secure-scuttlebutt",
   "repository": {
     "type": "git",
