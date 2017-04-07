@@ -261,7 +261,7 @@ if `live` is true, the stream will be a
 
 ### SecureScuttlebutt#messagesByType ({type: string, live: bool?}) -> PullSource
 
-retrive messages with a given type. All messages must have a type,
+retrieve messages with a given type. All messages must have a type,
 so this is a good way to select messages that an application might use.
 Returns a source pull-stream. This function takes all the options from [pull-level#read](https://github.com/dominictarr/pull-level#example---reading)
 (gt, lt, gte, lte, limit, reverse, live)
