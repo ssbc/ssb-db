@@ -3,6 +3,7 @@
 var join      = require('path').join
 var assert    = require('assert')
 var EventEmitter = require('events')
+var Obv       = require('obv')
 
 var contpara  = require('cont').para
 var pull      = require('pull-stream')
@@ -72,6 +73,7 @@ module.exports = function (_db, opts, keys, path) {
 
   db.opts = opts
 
+  db.post = Obv()
   db.batch = function (batch, cb) {
     db.append(batch.map(function (e) {
       return {
@@ -80,6 +82,10 @@ module.exports = function (_db, opts, keys, path) {
         timestamp: timestamp()
       }
     }), function (err, offsets) {
+      batch.forEach(function (msg, i) {
+        //trigger post immediately.
+        db.post.set(msg)
+      })
       cb(err)
     })
   }
@@ -101,7 +107,13 @@ module.exports = function (_db, opts, keys, path) {
     else _get(key, cb) //seq
   }
 
-  db.add = Validator(db, opts)
+  var add = Validator(db, opts)
+  db.add = function (msg, cb) {
+    add(msg, function (err, value) {
+      if(err) console.log(err)
+      cb(err, value)
+    })
+  }
 
   var realtime = Notify()
 
@@ -220,4 +232,5 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
+
 
