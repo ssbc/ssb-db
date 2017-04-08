@@ -22,6 +22,7 @@
     "level-sublevel": "^6.6.0",
     "ltgt": "~2.0.0",
     "monotonic-timestamp": "~0.0.8",
+    "obv": "0.0.1",
     "pull-cat": "~1.1.5",
     "pull-cont": "0.0.0",
     "pull-defer": "^0.2.2",
