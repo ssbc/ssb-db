@@ -84,7 +84,7 @@ module.exports = function (db, flumedb) {
           if(Math.random() < 0.001)
             console.log(data.timestamp)
           flumedb.append(data, cb)
-        }),
+        }, 32),
         pull.drain(null, function () {
           console.log('loaded!')
         })
