@@ -13,7 +13,7 @@
     "deep-equal": "~0.2.1",
     "explain-error": "~1.0.1",
     "flumedb": "^0.1.0",
-    "flumelog-offset": "0.0.3",
+    "flumelog-offset": "^1.0.0",
     "flumeview-level": "^2.0.0",
     "flumeview-reduce": "^1.0.0",
     "level": "^1.4.0",
