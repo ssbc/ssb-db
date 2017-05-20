@@ -38,7 +38,7 @@ exports.wait = function () {
       else waiting.push(cb)
     }
   }
-
+}
 exports.formatStream = function (keys, values) {
   return Map(function (data) {
     if(data.sync) return data
