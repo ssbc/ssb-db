@@ -12,7 +12,7 @@
     "cont": "~1.0.0",
     "deep-equal": "~0.2.1",
     "explain-error": "~1.0.1",
-    "flumedb": "^0.1.0",
+    "flumedb": "^0.2.0",
     "flumelog-offset": "^3.0.2",
     "flumeview-level": "^2.0.0",
     "flumeview-reduce": "^1.0.0",
@@ -72,4 +72,3 @@
     "files": "test/defaults.js"
   }
 }
-
