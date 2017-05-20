@@ -94,10 +94,14 @@ module.exports = function (_db, opts, keys, path) {
 
   var add = Validator(db, opts)
   db.add = function (msg, cb) {
-    add(msg, function (err, value) {
-      if(err) console.log(err)
-      cb(err, value)
-    })
+    if(db.ready.value) next(true)
+    else db.ready.once(next, false)
+    function next (ready) {
+      add(msg, function (err, value) {
+        if(err) console.log(err)
+        cb(err, value)
+      })
+    }
   }
 
   var realtime = Notify()
@@ -217,4 +221,10 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
+
+
+
+
+
+
 
