@@ -87,6 +87,7 @@ module.exports = function (db, flumedb) {
         }, 32),
         pull.drain(null, function () {
           console.log('loaded!')
+          flumedb.ready.set(true)
         })
       )
     }

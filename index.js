@@ -52,6 +52,7 @@ module.exports = function (_db, opts, keys, path) {
 
   //legacy database
   if(_db) require('./legacy')(_db, db)
+  else db.ready.set(true)
 
   db.sublevel = function (a, b) {
     return _db.sublevel(a, b)
@@ -216,13 +217,4 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
-
-
-
-
-
-
-
-
-
 

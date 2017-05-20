@@ -7,7 +7,7 @@ var ViewLevel = require('flumeview-level')
 module.exports = function (dir, keys) {
   var log = OffsetLog(path.join(dir, 'log.offset'), 1024*16, codex.json)
 
-  return Flume(log)
+  return Flume(log, false) //false says the database is not ready yet!
     .use('last', require('./indexes/last')())
     .use('keys', ViewLevel(1, function (data) {
       return [data.key]
