@@ -142,7 +142,6 @@ module.exports = function (_db, opts, keys, path) {
       pull.asyncMap(function (data, cb) {
         db.add(data, function (err, msg) {
           if(err) {
-            console.error(err.message, data)
             db.emit('invalid', err, msg)
           }
           cb()
@@ -221,10 +220,6 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
-
-
-
-
 
 
 
