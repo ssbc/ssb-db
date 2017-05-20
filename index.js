@@ -1,26 +1,16 @@
 'use strict';
 
 var join      = require('path').join
-var assert    = require('assert')
 var EventEmitter = require('events')
 var Obv       = require('obv')
 
-var contpara  = require('cont').para
 var pull      = require('pull-stream')
-var pl        = require('pull-level')
-var paramap   = require('pull-paramap')
 var timestamp = require('monotonic-timestamp')
-var ltgt      = require('ltgt')
-var mlib      = require('ssb-msgs')
 var explain   = require('explain-error')
-var pdotjson  = require('./package.json')
 var createFeed = require('ssb-feed')
-var cat       = require('pull-cat')
 var ref       = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
-var Live      = require('pull-live')
 var Notify    = require('pull-notify')
-var peek      = require('level-peek')
 var Validator = require('ssb-feed/validator')
 var Related   = require('./related')
 
@@ -96,14 +86,8 @@ module.exports = function (_db, opts, keys, path) {
     if(ref.isMsg(key))
       return db.keys.get(key, function (err, seq) {
         if(err) cb(err)
-//        else if(Number.isInteger(seq)) _get(seq, function (err, data) {
-//          if(err) cb(err)
-//          else    cb(err, data && data.value)
-//        })
-        else
-          cb(err, seq && seq.value)
+        else cb(null, seq && seq.value)
       })
-//    else cb(null, seq)
     else _get(key, cb) //seq
   }
 
@@ -232,5 +216,13 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
+
+
+
+
+
+
+
+
 
 
