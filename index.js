@@ -98,7 +98,6 @@ module.exports = function (_db, opts, keys, path) {
     else db.ready.once(next, false)
     function next (ready) {
       add(msg, function (err, value) {
-        if(err) console.log(err)
         cb(err, value)
       })
     }
@@ -238,3 +237,4 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
