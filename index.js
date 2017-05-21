@@ -218,8 +218,23 @@ module.exports = function (_db, opts, keys, path) {
 
   }
 
+  if(_db) {
+    var close = db.close
+    db.close = function (cb) {
+      var n = 2
+      _db.close(next); close(next)
+
+      function next (err) {
+        if(err && n>0) {
+          n = -1
+          return cb(err)
+        }
+        if(--n) return
+        cb()
+      }
+
+    }
+
+  }
   return db
 }
-
-
-
