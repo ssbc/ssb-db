@@ -6,20 +6,15 @@ var u         = require('./util')
 var stdopts   = u.options
 var Format    = u.formatStream
 var msgFmt    = u.format
+var timestamp = require('monotonic-timestamp')
 
 module.exports = function (db, flumedb) {
 
   var logDB = db.sublevel('log')
-  db.pre(function (op, _add, _batch) {
+  db.pre(function (op, add, _batch) {
     var msg = op.value
     var id = op.key
     // index by sequence number
-
-    function add (kv) {
-      _add(kv);
-      kv._value = op.value
-      realtime(kv)
-    }
 
     var localtime = op.timestamp = timestamp()
 
@@ -69,29 +64,53 @@ module.exports = function (db, flumedb) {
   }))
 
   if(flumedb) {
-    flumedb.since.once(function (v) {
-      if(v === -1) load(null)
-      else flumedb.get(v, function (err, data) {
-        if(err) throw err
-        load(data.timestamp)
-      })
-    })
-
-    function load(since) {
+    flumedb.progress = {}
+    function one (opts, cb) {
       pull(
-        db.createLogStream({gt: since}),
-        paramap(function (data, cb) {
-          if(Math.random() < 0.001)
-            console.log(data.timestamp)
-          flumedb.append(data, cb)
-        }, 32),
-        pull.drain(null, function () {
-          console.log('loaded!')
-          flumedb.ready.set(true)
+        db.createLogStream(opts),
+        pull.collect(function (err, ary) {
+          cb(err, ary[ary.length - 1])
         })
       )
     }
+
+    one({reverse: true, limit: 1}, function (err, last) {
+        if(!last) ready() //empty legacy database.
+        else
+          flumedb.since.once(function (v) {
+            if(v === -1) load(null)
+            else flumedb.get(v, function (err, data) {
+              if(err) throw err
+              if(data.timestamp < last.timestamp) load(data.timestamp)
+              else ready()
+            })
+          })
+
+        function load(since) {
+          flumedb.progress = {
+            target: +last.timestamp, current: +since,
+            from: +since
+          }
+          pull(
+            db.createLogStream({gt: since}),
+            paramap(function (data, cb) {
+              var prog = flumedb.progress
+              prog.from = flumedb.progress.from ? flumedb.progress.from : +data.timestamp
+              prog.current = +data.timestamp
+              prog.ratio =
+                (prog.current - prog.from) / (prog.target - prog.from)
+              flumedb.append(data, cb)
+            }, 32),
+            pull.drain(null, ready)
+          )
+        }
+        function ready () {
+          console.log('loaded!')
+          flumedb.progress.current = flumedb.progress.target
+          flumedb.ready.set(true)
+
+        }
+    })
   }
 }
-
 
