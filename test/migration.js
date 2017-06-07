@@ -20,7 +20,7 @@ tape('generate fake feed', function (t) {
     }
   }, ssbKeys.generate())
 
-  var l = 100000
+  var l = 10000
   while(l--)
     feed.add({type: 'test', text:'hello1', l: l}, function () {})
 
@@ -85,7 +85,24 @@ tape('migrate', function (t) {
 
 })
 
+tape('progress looks right on empty database', function (t) {
 
+  var db = sublevel(level('/tmp/test-ssb-feed_'+Date.now(), {
+    valueEncoding: require('../codec')
+  }))
 
+  var flume = require('../db')('/tmp/test-ssb-migration_'+Date.now())
+
+  flume.ready(function (b) {
+    if(b) {
+      console.log('ready?', flume.progress)
+      t.equal(flume.progress.ratio, 1)
+      t.end()
+    }
+  })
+
+  require('../legacy')(db, flume)
+
+})
 
 
