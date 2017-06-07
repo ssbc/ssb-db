@@ -1,3 +1,4 @@
+'use strict'
 var pull      = require('pull-stream')
 var pl        = require('pull-level')
 var Live      = require('pull-live')
@@ -74,43 +75,50 @@ module.exports = function (db, flumedb) {
       )
     }
 
+    function update (since) {
+      var prog = flumedb.progress
+      var start = (prog.start = flumedb.progress.start ? flumedb.progress.start : +since)
+      prog.current = +since
+      prog.ratio =
+        (prog.current - start) / (prog.target - start)
+    }
+
     one({reverse: true, limit: 1}, function (err, last) {
-        if(!last) ready() //empty legacy database.
-        else
-          flumedb.since.once(function (v) {
-            if(v === -1) load(null)
-            else flumedb.get(v, function (err, data) {
-              if(err) throw err
-              if(data.timestamp < last.timestamp) load(data.timestamp)
-              else ready()
-            })
+      if(!last) ready() //empty legacy database.
+      else {
+        flumedb.progress.target = +last.timestamp
+        flumedb.since.once(function (v) {
+          if(v === -1) load(null)
+          else flumedb.get(v, function (err, data) {
+            if(err) throw err
+            if(data.timestamp < last.timestamp) load(data.timestamp)
+            else ready()
           })
+        })
+      }
 
-        function load(since) {
-          flumedb.progress = {
-            target: +last.timestamp, current: +since,
-            from: +since
-          }
-          pull(
-            db.createLogStream({gt: since}),
-            paramap(function (data, cb) {
-              var prog = flumedb.progress
-              prog.from = flumedb.progress.from ? flumedb.progress.from : +data.timestamp
-              prog.current = +data.timestamp
-              prog.ratio =
-                (prog.current - prog.from) / (prog.target - prog.from)
-              flumedb.append(data, cb)
-            }, 32),
-            pull.drain(null, ready)
-          )
+      function load(since) {
+        update(since)
+        pull(
+          db.createLogStream({gt: since}),
+          paramap(function (data, cb) {
+            update(data.timestamp)
+            flumedb.append(data, cb)
+          }, 32),
+          pull.drain(null, ready)
+        )
+      }
+      function ready () {
+        if(!flumedb.progress.target) {
+          flumedb.progress.target = flumedb.progress.current = flumedb.progress.ratio = 1
+          flumedb.progress.start = 0
         }
-        function ready () {
-          console.log('loaded!')
-          flumedb.progress.current = flumedb.progress.target
-          flumedb.ready.set(true)
-
-        }
+        flumedb.ready.set(true)
+      }
     })
   }
 }
+
+
+
 
