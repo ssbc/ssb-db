@@ -76,7 +76,6 @@ tape('migrate', function (t) {
       console.log('migrate', Date.now() - start)
       clearInterval(int)
       t.equal(flume.progress.current, flume.progress.target)
-      t.equal(flume.progress.ratio, 1)
       t.end()
     }
   })
@@ -90,19 +89,25 @@ tape('progress looks right on empty database', function (t) {
   var db = sublevel(level('/tmp/test-ssb-feed_'+Date.now(), {
     valueEncoding: require('../codec')
   }))
-
+  
   var flume = require('../db')('/tmp/test-ssb-migration_'+Date.now())
 
   flume.ready(function (b) {
     if(b) {
       console.log('ready?', flume.progress)
-      t.equal(flume.progress.ratio, 1)
-      t.end()
+      t.ok(flume.progress, 'progress object is defined')
+      t.notOk(flume.progress.migration, 'progress.migration is undefined')
+      setTimeout(function () {
+        t.equal(
+          flume.progress.indexes.current,
+          flume.progress.indexes.target
+        )
+        t.end()
+      }, 200)
     }
   })
 
   require('../legacy')(db, flume)
 
 })
-
 
