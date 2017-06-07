@@ -65,7 +65,7 @@ module.exports = function (db, flumedb) {
   }))
 
   if(flumedb) {
-    flumedb.progress = {}
+    var prog = {}
     function one (opts, cb) {
       pull(
         db.createLogStream(opts),
@@ -76,29 +76,38 @@ module.exports = function (db, flumedb) {
     }
 
     function update (since) {
-      var prog = flumedb.progress
-      var start = (prog.start = flumedb.progress.start ? flumedb.progress.start : +since)
+      var start = (prog.start = prog.start ? prog.start : +since)
       prog.current = +since
-      prog.ratio =
-        (prog.current - start) / (prog.target - start)
     }
 
     one({reverse: true, limit: 1}, function (err, last) {
       if(!last) ready() //empty legacy database.
       else {
-        flumedb.progress.target = +last.timestamp
         flumedb.since.once(function (v) {
-          if(v === -1) load(null)
+          if(v === -1) {
+            prog = flumedb.progress.migration = {
+              start: 0,
+              current: 0,
+              target: +last.timestamp
+            }
+            load(null)
+          }
           else flumedb.get(v, function (err, data) {
             if(err) throw err
-            if(data.timestamp < last.timestamp) load(data.timestamp)
+            if(data.timestamp < last.timestamp) {
+              prog = flume.progress.migration = {
+                start: data.timestamp,
+                current: 0,
+                target: +last.timestamp
+              }
+              load(data.timestamp)
+            }
             else ready()
           })
         })
       }
 
       function load(since) {
-        update(since)
         pull(
           db.createLogStream({gt: since}),
           paramap(function (data, cb) {
@@ -109,16 +118,9 @@ module.exports = function (db, flumedb) {
         )
       }
       function ready () {
-        if(!flumedb.progress.target) {
-          flumedb.progress.target = flumedb.progress.current = flumedb.progress.ratio = 1
-          flumedb.progress.start = 0
-        }
         flumedb.ready.set(true)
       }
     })
   }
 }
-
-
-
 
