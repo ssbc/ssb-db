@@ -95,7 +95,7 @@ module.exports = function (db, flumedb) {
           else flumedb.get(v, function (err, data) {
             if(err) throw err
             if(data.timestamp < last.timestamp) {
-              prog = flume.progress.migration = {
+              prog = flumedb.progress.migration = {
                 start: data.timestamp,
                 current: 0,
                 target: +last.timestamp
