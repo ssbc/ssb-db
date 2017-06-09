@@ -35,7 +35,7 @@ module.exports = function (dir, keys) {
     //as well as the built ins.
     var current = 0, n = 0
     for(var k in db)
-      if(db[k].since) {
+      if(db[k] && 'function' === typeof db[k].since) {
         n++
         current += (db[k].since.value || 0)
       }
@@ -44,11 +44,11 @@ module.exports = function (dir, keys) {
     //up to the current position!
     if(prog.current === prog.target)
       prog.start = prog.current
-    console.log('prog', prog)
   }
 
   setInterval(update, 200).unref()
 
   return db
 }
+
 
