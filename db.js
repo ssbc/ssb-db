@@ -22,7 +22,7 @@ module.exports = function (dir, keys) {
   db.progress = {}
   var prog = db.progress.indexes = {start: 0, current: 0, target: 0}
   var ts = Date.now()
-  db.since.once(function (v) { prog.start = v })
+
   db.since(function () {
     prog.target = db.since.value
     if(Date.now() > ts + 100)
@@ -42,13 +42,18 @@ module.exports = function (dir, keys) {
     prog.current = ~~(current / n)
     //if the progress bar is complete, move the starting point
     //up to the current position!
-    if(prog.current === prog.target)
+    if(prog.start <= 0)
       prog.start = prog.current
+    else if(prog.current == prog.target)
+      prog.start = prog.target
+
   }
 
   setInterval(update, 200).unref()
 
   return db
 }
+
+
 
 
