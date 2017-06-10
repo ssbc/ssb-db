@@ -49,11 +49,10 @@ module.exports = function (dir, keys) {
 
   }
 
-  setInterval(update, 200).unref()
+  // unref is only available when running inside node
+  var timer = setInterval(update, 200)
+  timer.unref && timer.unref()
 
   return db
 }
-
-
-
 
