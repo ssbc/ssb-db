@@ -52,6 +52,7 @@ module.exports = function (db, flumedb) {
       pl.old(logDB, stdopts(opts)),
       //lookup2(keys, values, 'timestamp')
       paramap(function (data, cb) {
+        if(values == false) return cb(null, {key:data.value})
         var key = data.value
         var seq = data.key
         db.get(key, function (err, value) {
@@ -65,8 +66,7 @@ module.exports = function (db, flumedb) {
   }))
 
   if(flumedb) {
-    var prog = {}
-    var prog2 = {current: 0, start: 0, target: 0}
+    var prog = {current: 0, start: 0, target: 0}
 
     function one (opts, cb) {
       pull(
@@ -77,32 +77,16 @@ module.exports = function (db, flumedb) {
       )
     }
 
-    function update (since) {
-      var start = (prog.start = prog.start ? prog.start : +since)
-      prog.current = +since
-      prog2.current += 1
-    }
-
     one({reverse: true, limit: 1}, function (err, last) {
       if(!last) ready() //empty legacy database.
       else {
         flumedb.since.once(function (v) {
           if(v === -1) {
-            prog = flumedb.progress.migration = {
-              start: 0,
-              current: 0,
-              target: +last.timestamp
-            }
             load(null)
           }
           else flumedb.get(v, function (err, data) {
             if(err) throw err
             if(data.timestamp < last.timestamp) {
-              prog = flumedb.progress.migration = {
-                start: data.timestamp,
-                current: 0,
-                target: +last.timestamp
-              }
               load(data.timestamp)
             }
             else ready()
@@ -112,25 +96,29 @@ module.exports = function (db, flumedb) {
 
       function load(since) {
         // fast track for more accurate progress
+        flumedb.progress.migration = prog
+        var c = 0
         pull(
-          db.createLogStream({gt: since}),
-          pull.drain(x => {
-            prog2.target += 1
-          }, (err) => {
-            // now that we know how many total items, switch to prog2
-            if (!err) flumedb.progress.migration = prog2
+          pl.old(logDB, {values: false}),
+          pull.drain(function () {
+            c++
+          }, function () {
+            prog.target = c
+            migrate()
           })
         )
 
-        // actual upgrade
-        pull(
-          db.createLogStream({gt: since}),
-          paramap(function (data, cb) {
-            update(data.timestamp)
-            flumedb.append(data, cb)
-          }, 32),
-          pull.drain(null, ready)
-        )
+        function migrate () {
+          // actual upgrade
+          pull(
+            db.createLogStream({gt: since}),
+            paramap(function (data, cb) {
+              prog.current += 1
+              flumedb.append(data, cb)
+            }, 32),
+            pull.drain(null, ready)
+          )
+        }
       }
       function ready () {
         flumedb.ready.set(true)
