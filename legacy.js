@@ -66,6 +66,8 @@ module.exports = function (db, flumedb) {
 
   if(flumedb) {
     var prog = {}
+    var prog2 = {current: 0, start: 0, target: 0}
+
     function one (opts, cb) {
       pull(
         db.createLogStream(opts),
@@ -78,6 +80,7 @@ module.exports = function (db, flumedb) {
     function update (since) {
       var start = (prog.start = prog.start ? prog.start : +since)
       prog.current = +since
+      prog2.current += 1
     }
 
     one({reverse: true, limit: 1}, function (err, last) {
@@ -108,6 +111,18 @@ module.exports = function (db, flumedb) {
       }
 
       function load(since) {
+        // fast track for more accurate progress
+        pull(
+          db.createLogStream({gt: since}),
+          pull.drain(x => {
+            prog2.target += 1
+          }, (err) => {
+            // now that we know how many total items, switch to prog2
+            if (!err) flumedb.progress.migration = prog2
+          })
+        )
+
+        // actual upgrade
         pull(
           db.createLogStream({gt: since}),
           paramap(function (data, cb) {
@@ -123,4 +138,3 @@ module.exports = function (db, flumedb) {
     })
   }
 }
-
