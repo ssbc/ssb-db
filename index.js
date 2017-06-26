@@ -89,10 +89,10 @@ module.exports = function (_db, opts, keys, path) {
         if(err) cb(err)
         else cb(null, seq && seq.value)
       })
-    else if(typeof key === 'number') 
+    else if(Number.isInteger(key)) 
       _get(key, cb) //seq
     else
-      cb(new Error('Invalid key. You must call `get` with with an ssb ref or flume offset'))
+      throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
   }
 
   var add = Validator(db, opts)
