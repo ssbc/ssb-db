@@ -50,7 +50,7 @@
     "typewiselite": "~1.0.0"
   },
   "scripts": {
-    "prepublish": "npm ls && npm test",
+    "prepublishOnly": "npm ls && npm test",
     "test": "set -e; for t in test/*.js; do node $t; done"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
