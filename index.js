@@ -89,7 +89,10 @@ module.exports = function (_db, opts, keys, path) {
         if(err) cb(err)
         else cb(null, seq && seq.value)
       })
-    else _get(key, cb) //seq
+    else if(typeof key === 'number') 
+      _get(key, cb) //seq
+    else
+      cb(new Error('Invalid key. You must call `get` with with an ssb ref or flume offset'))
   }
 
   var add = Validator(db, opts)
