@@ -111,10 +111,14 @@ module.exports = function (db, flumedb) {
         function migrate () {
           // actual upgrade
           pull(
-            db.createLogStream({gt: since}),
+            db.createLogStream(),
             paramap(function (data, cb) {
               prog.current += 1
-              flumedb.append(data, cb)
+              if (data.timestamp > since) {
+                flumedb.append(data, cb)
+              } else {
+                cb() // skip this one, we already have it!
+              }
             }, 32),
             pull.drain(null, ready)
           )
