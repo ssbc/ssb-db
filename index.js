@@ -184,6 +184,9 @@ module.exports = function (_db, opts, keys, path) {
 
 
   db.createLogStream = function (opts) {
+    var limit = opts.limit
+    if(limit)
+      delete opts.limit
     opts = stdopts(opts)
     console.log('createLogStream', opts)
     if(opts.raw)
@@ -194,12 +197,12 @@ module.exports = function (_db, opts, keys, path) {
     return pull(
       db.time.read(opts),
       pull.filter(function (data) {
-        if(opts.private === true)
-          return 'string' === typeof data.value.content
-        else if(opts.private === false)
-          return 'string' !== typeof data.value.content
-        return true
+        if(data.sync) return true
+        var content = data.value.value.content
+        if(opts.private == null) return true
+        return opts.private === ('string' === typeof content)
       }),
+      limit ? pull.take(limit) : pull.through(),
       Format(keys, values)
     )
   }
@@ -251,4 +254,3 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
-
