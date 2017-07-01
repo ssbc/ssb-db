@@ -188,7 +188,6 @@ module.exports = function (_db, opts, keys, path) {
     if(limit)
       delete opts.limit
     opts = stdopts(opts)
-    console.log('createLogStream', opts)
     if(opts.raw)
       return db.stream()
 
@@ -254,3 +253,4 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
