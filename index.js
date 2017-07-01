@@ -185,12 +185,23 @@ module.exports = function (_db, opts, keys, path) {
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
+    console.log('createLogStream', opts)
     if(opts.raw)
       return db.stream()
 
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), Format(keys, values))
+    return pull(
+      db.time.read(opts),
+      pull.filter(function (data) {
+        if(opts.private === true)
+          return 'string' === typeof data.value.content
+        else if(opts.private === false)
+          return 'string' !== typeof data.value.content
+        return true
+      }),
+      Format(keys, values)
+    )
   }
 
   db.messagesByType = db.links.messagesByType
