@@ -99,7 +99,7 @@ module.exports = function (db, flumedb) {
         flumedb.progress.migration = prog
         var c = 0
         pull(
-          pl.old(logDB, {values: false}),
+          pl.old(logDB, {gt: since, values: false}),
           pull.drain(function () {
             c++
           }, function () {
