@@ -184,13 +184,29 @@ module.exports = function (_db, opts, keys, path) {
 
 
   db.createLogStream = function (opts) {
+    if(opts && opts.raw)
+      return db.stream(opts)
+
     opts = stdopts(opts)
-    if(opts.raw)
-      return db.stream()
+    var limit
+    if('boolean' === typeof opts.private) {
+      limit = opts && opts.limit
+      if(limit) delete opts.limit
+    }
 
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), Format(keys, values))
+    return pull(
+      db.time.read(opts),
+      limit ? pull.filter(function (data) {
+        if(data.sync) return true
+        var content = data.value.value.content
+        if(opts.private == null) return true
+        return opts.private === ('string' === typeof content)
+      }) : pull.through(),
+      limit ? pull.take(limit) : pull.through(),
+      Format(keys, values)
+    )
   }
 
   db.messagesByType = db.links.messagesByType
@@ -240,4 +256,7 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
+
+
 
