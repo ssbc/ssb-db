@@ -1,17 +1,21 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-//var LevelView = require('flumeview-level')
 var codex = require('level-codec/lib/encodings')
 var ViewLevel = require('flumeview-level')
+var ViewHashTable = require('flumeview-hashtable')
+
 module.exports = function (dir, keys) {
   var log = OffsetLog(path.join(dir, 'log.offset'), 1024*16, codex.json)
 
   var db = Flume(log, false) //false says the database is not ready yet!
     .use('last', require('./indexes/last')())
-    .use('keys', ViewLevel(1, function (data) {
-      return [data.key]
-    }))
+    .use('keys', ViewHashTable(1, function (key) {
+        var b = new Buffer(key.substring(1,7), 'base64').readUInt32BE(0)
+        return b
+      })
+    )
+
     .use('clock', require('./indexes/clock')())
     .use('feed', require('./indexes/feed')())
     .use('links', require('./indexes/links')(keys))
@@ -56,6 +60,4 @@ module.exports = function (dir, keys) {
 
   return db
 }
-
-
 

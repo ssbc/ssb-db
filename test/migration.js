@@ -100,7 +100,13 @@ tape('progress looks right on empty database', function (t) {
       setTimeout(function () {
         t.equal(
           flume.progress.indexes.current,
-          flume.progress.indexes.target
+          -1,
+          'current is -1'
+        )
+        t.equal(
+          flume.progress.indexes.target,
+          -1,
+          'target is -1'
         )
         t.end()
       }, 200)

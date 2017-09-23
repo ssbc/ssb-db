@@ -23,14 +23,15 @@ module.exports = function (db) {
     //which causes messages to be queried twice.
     var n = 1
     var msgs = {key: key, value: null}
+
+    related(msgs, depth)
+
     db.get(key, function (err, msg) {
       msgs.value = msg
       if (err && err.notFound)
         err = null // ignore not found
       done(err)
     })
-
-    related(msgs, depth)
 
     function related (msg, depth) {
       if(depth <= 0) return
