@@ -37,7 +37,8 @@ module.exports = function (dir, keys) {
     for(var k in db)
       if(db[k] && 'function' === typeof db[k].since) {
         n++
-        current += (db[k].since.value || 0)
+        var c = db[k].since.value
+        current += (Number.isInteger(c) ? c : -1)
       }
     prog.current = ~~(current / n)
     //if the progress bar is complete, move the starting point
@@ -55,4 +56,6 @@ module.exports = function (dir, keys) {
 
   return db
 }
+
+
 
