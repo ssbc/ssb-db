@@ -64,24 +64,6 @@ module.exports = function (_db, opts, keys, path) {
 
   db.opts = opts
 
-//  db.post = Obv()
-//  console.log('APPEND', db.append)
-//  db.batch = function (batch, cb) {
-//    db.append(batch.map(function (e) {
-//      return {
-//        key: e.key,
-//        value: e.value,
-//        timestamp: timestamp()
-//      }
-//    }), function (err, offsets) {
-//      batch.forEach(function (msg, i) {
-//        //trigger post immediately.
-//        db.post.set(msg)
-//      })
-//      cb(err)
-//    })
-//  }
-
   var _get = db.get
 
   db.get = function (key, cb) {
@@ -95,17 +77,6 @@ module.exports = function (_db, opts, keys, path) {
     else
       throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
   }
-
-//  var add = Validator(db, opts)
-//  db.add = function (msg, cb) {
-//    if(db.ready.value) next(true)
-//    else db.ready.once(next, false)
-//    function next (ready) {
-//      add(msg, function (err, value) {
-//        cb(err, value)
-//      })
-//    }
-//  }
 
   db.add = function (msg, cb) {
     db.queue(msg, function (err, data) {
@@ -122,7 +93,7 @@ module.exports = function (_db, opts, keys, path) {
       db.append({content: content, keys: keys}, cb)
     }
     return {
-      add: add, publish: add
+      add: add, publish: add,
       id: keys.id, keys: keys
     }
   }
@@ -174,11 +145,6 @@ module.exports = function (_db, opts, keys, path) {
     )
   }
 
-//  db.createFeed = function (keys) {
-//    if(!keys) keys = ssbKeys.generate()
-//    return createFeed(db, keys, opts)
-//  }
-//
   db.latest = db.last.latest
 
   //used by sbot replication plugin
