@@ -82,7 +82,7 @@ module.exports = function (_db, opts, keys, path) {
     db.queue(msg, function (err, data) {
       if(err) cb(err)
       else db.flush(function () {
-        cb(null, data.value, data.key)
+        cb(null, data)
       })
     })
   }
@@ -90,7 +90,14 @@ module.exports = function (_db, opts, keys, path) {
   db.createFeed = function (keys) {
     if(!keys) keys = ssbKeys.generate()
     function add (content, cb) {
-      db.append({content: content, keys: keys}, cb)
+      db.append({content: content, keys: keys}, function (err, data) {
+        if(err) cb(err)
+        //THIS IS A HACK to make relatedMessages work.
+        //I'd rather not have hacks like this, especially
+        //since the timestamp could be useful. But better
+        //to not change the tests just yet.
+        else cb(null, {key:data.key, value: data.value})
+      })
     }
     return {
       add: add, publish: add,

@@ -39,13 +39,15 @@ module.exports = function (dirname) {
 
   var append = db.append
   var queue = AsyncWrite(function (_, cb) {
-    var batch = state.queue.map(toKeyValueTimestamp)
+    var batch = state.queue//.map(toKeyValueTimestamp)
     state.queue = []
     append(batch, function (err, v) {
       cb(err, v)
     })
   }, function reduce(_, msg) {
-    return V.append(state, msg)
+    state = V.append(state, msg)
+    state.queue[state.queue.length-1] = toKeyValueTimestamp(state.queue[state.queue.length-1])
+    return state
   }, function (_state) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
@@ -96,9 +98,10 @@ module.exports = function (dirname) {
       timestamp()
     )
     queue(msg, function (err) {
-      if(err) cb(err)
-      else flush.push(function () {
-        cb(null, toKeyValueTimestamp(msg))
+      if(err) return cb(err)
+      var data = state.queue[state.queue.length-1]
+      flush.push(function () {
+        cb(null, data)
       })
     })
   })
@@ -112,15 +115,4 @@ module.exports = function (dirname) {
 
   return db
 }
-
-
-
-
-
-
-
-
-
-
-
 
