@@ -94,12 +94,13 @@ module.exports = function (_db, opts, keys, path) {
   db.createFeed = function (keys) {
     if(!keys) keys = ssbKeys.generate()
     function add (type, content, cb) {
-      if(isFunction(content))
+      //LEGACY: hacks to support add as a continuable
+      if(!cb)
         cb = content, content = type
       else if(isString(type))
         content = {type: type, value: content}
-      else
-        throw new Error('Feed.add: unsupported signature')
+      if(!cb)
+        return function (cb) { add (content, cb) }
 
       db.append({content: content, keys: keys}, function (err, data) {
         if(err) cb(err)
@@ -245,4 +246,13 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
+
+
+
+
+
+
+
+
 

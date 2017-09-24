@@ -23,6 +23,8 @@ var carol = db.createFeed()
 
 var start = Date.now()
 
+//LEGACY: uses feed.add as a continuable
+
 tape('latest', function (t) {
 
   cont.para([
