@@ -37,7 +37,7 @@ module.exports = function (dirname) {
   var state = V.initial(), ready = false
   var waiting = [], flush = []
 
-  var append = db.append
+  var append = db.rawAppend = db.append
   var queue = AsyncWrite(function (_, cb) {
     var batch = state.queue//.map(toKeyValueTimestamp)
     state.queue = []

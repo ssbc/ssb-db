@@ -7,16 +7,12 @@ var ViewHashTable = require('flumeview-hashtable')
 
 module.exports = function (dir, keys) {
   var db = require('./minimal')(dir)
-//  var log = OffsetLog(path.join(dir, 'log.offset'), 1024*16, codex.json)
-//
-//  var db = Flume(log, false) //false says the database is not ready yet!
-//    .use('last', require('./indexes/last')())
+
     .use('keys', ViewHashTable(1, function (key) {
         var b = new Buffer(key.substring(1,7), 'base64').readUInt32BE(0)
         return b
       })
     )
-
     .use('clock', require('./indexes/clock')())
     .use('feed', require('./indexes/feed')())
     .use('links', require('./indexes/links')(keys))
@@ -44,6 +40,7 @@ module.exports = function (dir, keys) {
         n++
         var c = db[k].since.value
         current += (Number.isInteger(c) ? c : -1)
+//          current += c || 0
       }
     prog.current = ~~(current / n)
     //if the progress bar is complete, move the starting point
@@ -61,5 +58,4 @@ module.exports = function (dir, keys) {
 
   return db
 }
-
 

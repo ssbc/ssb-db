@@ -114,15 +114,17 @@ module.exports = function (db, flumedb) {
             db.createLogStream({gt: since}),
             paramap(function (data, cb) {
               prog.current += 1
-              flumedb.append(data, cb)
+              flumedb.rawAppend(data, cb)
             }, 32),
             pull.drain(null, ready)
           )
         }
       }
-      function ready () {
+      function ready (err) {
+        if(err) throw err
         flumedb.ready.set(true)
       }
     })
   }
 }
+
