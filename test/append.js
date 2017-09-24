@@ -2,29 +2,24 @@ var V = require('ssb-validate')
 var tape = require('tape')
 var ssbKeys = require('ssb-keys')
 var keys = ssbKeys.generate()
-var Flume = require('flumedb')
-var OffsetLog = require('flumelog-offset')
-var codex = require('flumecodec')
-var filename =
-'/tmp/test_ssb_append'+Date.now()+'/log.offset'
+
 var pull = require('pull-stream')
 var explain = require('explain-error')
-
 var timestamp = require('monotonic-timestamp')
+
+var dirname = '/tmp/test_ssb_append'+Date.now()
 
 var K = [keys]
 
 for(var i = 0; i < 100; i++) K.push(ssbKeys.generate())
 
-var log = OffsetLog(filename, 1024*16, codex.json)
-//NOTE: db.js uses Flume(log, false) and then db.ready.set(true) must be done at some point.
-//This is uses to cause it to wait until any migration is complete.
-var db = Flume(log, true) //false says the database is not ready yet!
-  .use('last', require('../indexes/last')())
 
-var a = require('../append')(db, {})
+var a
+var db = a = require('../minimal')(dirname)
+db.ready.set(true)
 var MSG
 tape('setup', function (t) {
+  console.log("SETUP:APPEND")
   a.append({keys: keys, content: {}}, function (err, msg) {
     if(err) throw err
     MSG = msg
@@ -41,7 +36,7 @@ tape('setup', function (t) {
 })
 
 var state = V.initial()
-var N = 100000
+var N = 10000
 
 tape('generate', function (t) {
   var start = Date.now()
@@ -116,6 +111,9 @@ tape('read back', function (t) {
     })
   )
 })
+
+
+
 
 
 
