@@ -8,6 +8,9 @@ var createFeed = require('ssb-feed')
 
 var level_opts = {valueEncoding: require('../codec')}
 
+//LEGACY: this uses a add(type, value, cb) signature
+//that is never used elsewhere.
+
 module.exports = function (opts) {
 
   tape('simple', function (t) {
@@ -84,7 +87,7 @@ module.exports = function (opts) {
       addAgain();
     })
   })
-
+  return
   tape('tail, parallel add', function (t) {
 
     var db = sublevel(level('test-ssb-feed3', level_opts))

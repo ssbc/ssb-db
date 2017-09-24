@@ -32,6 +32,10 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isFunction (f) {
+  return 'funciton' == typeof f
+}
+
 var isArray = Array.isArray
 
 function isObject (o) {
@@ -89,7 +93,14 @@ module.exports = function (_db, opts, keys, path) {
 
   db.createFeed = function (keys) {
     if(!keys) keys = ssbKeys.generate()
-    function add (content, cb) {
+    function add (type, content, cb) {
+      if(isFunction(content))
+        cb = content, content = type
+      else if(isString(type))
+        content = {type: type, value: content}
+      else
+        throw new Error('Feed.add: unsupported signature')
+
       db.append({content: content, keys: keys}, function (err, data) {
         if(err) cb(err)
         //THIS IS A HACK to make relatedMessages work.
