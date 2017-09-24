@@ -2,12 +2,12 @@
 
 var join      = require('path').join
 var EventEmitter = require('events')
-var Obv       = require('obv')
+//var Obv       = require('obv')
 
 var pull      = require('pull-stream')
 var timestamp = require('monotonic-timestamp')
 var explain   = require('explain-error')
-var createFeed = require('ssb-feed')
+//var createFeed = require('ssb-feed')
 var ref       = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Notify    = require('pull-notify')
@@ -64,22 +64,23 @@ module.exports = function (_db, opts, keys, path) {
 
   db.opts = opts
 
-  db.post = Obv()
-  db.batch = function (batch, cb) {
-    db.append(batch.map(function (e) {
-      return {
-        key: e.key,
-        value: e.value,
-        timestamp: timestamp()
-      }
-    }), function (err, offsets) {
-      batch.forEach(function (msg, i) {
-        //trigger post immediately.
-        db.post.set(msg)
-      })
-      cb(err)
-    })
-  }
+//  db.post = Obv()
+//  console.log('APPEND', db.append)
+//  db.batch = function (batch, cb) {
+//    db.append(batch.map(function (e) {
+//      return {
+//        key: e.key,
+//        value: e.value,
+//        timestamp: timestamp()
+//      }
+//    }), function (err, offsets) {
+//      batch.forEach(function (msg, i) {
+//        //trigger post immediately.
+//        db.post.set(msg)
+//      })
+//      cb(err)
+//    })
+//  }
 
   var _get = db.get
 
@@ -95,14 +96,34 @@ module.exports = function (_db, opts, keys, path) {
       throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
   }
 
-  var add = Validator(db, opts)
+//  var add = Validator(db, opts)
+//  db.add = function (msg, cb) {
+//    if(db.ready.value) next(true)
+//    else db.ready.once(next, false)
+//    function next (ready) {
+//      add(msg, function (err, value) {
+//        cb(err, value)
+//      })
+//    }
+//  }
+
   db.add = function (msg, cb) {
-    if(db.ready.value) next(true)
-    else db.ready.once(next, false)
-    function next (ready) {
-      add(msg, function (err, value) {
-        cb(err, value)
+    db.queue(msg, function (err, data) {
+      if(err) cb(err)
+      else db.flush(function () {
+        cb(null, data.value, data.key)
       })
+    })
+  }
+
+  db.createFeed = function (keys) {
+    if(!keys) keys = ssbKeys.generate()
+    function add (content, cb) {
+      db.append({content: content, keys: keys}, cb)
+    }
+    return {
+      add: add, publish: add
+      id: keys.id, keys: keys
     }
   }
 
@@ -153,11 +174,11 @@ module.exports = function (_db, opts, keys, path) {
     )
   }
 
-  db.createFeed = function (keys) {
-    if(!keys) keys = ssbKeys.generate()
-    return createFeed(db, keys, opts)
-  }
-
+//  db.createFeed = function (keys) {
+//    if(!keys) keys = ssbKeys.generate()
+//    return createFeed(db, keys, opts)
+//  }
+//
   db.latest = db.last.latest
 
   //used by sbot replication plugin
