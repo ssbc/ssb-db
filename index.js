@@ -86,7 +86,8 @@ module.exports = function (_db, opts, keys, path) {
     db.queue(msg, function (err, data) {
       if(err) cb(err)
       else db.flush(function () {
-        cb(null, data)
+        //LEGACY: hack to be compatible with createFeed(ssb, keys, opts)
+        cb(null, {key: data.key, value: data.value})
       })
     })
   }
