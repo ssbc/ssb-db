@@ -8,9 +8,6 @@ var createFeed = require('ssb-feed')
 
 var level_opts = {valueEncoding: require('../codec')}
 
-//LEGACY: this uses a add(type, value, cb) signature
-//that is never used elsewhere.
-
 module.exports = function (opts) {
 
   tape('simple', function (t) {
@@ -24,7 +21,7 @@ module.exports = function (opts) {
 
     var feed = ssb.createFeed(ssbKeys.generate())
 
-    feed.add('msg', 'hello there!', function (err, msg) {
+    feed.add({type:'msg', value:'hello there!'}, function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
       t.assert(!!msg.key)
@@ -53,11 +50,11 @@ module.exports = function (opts) {
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2;
-    feed.add('msg', 'hello there!', function (err, msg1) {
+    feed.add({type:'msg', value:'hello there!'}, function (err, msg1) {
       if(err) throw err
       var lasthash = msg1.key
       function addAgain() {
-        feed.add('msg', 'message '+nDrains, function(err, msgX) {
+        feed.add({type:'msg', value:'message '+nDrains}, function(err, msgX) {
           if(err) throw err
           t.equal(msgX.value.previous, lasthash)
           console.log(msgX.value.previous, lasthash)
@@ -98,13 +95,13 @@ module.exports = function (opts) {
 
     console.log('add 1'); console.log('add 2');
     var nDrains = 0, nAdds = 2, l = 7
-    feed.add('msg', 'hello there!', function (err, msg1) {
+    feed.add({type:'msg', value:'hello there!'}, function (err, msg1) {
       if(err) throw err
 
       var lasthash = msg1.key
       function addAgain() {
         console.log('ADD')
-        feed.add('msg', 'message '+nDrains, function(err, msgX) {
+        feed.add({type:'msg', value:'message '+nDrains}, function(err, msgX) {
           t.equal(msgX.value.previous, lasthash)
           console.log(msgX.value.previous, lasthash)
           lasthash = msgX.key;
@@ -139,7 +136,7 @@ module.exports = function (opts) {
     var ssb = require('../')(db, opts)
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
-    feed.add('msg', 'hello there!', function (err, msg) {
+    feed.add({type:'msg', value:'hello there!'}, function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
       pull(
@@ -160,7 +157,7 @@ module.exports = function (opts) {
     var ssb = require('../')(db, opts)
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
-    feed.add('msg', 'hello there!', function (err, msg) {
+    feed.add({type:'msg', value:'hello there!'}, function (err, msg) {
       if(err) throw err
       t.assert(!!msg)
       pull(
@@ -181,15 +178,5 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
-
-
-
-
-
-
-
-
-
 
 
