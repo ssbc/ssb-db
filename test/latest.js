@@ -28,9 +28,9 @@ var start = Date.now()
 tape('latest', function (t) {
 
   cont.para([
-    alice.add({type: 'post', text: 'hello'}),
-    bob  .add({type: 'post', text: 'hello'}),
-    carol.add({type: 'post', text: 'hello'}),
+    cont.to(alice.add)({type: 'post', text: 'hello'}),
+    cont.to(bob  .add)({type: 'post', text: 'hello'}),
+    cont.to(carol.add)({type: 'post', text: 'hello'}),
   ])(function (err) {
     if(err) throw err
     var end = Date.now()

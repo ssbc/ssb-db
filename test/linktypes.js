@@ -46,21 +46,34 @@ module.exports = function (opts) {
       )
     })
   }
-
+  function toKV (data) {
+    return {key: data.key, value: data.value}
+  }
   tape('reply to a message', function (t) {
 
-    alice.add('msg', 'hello world', function (err, msg) {
+    alice.add({type:'msg', value:'hello world'}, function (err, msg) {
       if(err) throw err
-      bob.add('msg', {
+      msg = toKV(msg)
+      bob.add({
+        type: 'msg',
         reply: msg.key,
         text: 'okay then'
       }, function (err, reply1) {
         if(err) throw err
-        carol.add('msg', {
+        reply1 = toKV(reply1)
+
+        carol.add({
+          type: 'msg',
           reply: msg.key,
           text: 'whatever'
         }, function (err, reply2) {
           if(err) throw err
+          reply2 = toKV(reply2)
+
+          console.log("LINKS", {
+            dest: msg.key, rel: 'reply',
+            meta: false, keys: false, values: true
+          })
 
           cont.series([
             function (cb) {
@@ -232,7 +245,6 @@ module.exports = function (opts) {
 }
 
 
-
 if(!module.parent)
-  module.exports(require('../defaults'))
+  module.exports({})
 
