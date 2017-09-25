@@ -8,6 +8,7 @@
     "url": "git://github.com/ssbc/secure-scuttlebutt.git"
   },
   "dependencies": {
+    "async-write": "^2.0.1",
     "bytewise": "^1.1.0",
     "cont": "~1.0.0",
     "deep-equal": "~0.2.1",
@@ -33,13 +34,14 @@
     "pull-paramap": "^1.1.6",
     "pull-stream": "^3.4.0",
     "pull-write": "^1.1.0",
-    "ssb-feed": "^2.2.1",
     "ssb-keys": "^7.0.0",
     "ssb-msgs": "^5.0.0",
     "ssb-ref": "^2.0.0",
+    "ssb-validate": "^2.0.2",
     "typewiselite": "^1.0.0"
   },
   "devDependencies": {
+    "ssb-feed": "^2.2.1",
     "deep-equal": "^0.2.1",
     "hexpp": "~1.1.3",
     "level-test": "^2.0.1",
