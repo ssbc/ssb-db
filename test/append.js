@@ -20,7 +20,7 @@ db.ready.set(true)
 var MSG
 tape('setup', function (t) {
   console.log("SETUP:APPEND")
-  a.append({keys: keys, content: {}}, function (err, msg) {
+  a.append({keys: keys, content: {type: 'empty'}}, function (err, msg) {
     if(err) throw err
     MSG = msg
     t.ok(msg)
