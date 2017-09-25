@@ -85,32 +85,18 @@ module.exports = function (_db, opts, keys, path) {
   db.add = function (msg, cb) {
     db.queue(msg, function (err, data) {
       if(err) cb(err)
-      else db.flush(function () {
-        //LEGACY: hack to be compatible with createFeed(ssb, keys, opts)
-        cb(null, {key: data.key, value: data.value})
-      })
+      else db.flush(function () { cb(null, data) })
     })
   }
 
   db.createFeed = function (keys) {
     if(!keys) keys = ssbKeys.generate()
-    function add (type, content, cb) {
+    function add (content, cb) {
       //LEGACY: hacks to support add as a continuable
-      if(!cb)
-        cb = content, content = type
-      else if(isString(type))
-        content = {type: type, value: content}
       if(!cb)
         return function (cb) { add (content, cb) }
 
-      db.append({content: content, keys: keys}, function (err, data) {
-        if(err) cb(err)
-        //THIS IS A HACK to make relatedMessages work.
-        //I'd rather not have hacks like this, especially
-        //since the timestamp could be useful. But better
-        //to not change the tests just yet.
-        else cb(null, {key:data.key, value: data.value})
-      })
+      db.append({content: content, keys: keys}, cb)
     }
     return {
       add: add, publish: add,
@@ -176,7 +162,6 @@ module.exports = function (_db, opts, keys, path) {
     })
   }
 
-
   db.getLatest = function (key, cb) {
     db.last.get(function (err, value) {
       if(err || !value || !value[key]) cb()
@@ -188,7 +173,6 @@ module.exports = function (_db, opts, keys, path) {
       })
     })
   }
-
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
@@ -247,13 +231,4 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
-
-
-
-
-
-
-
-
-
 
