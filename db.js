@@ -1,7 +1,4 @@
 var path = require('path')
-var Flume = require('flumedb')
-var OffsetLog = require('flumelog-offset')
-var codex = require('level-codec/lib/encodings')
 var ViewLevel = require('flumeview-level')
 var ViewHashTable = require('flumeview-hashtable')
 
@@ -40,7 +37,6 @@ module.exports = function (dir, keys) {
         n++
         var c = db[k].since.value
         current += (Number.isInteger(c) ? c : -1)
-//          current += c || 0
       }
     prog.current = ~~(current / n)
     //if the progress bar is complete, move the starting point
