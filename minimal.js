@@ -5,6 +5,7 @@ var codec = require('flumecodec/json')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
+var Obv       = require('obv')
 
 
 /*
@@ -38,10 +39,14 @@ module.exports = function (dirname) {
   var waiting = [], flush = []
 
   var append = db.rawAppend = db.append
+  db.post = Obv()
   var queue = AsyncWrite(function (_, cb) {
     var batch = state.queue//.map(toKeyValueTimestamp)
     state.queue = []
     append(batch, function (err, v) {
+      batch.forEach(function (data) {
+        db.post.set(data)
+      })
       cb(err, v)
     })
   }, function reduce(_, msg) {
