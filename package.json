@@ -8,7 +8,7 @@
     "url": "git://github.com/ssbc/secure-scuttlebutt.git"
   },
   "dependencies": {
-    "async-write": "^2.0.1",
+    "async-write": "^2.1.0",
     "bytewise": "^1.1.0",
     "cont": "~1.0.0",
     "deep-equal": "~0.2.1",
