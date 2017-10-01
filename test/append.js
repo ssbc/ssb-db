@@ -41,7 +41,7 @@ var N = 10000
 tape('generate', function (t) {
   var start = Date.now()
   var l = N
-  state = V.append(state, MSG.value)
+  state = V.append(state, null, MSG.value)
   console.log(state)
 
   while(l--) {
@@ -55,7 +55,7 @@ tape('generate', function (t) {
       keys, null,
       content, timestamp()
     )
-    state = V.append(state, msg)
+    state = V.append(state, null, msg)
     if(state.error) throw explain(err, 'error on generate')
   }
   console.log('generate', N/((Date.now()-start)/1000))
@@ -100,7 +100,7 @@ tape('read back', function (t) {
       if(!(msg.timestamp > ts))
       t.fail('messages out of order')
       ts = msg.timestamp
-      _state = V.append(_state, msg.value)
+      _state = V.append(_state, null, msg.value)
       if(_state.error) throw _state.error
     }, function (err) {
       if(err) throw err
@@ -111,13 +111,4 @@ tape('read back', function (t) {
     })
   )
 })
-
-
-
-
-
-
-
-
-
 
