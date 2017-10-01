@@ -1,3 +1,4 @@
+'use strict'
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
@@ -27,8 +28,8 @@ function toKeyValueTimestamp(msg) {
   }
 }
 
-module.exports = function (dirname) {
-
+module.exports = function (dirname, opts) {
+  var hmac_key = opts && opts.caps && opts.caps.sign
   var log = OffsetLog(path.join(dirname, 'log.offset'), 1024*16, codec)
   //NOTE: must use db.ready.set(true) at when migration is complete
 
@@ -50,7 +51,7 @@ module.exports = function (dirname) {
       cb(err, v)
     })
   }, function reduce(_, msg) {
-    state = V.append(state, msg)
+    state = V.append(state, hmac_key, msg)
     state.queue[state.queue.length-1] = toKeyValueTimestamp(state.queue[state.queue.length-1])
     return state
   }, function (_state) {
@@ -98,7 +99,7 @@ module.exports = function (dirname) {
   db.append = wait(function (opts, cb) {
     var msg = V.create(
       state.feeds[opts.keys.id],
-      opts.keys, opts.hmacKey,
+      opts.keys, opts.hmacKey || hmac_key,
       opts.content,
       timestamp()
     )

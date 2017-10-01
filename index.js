@@ -52,7 +52,7 @@ module.exports = function (_db, opts, keys, path) {
 
   keys = keys || ssbKeys.generate()
 
-  var db = require('./db')(join(opts.path || path, 'flume'), keys)
+  var db = require('./db')(join(opts.path || path, 'flume'), keys, opts)
 
   //legacy database
   if(_db) require('./legacy')(_db, db)
@@ -136,18 +136,21 @@ module.exports = function (_db, opts, keys, path) {
 
   db.createUserStream = db.clock.createUserStream
 
-  //writeStream - used in replication.
+  //writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {
     return pull(
       pull.asyncMap(function (data, cb) {
-        db.add(data, function (err, msg) {
+        db.queue(data, function (err, msg) {
           if(err) {
             db.emit('invalid', err, msg)
           }
-          cb()
+          setImmediate(cb)
         })
       }),
-      pull.drain(null, cb)
+      pull.drain(null, function (err) {
+        if(err) return cb(err)
+        db.flush(cb)
+      })
     )
   }
 

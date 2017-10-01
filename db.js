@@ -2,8 +2,8 @@ var path = require('path')
 var ViewLevel = require('flumeview-level')
 var ViewHashTable = require('flumeview-hashtable')
 
-module.exports = function (dir, keys) {
-  var db = require('./minimal')(dir)
+module.exports = function (dir, keys, opts) {
+  var db = require('./minimal')(dir, opts)
 
     .use('keys', ViewHashTable(1, function (key) {
         var b = new Buffer(key.substring(1,7), 'base64').readUInt32BE(0)
