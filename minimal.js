@@ -30,7 +30,7 @@ function toKeyValueTimestamp(msg) {
 
 module.exports = function (dirname, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
-  var log = OffsetLog(path.join(dirname, 'log.offset'), 1024*16, codec)
+  var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
   //NOTE: must use db.ready.set(true) at when migration is complete
 
   var db = Flume(log, false) //false says the database is not ready yet!
