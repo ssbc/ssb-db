@@ -58,7 +58,7 @@ module.exports = function (dirname, opts) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
     return !state.queue.length
-  })
+  }, 10)
 
   queue.onDrain = function () {
     if(state.queue.length == 0) {
@@ -70,12 +70,14 @@ module.exports = function (dirname, opts) {
   db.last.get(function (err, last) {
     //copy to so we avoid weirdness, because this object
     //tracks the state coming in to the database.
-    for(var k in last)
+    for(var k in last) {
       state.feeds[k] = {
         id: last[k].id,
-        timestamp: last[k].timestamp,
-        sequence: last[k].sequence
+        timestamp: last[k].ts||last[k].timestamp,
+        sequence: last[k].sequence,
+        queue: []
       }
+    }
     ready = true
     while(waiting.length)
       waiting.shift()()
@@ -122,5 +124,11 @@ module.exports = function (dirname, opts) {
 
   return db
 }
+
+
+
+
+
+
 
 
