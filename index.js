@@ -12,7 +12,6 @@ var ref       = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Notify    = require('pull-notify')
 var Validator = require('ssb-feed/validator')
-var Related   = require('./related')
 
 var isFeedId = ref.isFeedId
 var isMsgId  = ref.isMsgId
@@ -104,37 +103,13 @@ module.exports = function (_db, opts, keys, path) {
     }
   }
 
-  var realtime = Notify()
-
-  //TODO: eventually, this should filter out authors you do not follow.
-  db.createFeedStream = db.feed.createFeedStream
-
-  //latest was stored as author: seq
-  //but for the purposes of replication back pressure
-  //we need to know when we last replicated with someone.
-  //instead store as: {sequence: seq, ts: localtime}
-  //then, peers can request a max number of posts per feed.
-
-  function toSeq (latest) {
-    return isNumber(latest) ? latest : latest.sequence
+  db.createLogStream = function (opts) {
+    return db.stream(opts)
   }
 
-  function lookup(keys, values) {
-    return paramap(function (key, cb) {
-      if(key.sync) return cb(null, key)
-      if(!values) return cb(null, key)
-      db.get(key, function (err, data) {
-        if (err) cb(err)
-        else cb(null, u.format(keys, values, data))
-      })
-    })
-  }
-
-  db.lookup = lookup
-
-  db.createHistoryStream = db.clock.createHistoryStream
-
-  db.createUserStream = db.clock.createUserStream
+  //pull in the features that are needed to pass the tests
+  //and that sbot, etc uses but are slow.
+  require('./extras')(db, opts, keys)
 
   //writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {
@@ -154,48 +129,7 @@ module.exports = function (_db, opts, keys, path) {
     )
   }
 
-  db.latest = db.last.latest
-
-  //used by sbot replication plugin
-  db.latestSequence = function (id, cb) {
-    db.last.get(function (err, val) {
-      if(err) cb(err)
-      else if (!val || !val[id]) cb(new Error('not found:'+id))
-      else cb(null, val[id].sequence)
-    })
-  }
-
-  db.getLatest = function (key, cb) {
-    db.last.get(function (err, value) {
-      if(err || !value || !value[key]) cb()
-      //Currently, this retrives the previous message.
-      //but, we could rewrite validation to only use
-      //data the reduce view, so that no disk read is necessary.
-      else db.get(value[key].id, function (err, msg) {
-        cb(err, {key: value[key].id, value: msg})
-      })
-    })
-  }
-
-  db.createLogStream = function (opts) {
-    opts = stdopts(opts)
-    if(opts.raw)
-      return db.stream()
-
-    var keys = opts.keys; delete opts.keys
-    var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), Format(keys, values))
-  }
-
-  db.messagesByType = db.links.messagesByType
-
-  db.links = db.links.links
-
-  var HI = undefined, LO = null
-
-  //get all messages that link to a given message.
-
-  db.relatedMessages = Related(db)
+  db.createHistoryStream = db.clock.createHistoryStream
 
   //called with [id, seq] or "<id>:<seq>"
   db.getAtSequence = function (seqid, cb) {

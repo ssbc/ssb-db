@@ -11,11 +11,6 @@ module.exports = function (dir, keys, opts) {
       })
     )
     .use('clock', require('./indexes/clock')())
-    .use('feed', require('./indexes/feed')())
-    .use('links', require('./indexes/links')(keys))
-    .use('time', ViewLevel(1, function (data) {
-      return [data.timestamp]
-    }))
 
   db.progress = {}
   var prog = db.progress.indexes = {start: 0, current: 0, target: 0}
