@@ -16,8 +16,8 @@
     "flumecodec": "0.0.1",
     "flumedb": "^0.4.1",
     "flumelog-offset": "^3.0.2",
-    "flumeview-hashtable": "^0.1.4",
-    "flumeview-level": "^2.0.1",
+    "flumeview-hashtable": "^1.0.0",
+    "flumeview-level": "^2.1.0",
     "flumeview-reduce": "^1.3.5",
     "level": "^1.7.0",
     "level-codec": "^6.2.0",
@@ -75,3 +75,4 @@
     "files": "test/defaults.js"
   }
 }
+
