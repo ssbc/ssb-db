@@ -118,17 +118,10 @@ module.exports = function (dirname, opts) {
   }
   db.flush = function (cb) {
     //maybe need to check if there is anything currently writing?
-    if(!queue.buffer.queue.length && !queue.writing) cb()
+    if(!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
     else flush.push(cb)
   }
 
   return db
 }
-
-
-
-
-
-
-
 

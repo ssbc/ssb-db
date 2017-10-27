@@ -5,7 +5,7 @@ var ViewHashTable = require('flumeview-hashtable')
 module.exports = function (dir, keys, opts) {
   var db = require('./minimal')(dir, opts)
 
-    .use('keys', ViewHashTable(1, function (key) {
+    .use('keys', ViewHashTable(2, function (key) {
         var b = new Buffer(key.substring(1,7), 'base64').readUInt32BE(0)
         return b
       })
