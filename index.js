@@ -32,7 +32,7 @@ function isString (s) {
 }
 
 function isFunction (f) {
-  return 'funciton' == typeof f
+  return 'function' == typeof f
 }
 
 var isArray = Array.isArray
