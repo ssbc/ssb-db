@@ -8,6 +8,10 @@ var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
 
 
+function toKV (data) {
+  return {key: data.key, value: data.value}
+}
+
 module.exports = function (opts) {
 
   var db = sublevel(level('test-ssb-related', {
@@ -27,6 +31,7 @@ module.exports = function (opts) {
       text: 'hello, world 1'
     }, function (err, msg) {
       if(err) throw err
+      msg = toKV(msg)
       console.log(msg)
 
       bob.add({
@@ -35,6 +40,7 @@ module.exports = function (opts) {
         'replies-to': msg.key
       }, function (err, msg2) {
         if(err) throw err
+        msg2 = toKV(msg2)
 
         ssb.relatedMessages({id: msg.key, count: true}, function (err, msgs) {
 
@@ -61,6 +67,7 @@ module.exports = function (opts) {
       text: 'hello, world 2'
     }, function (err, msg) {
       if(err) throw err
+      msg = toKV(msg)
       console.log(msg)
 
       bob.add({
@@ -69,12 +76,15 @@ module.exports = function (opts) {
         'replies-to': msg.key
       }, function (err, msg2) {
         if(err) throw err
+        msg2 = toKV(msg2)
 
         charlie.add({
           type: 'post',
           text: 'hey hey 2',
           'replies-to': msg2.key
         }, function (err, msg3) {
+          if(err) throw err
+          msg3 = toKV(msg3)
 
           ssb.relatedMessages({id: msg.key, count: true}, function (err, msgs) {
 
@@ -109,7 +119,7 @@ module.exports = function (opts) {
       text: 'hello, world 3'
     }, function (err, msg1) {
       if(err) throw err
-
+      msg1 = toKV(msg1)
 
       cont.para([
         bob.add({
@@ -124,8 +134,8 @@ module.exports = function (opts) {
         })
       ]) (function (err, ary) {
         if(err) throw err
-        var msg2 = ary[0]
-        var msg3 = ary[1]
+        var msg2 = toKV(ary[0])
+        var msg3 = toKV(ary[1])
 
         ssb.relatedMessages({id: msg1.key, count: true}, function (err, msgs) {
 
@@ -151,7 +161,7 @@ module.exports = function (opts) {
       text: 'hello, world 4'
     }, function (err, msg) {
       if(err) throw err
-      console.log(msg)
+      msg = toKV(msg)
 
       bob.add({
         type: 'post',
@@ -159,6 +169,7 @@ module.exports = function (opts) {
         'replies-to': msg.key
       }, function (err, msg2) {
         if(err) throw err
+        msg2 = toKV(msg2)
 
         ssb.relatedMessages({id: msg.key, parent: true}, function (err, msgs) {
 
@@ -194,12 +205,15 @@ module.exports = function (opts) {
         'replies-to': msg1Key
       }, function (err, msg2) {
         if(err) throw err
+        msg2 = toKV(msg2)
 
         charlie.add({
           type: 'post',
           text: 'hey hey 2',
           'replies-to': msg2.key
         }, function (err, msg3) {
+          if(err) throw err
+          msg3 = toKV(msg3)
 
           ssb.relatedMessages({id: msg1Key, count: true}, function (err, msgs) {
 
@@ -233,4 +247,5 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
 

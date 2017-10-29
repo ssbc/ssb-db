@@ -2,17 +2,16 @@
 
 var join      = require('path').join
 var EventEmitter = require('events')
-var Obv       = require('obv')
+//var Obv       = require('obv')
 
 var pull      = require('pull-stream')
 var timestamp = require('monotonic-timestamp')
 var explain   = require('explain-error')
-var createFeed = require('ssb-feed')
+//var createFeed = require('ssb-feed')
 var ref       = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Notify    = require('pull-notify')
 var Validator = require('ssb-feed/validator')
-var Related   = require('./related')
 
 var isFeedId = ref.isFeedId
 var isMsgId  = ref.isMsgId
@@ -32,6 +31,10 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isFunction (f) {
+  return 'funciton' == typeof f
+}
+
 var isArray = Array.isArray
 
 function isObject (o) {
@@ -48,7 +51,7 @@ module.exports = function (_db, opts, keys, path) {
 
   keys = keys || ssbKeys.generate()
 
-  var db = require('./db')(join(opts.path || path, 'flume'), keys)
+  var db = require('./db')(join(opts.path || path, 'flume'), keys, opts)
 
   //legacy database
   if(_db) require('./legacy')(_db, db)
@@ -64,23 +67,6 @@ module.exports = function (_db, opts, keys, path) {
 
   db.opts = opts
 
-  db.post = Obv()
-  db.batch = function (batch, cb) {
-    db.append(batch.map(function (e) {
-      return {
-        key: e.key,
-        value: e.value,
-        timestamp: timestamp()
-      }
-    }), function (err, offsets) {
-      batch.forEach(function (msg, i) {
-        //trigger post immediately.
-        db.post.set(msg)
-      })
-      cb(err)
-    })
-  }
-
   var _get = db.get
 
   db.get = function (key, cb) {
@@ -95,113 +81,55 @@ module.exports = function (_db, opts, keys, path) {
       throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
   }
 
-  var add = Validator(db, opts)
   db.add = function (msg, cb) {
-    if(db.ready.value) next(true)
-    else db.ready.once(next, false)
-    function next (ready) {
-      add(msg, function (err, value) {
-        cb(err, value)
-      })
-    }
-  }
-
-  var realtime = Notify()
-
-  //TODO: eventually, this should filter out authors you do not follow.
-  db.createFeedStream = db.feed.createFeedStream
-
-  //latest was stored as author: seq
-  //but for the purposes of replication back pressure
-  //we need to know when we last replicated with someone.
-  //instead store as: {sequence: seq, ts: localtime}
-  //then, peers can request a max number of posts per feed.
-
-  function toSeq (latest) {
-    return isNumber(latest) ? latest : latest.sequence
-  }
-
-  function lookup(keys, values) {
-    return paramap(function (key, cb) {
-      if(key.sync) return cb(null, key)
-      if(!values) return cb(null, key)
-      db.get(key, function (err, data) {
-        if (err) cb(err)
-        else cb(null, u.format(keys, values, data))
-      })
+    db.queue(msg, function (err, data) {
+      if(err) cb(err)
+      else db.flush(function () { cb(null, data) })
     })
-  }
-
-  db.lookup = lookup
-
-  db.createHistoryStream = db.clock.createHistoryStream
-
-  db.createUserStream = db.clock.createUserStream
-
-  //writeStream - used in replication.
-  db.createWriteStream = function (cb) {
-    return pull(
-      pull.asyncMap(function (data, cb) {
-        db.add(data, function (err, msg) {
-          if(err) {
-            db.emit('invalid', err, msg)
-          }
-          cb()
-        })
-      }),
-      pull.drain(null, cb)
-    )
   }
 
   db.createFeed = function (keys) {
     if(!keys) keys = ssbKeys.generate()
-    return createFeed(db, keys, opts)
+    function add (content, cb) {
+      //LEGACY: hacks to support add as a continuable
+      if(!cb)
+        return function (cb) { add (content, cb) }
+
+      db.append({content: content, keys: keys}, cb)
+    }
+    return {
+      add: add, publish: add,
+      id: keys.id, keys: keys
+    }
   }
-
-  db.latest = db.last.latest
-
-  //used by sbot replication plugin
-  db.latestSequence = function (id, cb) {
-    db.last.get(function (err, val) {
-      if(err) cb(err)
-      else if (!val || !val[id]) cb(new Error('not found:'+id))
-      else cb(null, val[id].sequence)
-    })
-  }
-
-
-  db.getLatest = function (key, cb) {
-    db.last.get(function (err, value) {
-      if(err || !value || !value[key]) cb()
-      //Currently, this retrives the previous message.
-      //but, we could rewrite validation to only use
-      //data the reduce view, so that no disk read is necessary.
-      else db.get(value[key].id, function (err, msg) {
-        cb(err, {key: value[key].id, value: msg})
-      })
-    })
-  }
-
 
   db.createLogStream = function (opts) {
-    opts = stdopts(opts)
-    if(opts.raw)
-      return db.stream()
-
-    var keys = opts.keys; delete opts.keys
-    var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), Format(keys, values))
+    return db.stream(opts)
   }
 
-  db.messagesByType = db.links.messagesByType
+  //pull in the features that are needed to pass the tests
+  //and that sbot, etc uses but are slow.
+  require('./extras')(db, opts, keys)
 
-  db.links = db.links.links
+  //writeStream - used in (legacy) replication.
+  db.createWriteStream = function (cb) {
+    return pull(
+      pull.asyncMap(function (data, cb) {
+        db.queue(data, function (err, msg) {
+          if(err) {
+            db.emit('invalid', err, msg)
+          }
+          setImmediate(cb)
+        })
+      }),
+      pull.drain(null, function (err) {
+        if(err) return cb(err)
+        db.flush(cb)
+      })
+    )
+  }
 
-  var HI = undefined, LO = null
-
-  //get all messages that link to a given message.
-
-  db.relatedMessages = Related(db)
+  db.createHistoryStream = db.clock.createHistoryStream
 
   //called with [id, seq] or "<id>:<seq>"
   db.getAtSequence = function (seqid, cb) {

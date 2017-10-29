@@ -30,19 +30,25 @@ module.exports = function (opts) {
       prev = create(keys, 'msg', 'hello', prev),
       prev = create(keys, 'msg', 'hello2', prev)
     ]
-
-    var _msg = null
-    messages.forEach(function (msg) {
-      validate(msg, function (err) {
-        console.log('HELLO', hash('HELLLO'))
-        if(_msg)
-          t.deepEqual('%'+hash(codec.encode(_msg)), msg.previous)
-        _msg = msg
-        if(err) throw err
-        if(msg.sequence === 3)
-          t.end()
-      })
+    ssb.queue(messages[0], function () {})
+    ssb.queue(messages[1], function () {})
+    ssb.queue(messages[2], function () {
+      t.end()
     })
+
+    
+//    var _msg = null
+//    messages.forEach(function (msg) {
+//      validate(msg, function (err) {
+//        console.log('HELLO', hash('HELLLO'))
+//        if(_msg)
+//          t.deepEqual('%'+hash(codec.encode(_msg)), msg.previous)
+//        _msg = msg
+//        if(err) throw err
+//        if(msg.sequence === 3)
+//          t.end()
+//      })
+//    })
   })
 
   tape('add & validate', function (t) {
@@ -138,6 +144,7 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
 
 
 

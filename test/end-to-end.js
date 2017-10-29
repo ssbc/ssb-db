@@ -71,21 +71,29 @@ module.exports = function (opts) {
         )
       })
     })
-
   })
 
+  function toKV (data) { return {key: data.key, value: data.value}}
+
+  //LEGACY: move this test into a legacy section.
+  //patchwork@3 doesn't need this, can probably kill it now.
   tape('related-messages', function (t) {
     feed.add(ssbKeys.box({
       type: 'secret', okay: true
       }, [alice.public, bob.public]
     ), function (err, msg) {
+      msg = toKV(msg)
       feed.add(ssbKeys.box({
           type: 'secret', post: 'wow', reply: msg.key
         }, [alice.public, bob.public]
       ), function (err, msg2) {
+        msg2 = toKV(msg2)
+        console.log("MSG2", msg2)
         ssb.relatedMessages({key: msg.key, rel: 'reply'},
           function (err, msgs) {
+            console.log("MSGS", msgs)
             msg.related = [msg2]
+            console.log(msg)
             t.deepEqual(msgs, msg)
             t.end()
             
