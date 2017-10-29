@@ -11,7 +11,6 @@ var explain   = require('explain-error')
 var ref       = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Notify    = require('pull-notify')
-var Validator = require('ssb-feed/validator')
 
 var isFeedId = ref.isFeedId
 var isMsgId  = ref.isMsgId
@@ -168,4 +167,5 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
 
