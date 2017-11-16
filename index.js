@@ -23,16 +23,8 @@ var Format    = u.formatStream
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 
-function isNumber (n) {
-  return typeof n === 'number'
-}
-
 function isString (s) {
   return 'string' === typeof s
-}
-
-function isFunction (f) {
-  return 'function' == typeof f
 }
 
 var isArray = Array.isArray
