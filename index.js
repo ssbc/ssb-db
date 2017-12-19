@@ -94,7 +94,7 @@ module.exports = function (_db, opts, keys, path) {
     }
   }
 
-  db.createLogStream = function (opts) {
+  db.createRawLogStream = function (opts) {
     return db.stream(opts)
   }
 
