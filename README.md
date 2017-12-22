@@ -24,15 +24,17 @@ that reads from the feed.
  */
 
 var pull = require('pull-stream')
+var fs = require('fs')
 
 // paths:
-var pathToDB     = '/tmp/ssb1/'
-var pathToSecret = '/tmp/ssb1-secret'
+var pathToDB     = './db'
+var pathToSecret = './ssb-identity'
+fs.mkdirSync(pathToDB)
 
 // ways to create keys:
-var keys = require('ssb-keys').generate()
-var keys = require('ssb-keys').loadSync(pathToSecret)
-var keys = require('ssb-keys').createSync(pathToSecret)
+//var keys = require('ssb-keys').generate()
+//var keys = require('ssb-keys').loadSync(pathToSecret)
+//var keys = require('ssb-keys').createSync(pathToSecret)
 var keys = require('ssb-keys').loadOrCreateSync(pathToSecret)
 
 // create the db instance.
