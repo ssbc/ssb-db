@@ -70,7 +70,7 @@ pull(
 
 // stream all messages for a particular keypair.
 pull(
-  ssb.createHistoryStream(feed.id),
+  ssb.createHistoryStream({id: feed.id}),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
