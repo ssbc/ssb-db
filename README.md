@@ -6,7 +6,7 @@ A database of unforgeable append-only feeds, optimized for efficient replication
 
 Secure-scuttlebutt provides tools for dealing with unforgeable append-only message 
 feeds. You can create a feed, post messages to that feed, verify a feed created by
-someone else, stream messages to and from feeds, and more (see [API](#API)).
+someone else, stream messages to and from feeds, and more (see [API](#api)).
 
 "Unforgeable" means that only the owner of a feed can modify that feed, as
 enforced by digital signing (see [Security properties](#security-properties)).
