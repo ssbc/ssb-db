@@ -29,7 +29,7 @@ var fs = require('fs')
 // paths:
 var pathToDB     = './db'
 var pathToSecret = './ssb-identity'
-fs.mkdirSync(pathToDB)
+try { fs.mkdirSync(pathToDB) } catch(e) {}
 
 // ways to create keys:
 //var keys = require('ssb-keys').generate()
