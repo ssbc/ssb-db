@@ -6,7 +6,7 @@ A database of unforgeable append-only feeds, optimized for efficient replication
 
 Secure-scuttlebutt provides tools for dealing with unforgeable append-only message 
 feeds. You can create a feed, post messages to that feed, verify a feed created by
-someone else, stream messages to and from feeds, and more (see [API](#API)).
+someone else, stream messages to and from feeds, and more (see [API](#api)).
 
 "Unforgeable" means that only the owner of a feed can modify that feed, as
 enforced by digital signing (see [Security properties](#security-properties)).
@@ -24,15 +24,17 @@ that reads from the feed.
  */
 
 var pull = require('pull-stream')
+var fs = require('fs')
 
 // paths:
-var pathToDB     = '/tmp/ssb1/'
-var pathToSecret = '/tmp/ssb1-secret'
+var pathToDB     = './db'
+var pathToSecret = './ssb-identity'
+try { fs.mkdirSync(pathToDB) } catch(e) {}
 
 // ways to create keys:
-var keys = require('ssb-keys').generate()
-var keys = require('ssb-keys').loadSync(pathToSecret)
-var keys = require('ssb-keys').createSync(pathToSecret)
+//var keys = require('ssb-keys').generate()
+//var keys = require('ssb-keys').loadSync(pathToSecret)
+//var keys = require('ssb-keys').createSync(pathToSecret)
 var keys = require('ssb-keys').loadOrCreateSync(pathToSecret)
 
 // create the db instance.
@@ -70,7 +72,7 @@ pull(
 
 // stream all messages for a particular keypair.
 pull(
-  ssb.createHistoryStream(feed.id),
+  ssb.createHistoryStream({id: feed.id}),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
