@@ -30,7 +30,9 @@ tape ('empty', function(t) {
     if(err) throw err
     pull(
       db.latest(),
-      pull.collect(function (err, ary) {}))
+      pull.collect(function (err, ary) {
+        t.equal(ary.length, 0)
+      }))
       t.end()
   })
 })
