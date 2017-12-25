@@ -30,7 +30,7 @@ module.exports = function () {
       return pCont(function (cb) {
         index.get([], function (err, val) {
           if(err) return cb(err)
-          cb(null, pull.values(Object.keys(val).map(function (author) {
+          cb(null, pull.values(Object.keys(val||{}).map(function (author) {
             return {id: author, sequence: val[author].sequence, ts: val[author].ts}
           })))
         })
