@@ -1,4 +1,3 @@
-var Related   = require('./related')
 var pull      = require('pull-stream')
 var ViewLevel = require('flumeview-level')
 var u         = require('./util')
@@ -21,7 +20,7 @@ module.exports = function (db, config, keys) {
 
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), Format(keys, values))
+    return pull(db.time.read(opts), Format(keys, values, opts['private'] === true))
   }
 
   //TODO: eventually, this should filter out authors you do not follow.
@@ -58,14 +57,7 @@ module.exports = function (db, config, keys) {
 
   var HI = undefined, LO = null
 
-  //get all messages that link to a given message.
-
-  db.relatedMessages = Related(db)
-
   return db
 
-
 }
-
-
 

@@ -120,10 +120,12 @@ module.exports = function (_db, opts, keys, path) {
     )
   }
 
+  //should be private
   db.createHistoryStream = db.clock.createHistoryStream
 
   //called with [id, seq] or "<id>:<seq>"
   db.getAtSequence = function (seqid, cb) {
+    //should be private
     db.clock.get(isString(seqid) ? seqid.split(':') : seqid, cb)
   }
 
@@ -159,5 +161,6 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
 
 

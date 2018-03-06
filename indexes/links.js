@@ -8,7 +8,6 @@ var Format    = require('../util').formatStream
 var ViewLevel = require('flumeview-level')
 
 
-
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 var u = require('../util')
@@ -77,7 +76,7 @@ module.exports = function (keys) {
 
       return pull(
         index.read(opts),
-        Format(keys, values)
+        Format(keys, values, opts['private'] === true)
       )
     }
 
@@ -93,7 +92,9 @@ module.exports = function (keys) {
                           : value
         )
       else {
-        if(vals)  op.value = value
+        if(vals)  {
+          op.value = opts.private === true ? util.rebox(value) : value
+        }
         if(!keys) delete op.key
         delete op._value
         return op
@@ -178,6 +179,8 @@ module.exports = function (keys) {
     return index
   }
 }
+
+
 
 
 

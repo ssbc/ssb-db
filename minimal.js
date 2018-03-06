@@ -7,7 +7,7 @@ var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv       = require('obv')
-
+var unbox     = require('ssb-keys').unbox
 
 /*
 ## queue (msg, cb)
@@ -28,9 +28,31 @@ function toKeyValueTimestamp(msg) {
   }
 }
 
-module.exports = function (dirname, opts) {
+function isString (s) {
+  return 'string' === typeof s
+}
+
+module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
+
+
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
+
+
+  var _get = log.get
+
+  log.get = function (seq, cb) {
+    _get(seq, function (err, data) {
+      if(data && isString(data.value.content)) {
+        var plaintext = unbox(data.value.content, keys)
+        if(plaintext) {
+          data.value.cyphertext = data.value.content
+          data.value.content = plaintext
+        }
+      }
+      cb(err, data)
+    })
+  }
   //NOTE: must use db.ready.set(true) at when migration is complete
 
   var db = Flume(log, false) //false says the database is not ready yet!

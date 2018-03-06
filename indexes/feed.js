@@ -1,3 +1,4 @@
+'use strict'
 var pull = require('pull-stream')
 var path = require('path')
 var ltgt = require('ltgt')
@@ -27,17 +28,13 @@ module.exports = function (db) {
       opts.keys = false
       opts.values = true
 
-      return pull(index.read(opts), Format(keys, values))
+      return pull(index.read(opts), Format(keys, values, opts.private === true))
     }
 
     return index
 
   }
 }
-
-
-
-
 
 
 

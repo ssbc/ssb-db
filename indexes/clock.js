@@ -39,9 +39,7 @@ module.exports = function (db, opts) {
           sync: false === (opts && opts.sync),
           limit: limit
         }),
-        pull.map(function (e) {
-          return keys && values ? e.value : keys ? e.value.key : e.value.value
-        })
+        Format(keys, values, false)
       )
     }
 
@@ -56,7 +54,7 @@ module.exports = function (db, opts) {
       opts.keys = false
       opts.values = true
 
-      return pull(index.read(opts), Format(keys, values))
+      return pull(index.read(opts), Format(keys, values, opts.private === true))
     }
 
     return index
