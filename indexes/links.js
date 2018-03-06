@@ -27,11 +27,12 @@ module.exports = function (keys) {
     //then this will not leak information.
     //otherwise, we may need to figure something out.
 
-    var content = (keys && isString(msg.content))
+    var content = /*(keys && isString(msg.content))
       ? ssbKeys.unbox(msg.content, keys)
-      : msg.content
+      : */msg.content
 
-    if(!content) return []
+    //couldn't decrypt
+    if(isString(content)) return []
 
     var a = []
 
