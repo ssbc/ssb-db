@@ -43,8 +43,8 @@ exports.wait = function () {
 var reboxValue = exports.reboxValue = function (value, isPrivate) {
   return isPrivate === true ? value : {
     previous: value.previous,
-    author: value.author,
     sequence: value.sequence,
+    author: value.author,
     timestamp: value.timestamp,
     hash: value.hash,
     content: value.cyphertext || value.content,
@@ -66,4 +66,5 @@ exports.formatStream = function (keys, values, isPrivate) {
     return keys && values ? rebox(data.value, isPrivate) : keys ? data.value.key : reboxValue(data.value.value, isPrivate)
   })
 }
+
 
