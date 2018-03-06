@@ -61,10 +61,15 @@ module.exports = function (_db, opts, keys, path) {
   var _get = db.get
 
   db.get = function (key, cb) {
+    var isPrivate = false
+    if('object' === typeof key) {
+      isPrivate = key.private === true
+      key = key.id
+    }
     if(ref.isMsg(key))
-      return db.keys.get(key, function (err, seq) {
+      return db.keys.get(key, function (err, data) {
         if(err) cb(err)
-        else cb(null, seq && seq.value)
+        else cb(null, data && u.reboxValue(data.value, isPrivate))
       })
     else if(Number.isInteger(key)) 
       _get(key, cb) //seq
@@ -125,8 +130,11 @@ module.exports = function (_db, opts, keys, path) {
 
   //called with [id, seq] or "<id>:<seq>"
   db.getAtSequence = function (seqid, cb) {
-    //should be private
-    db.clock.get(isString(seqid) ? seqid.split(':') : seqid, cb)
+    //will NOT expose private plaintext
+    db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
+      if(err) cb(err)
+      else cb(null, u.rebox(value))
+    })
   }
 
   db.getVectorClock = function (_, cb) {

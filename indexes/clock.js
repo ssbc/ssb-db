@@ -39,6 +39,8 @@ module.exports = function (db, opts) {
           sync: false === (opts && opts.sync),
           limit: limit
         }),
+        //NEVER allow private messages over history stream.
+        //createHistoryStream is used for legacy replication.
         Format(keys, values, false)
       )
     }
@@ -61,7 +63,4 @@ module.exports = function (db, opts) {
 
   }
 }
-
-
-
 

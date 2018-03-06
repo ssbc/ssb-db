@@ -46,6 +46,7 @@ module.exports = function (db, config, keys) {
       //but, we could rewrite validation to only use
       //data the reduce view, so that no disk read is necessary.
       else db.get(value[key].id, function (err, msg) {
+        //will NOT expose private plaintext
         cb(err, {key: value[key].id, value: msg})
       })
     })
@@ -60,4 +61,7 @@ module.exports = function (db, config, keys) {
   return db
 
 }
+
+
+
 
