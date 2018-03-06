@@ -46,8 +46,10 @@ module.exports = function (dirname, keys, opts) {
       if(data && isString(data.value.content)) {
         var plaintext = unbox(data.value.content, keys)
         if(plaintext) {
-          data.value.cyphertext = data.value.content
+          var ctxt = data.value.content
           data.value.content = plaintext
+          data.value.cyphertext = ctxt
+          data.value.private = true
         }
       }
       cb(err, data)
