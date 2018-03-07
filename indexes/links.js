@@ -4,14 +4,13 @@ var pull      = require('pull-stream')
 var ltgt      = require('ltgt')
 var ssbKeys   = require('ssb-keys')
 var paramap   = require('pull-paramap')
-var Format    = require('../util').formatStream
 var ViewLevel = require('flumeview-level')
 
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 var u = require('../util')
-
+var Format = u.formatStream
 var mlib = require('ssb-msgs')
 
 function isString (s) {
@@ -94,7 +93,7 @@ module.exports = function (keys) {
         )
       else {
         if(vals)  {
-          op.value = opts.private === true ? util.rebox(value) : value
+          op.value = opts.private === true ? u.rebox(value) : value
         }
         if(!keys) delete op.key
         delete op._value
@@ -180,12 +179,5 @@ module.exports = function (keys) {
     return index
   }
 }
-
-
-
-
-
-
-
 
 
