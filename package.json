@@ -32,7 +32,7 @@
     "ssb-keys": "^7.0.0",
     "ssb-msgs": "^5.0.0",
     "ssb-ref": "^2.0.0",
-    "ssb-validate": "^3.0.0",
+    "ssb-validate": "^3.0.1",
     "typewiselite": "^1.0.0"
   },
   "devDependencies": {
