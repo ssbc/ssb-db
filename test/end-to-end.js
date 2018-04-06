@@ -23,8 +23,12 @@ module.exports = function (opts) {
 
     var boxed = ssbKeys.box({type: 'secret', okay: true}, [alice.public, bob.public])
 
-    feed.add(boxed, function (err, msg) {
+    ssb.post(function (msg) {
+      t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
+    })
 
+    feed.add(boxed, function (err, msg) {
+      if(err) throw err
       t.notOk(err)
 
       pull(
@@ -94,4 +98,7 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
 
