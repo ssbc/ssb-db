@@ -213,26 +213,6 @@ the id of the feed (which is the feed's public key)
 
 the key pair for this feed.
 
-### SecureScuttlebutt#needsRebuild(cb)
-
-Checks the version stored in the database against the code version and
-calls back true/false accordingly. This keeps the database in sync with
-major breaking changes to secure-scuttlebutt when they occur.
-
-Should be run at startup. If true, you should call `rebuildIndex` before
-using the database.
-
-```js
-ssb.needsRebuild(function (err, b) {
-  if (b)
-    ssb.rebuildIndex(next)
-})
-```
-
-### SecureScuttlebutt#rebuildIndex(cb)
-
-Rebuilds the indexes by replaying history. See `needsRebuild`.
-
 ### SecureScuttlebutt#createFeedStream (opts) -> PullSource
 
 Create a [pull-stream](https://github.com/dominictarr/pull-stream)
@@ -293,32 +273,6 @@ If `opts.meta` is unset (default: true) `source, hash, rel` will be left off.
 > your query will be more efficient if you also provide `rel`.
 
 
-### SecureScuttlebutt#relatedMessages ({id: msgId, rel: string?, count: false?, parent: false?}, cb)
-
-Retrieve the tree of messages related to `id`.
-This is ideal for collecting things like threaded replies.
-If `rel` is provided, only messages that link to the message with the given type are included.
-The output is a recursive structure like this:
-
-``` js
-{
-  key: <msgId>,
-  value: <msg>,
-  related: [
-    <recursive>,...
-  ],
-  //number of messages below this point. (when opts.count = true)
-  count: <int>,
-  //the message this message links to. this will not appear on the bottom level.
-  //(when opts.parent = true)
-  parent: <parent_id>
-}
-```
-
-If `count` option is true, then each message will contain a `count`
-it's descendant messages. If `parent` is true then each level will have 
-`parent`, the `id/key` of it's parent message.
-
 ## Stability
 
 Stable: Expect patches, possible features additions.
@@ -326,4 +280,6 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
+
+
 
