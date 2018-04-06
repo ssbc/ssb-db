@@ -59,6 +59,7 @@ var rebox = exports.rebox = function (data, isPrivate) {
   }
 }
 
+exports.Format =
 exports.formatStream = function (keys, values, isPrivate) {
   if('boolean' !== typeof isPrivate) throw new Error('isPrivate must be explicit')
   return Map(function (data) {
@@ -66,5 +67,4 @@ exports.formatStream = function (keys, values, isPrivate) {
     return keys && values ? rebox(data.value, isPrivate) : keys ? data.value.key : reboxValue(data.value.value, isPrivate)
   })
 }
-
 
