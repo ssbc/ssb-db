@@ -2,7 +2,7 @@ var pull      = require('pull-stream')
 var ViewLevel = require('flumeview-level')
 var u         = require('./util')
 var stdopts   = u.options
-var Format    = u.formatStream
+var Format    = u.Format
 
 module.exports = function (db, config, keys) {
 
@@ -11,7 +11,7 @@ module.exports = function (db, config, keys) {
       return [data.timestamp]
     }))
     .use('feed', require('./indexes/feed')())
-    .use('links', require('./indexes/links')(keys))
+    .use('links', require('./indexes/links')())
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
@@ -61,7 +61,4 @@ module.exports = function (db, config, keys) {
   return db
 
 }
-
-
-
 

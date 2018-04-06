@@ -18,7 +18,7 @@ var isBlobId = ref.isBlobId
 
 var u         = require('./util')
 var stdopts   = u.options
-var Format    = u.formatStream
+var Format    = u.Format
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 
@@ -169,6 +169,4 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
-
-
 
