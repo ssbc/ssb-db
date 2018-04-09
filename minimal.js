@@ -79,7 +79,7 @@ module.exports = function (dirname, keys, opts) {
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
-        db.post.set(u.rebox(data))
+        db.post.set(rebox(data))
       })
       cb(err, v)
     })

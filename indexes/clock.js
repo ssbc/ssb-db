@@ -55,12 +55,11 @@ module.exports = function (db, opts) {
       opts.keys = false
       opts.values = true
 
-      return pull(index.read(opts), Format(keys, values, opts.private === true))
+      return pull(index.read(opts), u.Format(keys, values, opts.private === true))
     }
 
     return index
 
   }
 }
-
 
