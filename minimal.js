@@ -132,12 +132,19 @@ module.exports = function (dirname, keys, opts) {
     })
   })
   db.append = wait(function (opts, cb) {
-    var msg = V.create(
-      state.feeds[opts.keys.id],
-      opts.keys, opts.hmacKey || hmac_key,
-      opts.content,
-      timestamp()
-    )
+    try {
+      var msg = V.create(
+        state.feeds[opts.keys.id],
+        opts.keys, opts.hmacKey || hmac_key,
+        opts.content,
+        timestamp()
+      )
+    }
+    catch (err) {
+      cb(err)
+      return
+    }
+
     queue(msg, function (err) {
       if(err) return cb(err)
       var data = state.queue[state.queue.length-1]
