@@ -6,7 +6,6 @@ var ssbKeys   = require('ssb-keys')
 var paramap   = require('pull-paramap')
 var ViewLevel = require('flumeview-level')
 
-
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 var u = require('../util')
@@ -17,7 +16,7 @@ function isString (s) {
   return 'string' === typeof s
 }
 
-module.exports = function (keys) {
+module.exports = function () {
 
   function indexMsg (localtime, id, msg) {
     var content = msg.content
@@ -85,7 +84,7 @@ module.exports = function (keys) {
         )
       else {
         if(vals)  {
-          op.value = opts.private === true ? u.rebox(value) : value
+          op.value = (opts.private === true ? value : u.reboxValue(value))
         }
         if(!keys) delete op.key
         delete op._value
