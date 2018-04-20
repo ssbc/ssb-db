@@ -125,7 +125,7 @@ As long as the malicious database does not have the private key:
 - Messages may optionally be encrypted
 
 Additionally there is a protection from the feed owner, through the blockchain.
-The `previous` content-hash them from changing the feed history after publishing, as a newly-created message wouldn't match the hash of later messages which were already replicated.
+The `previous` content-hash prevents them from changing the feed history after publishing, as a newly-created message wouldn't match the hash of later messages which were already replicated.
 This ensures the append-only constraint, and thus safe network convergence.
 
 ## Further Reading
