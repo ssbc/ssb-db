@@ -2,12 +2,28 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-var codec = require('flumecodec/json')
+//var codec = require('flumecodec/json')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv       = require('obv')
+var _unbox    = require('ssb-keys').unbox
+var pull      = require('pull-stream')
+var rebox     = require('./util').rebox
 
+function unbox(data, keys) {
+  if(data && isString(data.value.content)) {
+    var plaintext = _unbox(data.value.content, keys)
+    if(plaintext) {
+      var ctxt = data.value.content
+      data.value.content = plaintext
+      data.value.cyphertext = ctxt
+      data.value.private = true
+    }
+  }
+
+  return data
+}
 
 /*
 ## queue (msg, cb)
@@ -28,9 +44,26 @@ function toKeyValueTimestamp(msg) {
   }
 }
 
-module.exports = function (dirname, opts) {
+function isString (s) {
+  return 'string' === typeof s
+}
+
+module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
+
+  var codec = {
+    encode: function (obj) {
+      return JSON.stringify(obj, null, 2)
+    },
+    decode: function (str) {
+      return unbox(JSON.parse(str.toString()), keys)
+    },
+    buffer: false,
+    type: 'ssb'
+  }
+
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
+
   //NOTE: must use db.ready.set(true) at when migration is complete
 
   var db = Flume(log, false) //false says the database is not ready yet!
@@ -46,7 +79,7 @@ module.exports = function (dirname, opts) {
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
-        db.post.set(data)
+        db.post.set(rebox(data))
       })
       cb(err, v)
     })
@@ -99,12 +132,19 @@ module.exports = function (dirname, opts) {
     })
   })
   db.append = wait(function (opts, cb) {
-    var msg = V.create(
-      state.feeds[opts.keys.id],
-      opts.keys, opts.hmacKey || hmac_key,
-      opts.content,
-      timestamp()
-    )
+    try {
+      var msg = V.create(
+        state.feeds[opts.keys.id],
+        opts.keys, opts.hmacKey || hmac_key,
+        opts.content,
+        timestamp()
+      )
+    }
+    catch (err) {
+      cb(err)
+      return
+    }
+
     queue(msg, function (err) {
       if(err) return cb(err)
       var data = state.queue[state.queue.length-1]

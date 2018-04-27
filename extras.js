@@ -1,9 +1,8 @@
-var Related   = require('./related')
 var pull      = require('pull-stream')
 var ViewLevel = require('flumeview-level')
 var u         = require('./util')
 var stdopts   = u.options
-var Format    = u.formatStream
+var Format    = u.Format
 
 module.exports = function (db, config, keys) {
 
@@ -12,7 +11,7 @@ module.exports = function (db, config, keys) {
       return [data.timestamp]
     }))
     .use('feed', require('./indexes/feed')())
-    .use('links', require('./indexes/links')(keys))
+    .use('links', require('./indexes/links')())
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
@@ -21,7 +20,7 @@ module.exports = function (db, config, keys) {
 
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
-    return pull(db.time.read(opts), Format(keys, values))
+    return pull(db.time.read(opts), Format(keys, values, opts['private'] === true))
   }
 
   //TODO: eventually, this should filter out authors you do not follow.
@@ -47,6 +46,7 @@ module.exports = function (db, config, keys) {
       //but, we could rewrite validation to only use
       //data the reduce view, so that no disk read is necessary.
       else db.get(value[key].id, function (err, msg) {
+        //will NOT expose private plaintext
         cb(err, {key: value[key].id, value: msg})
       })
     })
@@ -58,14 +58,7 @@ module.exports = function (db, config, keys) {
 
   var HI = undefined, LO = null
 
-  //get all messages that link to a given message.
-
-  db.relatedMessages = Related(db)
-
   return db
 
-
 }
-
-
 

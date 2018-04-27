@@ -23,8 +23,12 @@ module.exports = function (opts) {
 
     var boxed = ssbKeys.box({type: 'secret', okay: true}, [alice.public, bob.public])
 
-    feed.add(boxed, function (err, msg) {
+    ssb.post(function (msg) {
+      t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
+    })
 
+    feed.add(boxed, function (err, msg) {
+      if(err) throw err
       t.notOk(err)
 
       pull(
@@ -46,6 +50,23 @@ module.exports = function (opts) {
     })
 
   })
+
+
+  tape('retrive already decrypted messages via private: true', function (t) {
+
+    pull(
+      ssb.messagesByType({type:'secret', private: true}),
+      pull.collect(function (err, ary) {
+        if(err) throw err
+        var content = ary[0].value.content
+        t.deepEqual(content, {type: 'secret', okay: true}, 'alice can decrypt')
+
+        t.end()
+      })
+    )
+
+  })
+
 
   tape('test indexes on end-to-end messages', function (t) {
 
@@ -73,38 +94,11 @@ module.exports = function (opts) {
     })
   })
 
-  function toKV (data) { return {key: data.key, value: data.value}}
-
-  //LEGACY: move this test into a legacy section.
-  //patchwork@3 doesn't need this, can probably kill it now.
-  tape('related-messages', function (t) {
-    feed.add(ssbKeys.box({
-      type: 'secret', okay: true
-      }, [alice.public, bob.public]
-    ), function (err, msg) {
-      msg = toKV(msg)
-      feed.add(ssbKeys.box({
-          type: 'secret', post: 'wow', reply: msg.key
-        }, [alice.public, bob.public]
-      ), function (err, msg2) {
-        msg2 = toKV(msg2)
-        console.log("MSG2", msg2)
-        ssb.relatedMessages({key: msg.key, rel: 'reply'},
-          function (err, msgs) {
-            console.log("MSGS", msgs)
-            msg.related = [msg2]
-            console.log(msg)
-            t.deepEqual(msgs, msg)
-            t.end()
-            
-          })
-      })
-    })
-
-  })
-
 }
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
 

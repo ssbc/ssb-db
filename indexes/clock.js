@@ -5,7 +5,6 @@ var ltgt = require('ltgt')
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 var u = require('../util')
-var Format = u.formatStream
 
 var ViewLevel = require('flumeview-level')
 
@@ -39,9 +38,9 @@ module.exports = function (db, opts) {
           sync: false === (opts && opts.sync),
           limit: limit
         }),
-        pull.map(function (e) {
-          return keys && values ? e.value : keys ? e.value.key : e.value.value
-        })
+        //NEVER allow private messages over history stream.
+        //createHistoryStream is used for legacy replication.
+        u.Format(keys, values, false)
       )
     }
 
@@ -56,14 +55,11 @@ module.exports = function (db, opts) {
       opts.keys = false
       opts.values = true
 
-      return pull(index.read(opts), Format(keys, values))
+      return pull(index.read(opts), u.Format(keys, values, opts.private === true))
     }
 
     return index
 
   }
 }
-
-
-
 

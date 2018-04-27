@@ -4,41 +4,31 @@ var pull      = require('pull-stream')
 var ltgt      = require('ltgt')
 var ssbKeys   = require('ssb-keys')
 var paramap   = require('pull-paramap')
-var Format    = require('../util').formatStream
 var ViewLevel = require('flumeview-level')
-
-
 
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 var u = require('../util')
-
+var Format = u.formatStream
 var mlib = require('ssb-msgs')
 
 function isString (s) {
   return 'string' === typeof s
 }
 
-module.exports = function (keys) {
+module.exports = function () {
 
   function indexMsg (localtime, id, msg) {
-    //DECRYPT the message, if possible
-    //to enable indexing. If external apis
-    //are not provided that may access indexes
-    //then this will not leak information.
-    //otherwise, we may need to figure something out.
+    var content = msg.content
 
-    var content = (keys && isString(msg.content))
-      ? ssbKeys.unbox(msg.content, keys)
-      : msg.content
-
-    if(!content) return []
+    //couldn't decrypt, this message wasn't for us
+    if(isString(content)) return []
 
     var a = []
 
-    if(isString(content.type))
+    if(isString(content.type)) {
       a.push(['type', content.type.toString().substring(0, 32), localtime])
-
+    }
     mlib.indexLinks(content, function (obj, rel) {
       a.push(['link', msg.author, rel, obj.link, msg.sequence, id])
       a.push(['_link', obj.link, rel, msg.author, msg.sequence, id])
@@ -77,7 +67,7 @@ module.exports = function (keys) {
 
       return pull(
         index.read(opts),
-        Format(keys, values)
+        Format(keys, values, opts['private'] === true)
       )
     }
 
@@ -93,7 +83,9 @@ module.exports = function (keys) {
                           : value
         )
       else {
-        if(vals)  op.value = value
+        if(vals)  {
+          op.value = (opts.private === true ? value : u.reboxValue(value))
+        }
         if(!keys) delete op.key
         delete op._value
         return op
@@ -178,10 +170,4 @@ module.exports = function (keys) {
     return index
   }
 }
-
-
-
-
-
-
 
