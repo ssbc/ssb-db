@@ -41,15 +41,17 @@ exports.wait = function () {
 }
 
 var reboxValue = exports.reboxValue = function (value, isPrivate) {
-  return isPrivate === true ? value : {
-    previous: value.previous,
-    author: value.author,
-    sequence: value.sequence,
-    timestamp: value.timestamp,
-    hash: value.hash,
-    content: value.cyphertext || value.content,
-    signature: value.signature
+  if (isPrivate === true) return value
+
+  var o = {}
+  for (var key in value) {
+    if (key == 'content')
+      o[key] = value.cyphertext || value.content
+    else if (key != 'cyphertext' && key != 'private')
+      o[key] = value[key]
   }
+
+  return o
 }
 
 var rebox = exports.rebox = function (data, isPrivate) {
