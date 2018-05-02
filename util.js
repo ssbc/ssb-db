@@ -43,8 +43,8 @@ exports.wait = function () {
 var reboxValue = exports.reboxValue = function (value, isPrivate) {
   return isPrivate === true ? value : {
     previous: value.previous,
-    sequence: value.sequence,
     author: value.author,
+    sequence: value.sequence,
     timestamp: value.timestamp,
     hash: value.hash,
     content: value.cyphertext || value.content,
