@@ -1,7 +1,7 @@
 {
   "name": "secure-scuttlebutt",
   "description": "a secure, replicatable database",
-  "version": "18.0.0",
+  "version": "18.0.2",
   "homepage": "https://github.com/ssbc/secure-scuttlebutt",
   "repository": {
     "type": "git",
