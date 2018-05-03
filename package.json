@@ -18,7 +18,7 @@
     "flumeview-hashtable": "^1.0.3",
     "flumeview-level": "^2.1.0",
     "flumeview-reduce": "^1.3.9",
-    "level": "^1.7.0",
+    "level": "^3.0.0",
     "level-sublevel": "^6.6.1",
     "ltgt": "^2.2.0",
     "monotonic-timestamp": "~0.0.8",
