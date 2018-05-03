@@ -100,7 +100,8 @@ module.exports = function (opts) {
     var ssb = require('../')(db, opts)
     ssb.createFeed().add({type: 'test', options: opts}, function (err, msg) {
       if(err) throw err
-      t.deepEqual(msg.content.options, opts)
+      console.log(msg)
+      t.deepEqual(msg.value.content.options, opts)
       t.end()
     })
 
@@ -111,8 +112,4 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
-
-
-
 
