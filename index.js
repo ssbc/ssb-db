@@ -2,12 +2,11 @@
 
 var join      = require('path').join
 var EventEmitter = require('events')
-//var Obv       = require('obv')
 
 var pull      = require('pull-stream')
 var timestamp = require('monotonic-timestamp')
 var explain   = require('explain-error')
-//var createFeed = require('ssb-feed')
+
 var ref       = require('ssb-ref')
 var ssbKeys   = require('ssb-keys')
 var Notify    = require('pull-notify')
@@ -19,6 +18,7 @@ var isBlobId = ref.isBlobId
 var u         = require('./util')
 var stdopts   = u.options
 var Format    = u.Format
+
 //53 bit integer
 var MAX_INT  = 0x1fffffffffffff
 
@@ -60,18 +60,34 @@ module.exports = function (_db, opts, keys, path) {
 
   var _get = db.get
 
-  db.get = function (key, cb) {
-    var isPrivate = false
-    if('object' === typeof key) {
-      isPrivate = key.private === true
-      key = key.id
+  db.get = function (opts, cb) {
+    var isPrivate = false, unbox, key = isString(opts) ? opts : opts.id
+    if('object' === typeof opts) {
+      isPrivate = opts.private === true
+      unbox = opts.unbox || opts.query && opts.query.unbox
+      key = opts.id
     }
+
+    if(unbox && !isPrivate)
+      throw new Error('unbox key provided, but private was not explicitly set to true')
+
     if(ref.isMsg(key))
       return db.keys.get(key, function (err, data) {
         if(err) cb(err)
+        else if(unbox && isPrivate) {
+          if(!isString(data.value.content))
+            return cb(null, data.value) //already decrypted
+
+          var ctxt = data.value.content
+          data.value.content = ssbKeys.unboxBody(ctxt, unbox)
+          data.value.cyphertext = ctxt
+          data.value.unbox = unbox
+          data.value.private = true
+          cb(null, data.value)
+        }
         else cb(null, data && u.reboxValue(data.value, isPrivate))
       })
-    else if(Number.isInteger(key)) 
+    else if(Number.isInteger(key))
       _get(key, cb) //seq
     else
       throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
@@ -163,9 +179,7 @@ module.exports = function (_db, opts, keys, path) {
         if(--n) return
         cb()
       }
-
     }
-
   }
   return db
 }
