@@ -7,18 +7,22 @@ var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv       = require('obv')
-var _unbox    = require('ssb-keys').unbox
+var ssbKeys   = require('ssb-keys')
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
 
 function unbox(data, keys) {
   if(data && isString(data.value.content)) {
-    var plaintext = _unbox(data.value.content, keys)
-    if(plaintext) {
+    var key = ssbKeys.unboxKey(data.value.content, keys)
+    if(key) {
       var ctxt = data.value.content
-      data.value.content = plaintext
+      var ptxt = ssbKeys.unboxBody(ctxt, key)
+      if(!ptxt) return data
+      data.value.content = ptxt
       data.value.cyphertext = ctxt
+      data.value.unbox = key.toString('base64')
       data.value.private = true
+      return data
     }
   }
 
@@ -164,4 +168,5 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
+
 
