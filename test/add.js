@@ -5,6 +5,7 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
+var crypto = require('crypto')
 
 module.exports = function (opts) {
   var create = require('ssb-feed/util').create
@@ -90,13 +91,25 @@ module.exports = function (opts) {
 
   })
 
+  tape('sign-cap', function (t) {
+    var db = sublevel(level('test-ssb-sign-cap', {
+      valueEncoding: require('../codec')
+    }))
+
+    var opts = {caps: {sign: crypto.randomBytes(32).toString('base64')}}
+    var ssb = require('../')(db, opts)
+    ssb.createFeed().add({type: 'test', options: opts}, function (err, msg) {
+      if(err) throw err
+      console.log(msg)
+      t.deepEqual(msg.value.content.options, opts)
+      t.end()
+    })
+
+  })
 
 
 }
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
-
-
 
