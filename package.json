@@ -16,7 +16,7 @@
     "flumedb": "^0.4.2",
     "flumelog-offset": "^3.2.5",
     "flumeview-hashtable": "^1.0.3",
-    "flumeview-level": "^2.1.0",
+    "flumeview-level": "^3.0.4",
     "flumeview-reduce": "^1.3.9",
     "level": "^3.0.1",
     "level-sublevel": "^6.6.1",
