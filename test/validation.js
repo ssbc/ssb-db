@@ -6,6 +6,7 @@ var pull     = require('pull-stream')
 var explain  = require('explain-error')
 var generate = require('ssb-keys').generate
 var hash     = require('ssb-keys').hash
+var v        = require('ssb-validate')
 
 var codec = require('../codec')
 
@@ -140,6 +141,62 @@ module.exports = function (opts) {
       })
     })
   })
+
+  // git-ssb is known to change the order of the message
+  tape('dict order', function (t) {
+    var keys = generate()
+    var prev
+    ssb.add(
+      prev = create(keys, null, {type: 'init', public: keys.public}),
+      function (err) {
+        if(err) throw explain(err, 'init failed')
+
+        ssb.add(
+          prev = require('ssb-keys').signObj(keys, null, {
+            previous: ('%'+hash(JSON.stringify(prev, null, 2))),
+            sequence: prev ? prev.sequence + 1 : 1,
+            author: keys.id,
+            timestamp: require('monotonic-timestamp')(),
+            hash: 'sha256',
+            content: { type: 'msg',  value: 'hello' }
+          }),
+          function (err) {
+            if(err) throw explain(err, 'hello failed')
+
+            ssb.add(
+              prev = create(keys, 'msg', 'hello2', prev),
+              function (err) {
+                if(err) throw explain(err, 'hello2 failed')
+
+                var state = {
+                  feeds: {}, queue: []
+                }
+
+                pull(
+                  ssb.createFeedStream({ keys: false }),
+                  pull.drain(function (msg) {
+                    try {
+                      state = v.append(state, null, msg)
+                    }
+                    catch (ex)
+                    {
+                      t.fail(ex)
+                      return false
+                    }
+                  }, function() {
+                    if (state.queue.length > 0)
+                      t.pass("validate passes")
+                    t.end()
+                  })
+                )
+              }
+            )
+          }
+        )
+      }
+    )
+  })
+
 }
 
 if(!module.parent)
