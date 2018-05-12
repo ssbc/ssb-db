@@ -112,7 +112,7 @@ module.exports = function () {
       function range(value, end, def) {
         return !value ? def : /^[@%&]$/.test(value) ? value + end : value
       }
-      function lo(value) { return range(value, "!", u.lo) }
+      function lo(value) { return range(value, "", u.lo) }
       function hi(value) { return range(value, "~", u.hi) }
 
       var index = back ? '_link' : 'link'
@@ -170,4 +170,6 @@ module.exports = function () {
     return index
   }
 }
+
+
 
