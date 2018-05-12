@@ -99,9 +99,26 @@ module.exports = function (opts) {
               source: msg2.value.author, rel: 'reply',
               dest: msg.key
             }])
-            t.end()
+
+            //retrive links, with private: true
+            console.log("DECRYPTED LINKS ****************8")
+            pull(
+              ssb.links({
+                dest: msg.key, type: 'msg',
+                keys: false, values: true,
+                private: true
+              }),
+              pull.collect(function (err, ary) {
+                t.deepEqual(ary[0].value.content, {type: 'secret', post: 'wow', reply: msg.key})
+                t.end()
+              })
+            )
+
+
           })
         )
+
+
       })
     })
   })
