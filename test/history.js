@@ -8,6 +8,7 @@ var tape      = require('tape')
 var Abortable = require('pull-abortable')
 
 var SSB       = require('../')
+var createSSB = require('./util')
 
 var compare   = require('ltgt').compare
 var generate  = require('ssb-keys').generate
@@ -33,10 +34,6 @@ module.exports = function (opts) {
 
   var create = require('ssb-feed/util').create
 
-  function createDB(name) {
-    return SSB(sublevel(level(name, {valueEncoding: require('../codec')})), opts)
-  }
-
   var MESSAGE = new Buffer('msg')
 
   function init (ssb, n, cb) {
@@ -57,7 +54,7 @@ module.exports = function (opts) {
     return keys
   }
 
-  var ssb = createDB('ssb-history')
+  var ssb = createSSB('ssb-history')
   var keys, id, keys2, id2
   tape('history', function (t) {
     keys = init(ssb, 7, function (err) {
@@ -197,9 +194,4 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
-
-
-
-
 

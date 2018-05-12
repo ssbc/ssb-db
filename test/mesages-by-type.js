@@ -3,6 +3,7 @@ var cont = require('cont')
 var pull = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
+var createSSB = require('./util')
 
 function all(stream, cb) {
   pull(stream, pull.collect(cb))
@@ -12,9 +13,7 @@ module.exports = function (opts) {
 
   tape('retrive messages by type', function (t) {
 
-    var u = require('./util')(opts)
-
-    var dbA = u.createDB('msg-by-type1')
+    var dbA = createSSB('msg-by-type1')
     var alice = createFeed(dbA, ssbKeys.generate(), opts)
 
 
@@ -80,6 +79,4 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
-
 

@@ -4,15 +4,11 @@ var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
+var createSSB  = require('./util')
 
 
 module.exports = function (opts) {
-  var db = sublevel(level('test-ssb-feed', {
-    valueEncoding: require('../codec')
-  }))
-
-  var ssb = require('../')(db, opts)
-
+  var ssb = createSSB('test-ssb-feed')
   var create = require('ssb-feed/util').create
 
   tape('write-stream', function (t) {
@@ -82,4 +78,9 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
+
+
 

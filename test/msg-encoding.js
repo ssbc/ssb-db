@@ -7,6 +7,7 @@ var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var hexpp    = require('hexpp')
 var codec = require('../codec')
+var createSSB  = require('./util')
 
 var generate = ssbKeys.generate
 var hash = ssbKeys.hash
@@ -63,10 +64,8 @@ module.exports = function (opts) {
 
   tape('known error case 1', function (t) {
 
-    var db = sublevel(level('test-ssb-encoding', {
-      valueEncoding: codec
-    }))
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-encoding')
+
     var feed = createFeed(ssb, generate(), opts)
 
     feed.add(content, function (err, msg) {
@@ -91,6 +90,8 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
 
 
 

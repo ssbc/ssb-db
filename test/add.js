@@ -4,26 +4,16 @@ var level    = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
+var crypto   = require('crypto')
+
+var createSSB  = require('./util')
 var createFeed = require('ssb-feed')
-var crypto = require('crypto')
 
 module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
-  var db = sublevel(level('test-ssb-feed', {
-    valueEncoding: require('../codec')
-  }))
-
-  console.log(db.location)
-
-  var ssb = require('../')(db, opts)
-
-
-  var db2 = sublevel(level('test-ssb-feed2', {
-    valueEncoding: require('../codec')
-  }))
-
-  var ssb2 = require('../')(db2, opts)
+  var ssb = createSSB('test-ssb-feed', {})
+  var ssb2 = createSSB('test-ssb-feed2', {})
 
   tape('add invalid message', function (t) {
 
@@ -68,7 +58,6 @@ module.exports = function (opts) {
   })
 
   tape('log', function (t) {
-
     pull(ssb.createLogStream({keys: true, values: true}), pull.collect(function (err, ary) {
       console.log(err, ary)
       if(err) throw err
@@ -91,13 +80,14 @@ module.exports = function (opts) {
 
   })
 
+  return
   tape('sign-cap', function (t) {
     var db = sublevel(level('test-ssb-sign-cap', {
       valueEncoding: require('../codec')
     }))
 
     var opts = {caps: {sign: crypto.randomBytes(32).toString('base64')}}
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-sign-cap', opts)
     ssb.createFeed().add({type: 'test', options: opts}, function (err, msg) {
       if(err) throw err
       console.log(msg)
@@ -112,4 +102,10 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
+
+
+
 

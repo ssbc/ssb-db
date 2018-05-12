@@ -5,20 +5,14 @@ var sublevel = require('level-sublevel/bytewise')
 var pull     = require('pull-stream')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
+var createSSB  = require('./util')
 
 var level_opts = {valueEncoding: require('../codec')}
 
 module.exports = function (opts) {
 
   tape('simple', function (t) {
-
-
-    var db = sublevel(level('test-ssb-feed', level_opts))
-
-    var ssb = require('../')(db, opts)
-
-//    var feed = createFeed(ssb, ssbKeys.generate(), opts)
-
+    var ssb = createSSB('test-ssb-feed')
     var feed = ssb.createFeed(ssbKeys.generate())
 
     feed.add({type:'msg', value:'hello there!'}, function (err, msg) {
@@ -42,9 +36,7 @@ module.exports = function (opts) {
 
   tape('tail', function (t) {
 
-    var db = sublevel(level('test-ssb-feed2', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-feed2')
 
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
@@ -84,12 +76,10 @@ module.exports = function (opts) {
       addAgain();
     })
   })
-  return
+
   tape('tail, parallel add', function (t) {
 
-    var db = sublevel(level('test-ssb-feed3', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-feed3')
 
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
@@ -132,8 +122,7 @@ module.exports = function (opts) {
   })
 
   tape('keys only', function (t) {
-    var db = sublevel(level('test-ssb-feed5', level_opts))
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-feed4')
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     feed.add({type:'msg', value:'hello there!'}, function (err, msg) {
@@ -153,8 +142,8 @@ module.exports = function (opts) {
   })
 
   tape('values only', function (t) {
-    var db = sublevel(level('test-ssb-feed6', level_opts))
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-feed5')
+
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     feed.add({type:'msg', value:'hello there!'}, function (err, msg) {
@@ -175,8 +164,6 @@ module.exports = function (opts) {
 
 }
 
-
 if(!module.parent)
   module.exports(require('../defaults'))
-
 

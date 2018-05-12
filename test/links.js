@@ -7,6 +7,7 @@ var pull       = require('pull-stream')
 var ssbKeys    = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var cont       = require('cont')
+var createSSB  = require('./util')
 
 function cmpstr (a, b) {
   return a < b ? -1 : a === b ? 0 : 1
@@ -20,11 +21,7 @@ function compare (a, b) {
 module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
-  var db = sublevel(level('test-ssb-feed', {
-    valueEncoding: require('../codec')
-  }))
-
-  var db = require('../')(db, opts)
+  var db = createSSB('test-ssb-feed')
 
   var alice = db.createFeed()
   var bob = db.createFeed()
@@ -145,4 +142,6 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
 

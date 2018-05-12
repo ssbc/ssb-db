@@ -6,6 +6,8 @@ var pull     = require('pull-stream')
 var cont     = require('cont')
 var typewise = require('typewiselite')
 var ssbKeys  = require('ssb-keys')
+
+var createSSB  = require('./util')
 var createFeed = require('ssb-feed')
 
 function sort (a) {
@@ -21,11 +23,7 @@ function sort (a) {
 
 module.exports = function (opts) {
 
-  var db = sublevel(level('test-ssb-links', {
-    valueEncoding: require('../codec')
-  }))
-
-  var ssb = require('../')(db, opts)
+  var ssb = createSSB('test-ssb-links')
 
   var all = function (stream) {
     return function (cb) {
@@ -247,4 +245,7 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports({})
+
+
+
 

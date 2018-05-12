@@ -6,19 +6,15 @@ var pull      = require('pull-stream')
 var timestamp = require('monotonic-timestamp')
 var ssbKeys  = require('ssb-keys')
 var createFeed = require('ssb-feed')
+var createSSB = require('./util')
 
 var generate = ssbKeys.generate
 
 module.exports = function (opts) {
 
-  var level_opts = {
-      valueEncoding: require('../codec')
-  }
   tape('simple', function (t) {
 
-    var db = sublevel(level('test-ssb-log', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-log1')
 
     var feed = createFeed(ssb, generate(), opts)
 
@@ -41,9 +37,7 @@ module.exports = function (opts) {
 
   tape('gt', function (t) {
 
-    var db = sublevel(level('test-ssb-log2', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-log2')
 
     var feed = createFeed(ssb, generate(), opts)
 
@@ -68,9 +62,7 @@ module.exports = function (opts) {
 
   tape('gt 0', function (t) {
 
-    var db = sublevel(level('test-ssb-log3', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-log4')
 
     var feed = createFeed(ssb, generate(), opts)
 
@@ -91,9 +83,7 @@ module.exports = function (opts) {
 
   tape('keys only', function (t) {
 
-    var db = sublevel(level('test-ssb-log4', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-log5')
 
     var feed = createFeed(ssb, generate(), opts)
 
@@ -115,9 +105,7 @@ module.exports = function (opts) {
 
   tape('values only', function (t) {
 
-    var db = sublevel(level('test-ssb-log5', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-log6')
 
     var feed = createFeed(ssb, generate(), opts)
 
@@ -140,9 +128,7 @@ module.exports = function (opts) {
   tape('live', function (t) {
     t.plan(3)
 
-    var db = sublevel(level('test-ssb-log6', level_opts))
-
-    var ssb = require('../')(db, opts)
+    var ssb = createSSB('test-ssb-log7')
 
     var feed = createFeed(ssb, generate(), opts)
 
@@ -171,18 +157,4 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
