@@ -20,6 +20,8 @@ module.exports = function (db, config, keys) {
 
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
+    if(opts.gt == null)
+      opts.gt = 0
     return pull(db.time.read(opts), Format(keys, values, opts['private'] === true))
   }
 
@@ -39,8 +41,7 @@ module.exports = function (db, config, keys) {
     })
   }
 
-  db.getLatest = function (key, cb) {
-    db.last.get(function (err, value) {
+  db.getLatest = function (key, cb) {    db.last.get(function (err, value) {
       if(err || !value || !value[key]) cb()
       //Currently, this retrives the previous message.
       //but, we could rewrite validation to only use
@@ -61,4 +62,5 @@ module.exports = function (db, config, keys) {
   return db
 
 }
+
 
