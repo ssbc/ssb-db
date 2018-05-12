@@ -8,14 +8,12 @@ var ssbKeys    = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var cont       = require('cont')
 
+var createSSB  = require('./util')
 var create = require('ssb-feed/util').create
 
 var opts = require('../defaults')
 
-var db = require('../')(
-    sublevel(level('test-ssb-feed', { valueEncoding: require('../codec') })),
-    opts
-  )
+var db = createSSB('test-ssb-latest')
 
 var alice = db.createFeed()
 var bob = db.createFeed()
@@ -64,5 +62,6 @@ tape('latest', function (t) {
     )
   })
 })
+
 
 
