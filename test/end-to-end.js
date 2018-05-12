@@ -13,7 +13,7 @@ module.exports = function (opts) {
   var alice = ssbKeys.generate()
   var bob = ssbKeys.generate()
 
-  var ssb = createSSB('test-ssb', opts, alice)
+  var ssb = createSSB('test-ssb', {keys: alice})
 
   var feed = ssb.createFeed(alice)
 
@@ -48,7 +48,6 @@ module.exports = function (opts) {
     })
 
   })
-
 
   tape('retrive already decrypted messages via private: true', function (t) {
 
@@ -96,6 +95,10 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
+
 
 
 
