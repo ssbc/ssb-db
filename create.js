@@ -9,5 +9,5 @@ module.exports = function (path, opts, keys) {
   return SSB(
     sublevel(level(path, {
       valueEncoding: require('./codec')
-    })), opts, keys)
+    })), opts, keys, path)
 }
