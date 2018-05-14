@@ -8,7 +8,7 @@ var ViewLevel = require('flumeview-level')
 
 module.exports = function (db) {
 
-  var createIndex = ViewLevel(1, function (data) {
+  var createIndex = ViewLevel(2, function (data) {
     return [[data.value.timestamp, data.value.author]]
   })
 
