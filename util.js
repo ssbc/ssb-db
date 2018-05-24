@@ -30,8 +30,11 @@ exports.wait = function () {
     get: function () { return value },
     set: function (_value) {
       value = _value
-      while(waiting.length)
-        waiting.shift()(null, value)
+
+      var l = waiting.length;
+      for (var i = 0; i < l; ++i)
+        waiting[i](null, value)
+      waiting = waiting.slice(l)
     },
     wait: function (cb) {
       if(value !== undefined) cb(null, value)

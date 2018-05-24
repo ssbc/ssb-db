@@ -95,8 +95,10 @@ module.exports = function (dirname, keys, opts) {
 
   queue.onDrain = function () {
     if(state.queue.length == 0) {
-      var l = flush.length
-      while(l--) flush.shift()()
+      var l = flush.length;
+      for (var i = 0; i < l; ++i)
+        flush[i]()
+      flush = flush.slice(l)
     }
   }
 
@@ -112,8 +114,11 @@ module.exports = function (dirname, keys, opts) {
       }
     }
     ready = true
-    while(waiting.length)
-      waiting.shift()()
+
+    var l = waiting.length;
+    for (var i = 0; i < l; ++i)
+      waiting[i]()
+    waiting = waiting.slice(l)
   })
 
   function wait(fn) {
