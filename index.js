@@ -37,6 +37,10 @@ function getVMajor () {
   return (version.split('.')[0])|0
 }
 
+function errorCB (err) {
+  if(err) throw err
+}
+
 module.exports = function (_db, opts, keys, path) {
   path = path || _db.location
 
@@ -109,6 +113,7 @@ module.exports = function (_db, opts, keys, path) {
 
   //writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {
+    cb = cb || errorCB
     return pull(
       pull.asyncMap(function (data, cb) {
         db.queue(data, function (err, msg) {
@@ -169,4 +174,3 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
-
