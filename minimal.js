@@ -11,17 +11,18 @@ var _unbox    = require('ssb-keys').unbox
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
 
-function unbox(data, keys) {
+function unbox(data, unboxers) {
   if(data && isString(data.value.content)) {
-    var plaintext = _unbox(data.value.content, keys)
-    if(plaintext) {
-      var ctxt = data.value.content
-      data.value.content = plaintext
-      data.value.cyphertext = ctxt
-      data.value.private = true
+    for(var i = 0;i < unboxers.length;i++) {
+        var plaintext = unboxers[i](data.value.content)
+        if(plaintext) {
+            data.value.cyphertext = data.value.content
+            data.value.content = plaintext
+            data.value.private = true
+            return data
+        }
     }
   }
-
   return data
 }
 
@@ -51,12 +52,15 @@ function isString (s) {
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
+  var main_unboxer = function(content) { return _unbox(content, keys); }
+
   var codec = {
+    unboxers: [ main_unboxer ],
     encode: function (obj) {
       return JSON.stringify(obj, null, 2)
     },
     decode: function (str) {
-      return unbox(JSON.parse(str.toString()), keys)
+      return unbox(JSON.parse(str.toString()), this.unboxers)
     },
     buffer: false,
     type: 'ssb'
@@ -165,6 +169,9 @@ module.exports = function (dirname, keys, opts) {
     //maybe need to check if there is anything currently writing?
     if(!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
     else flush.push(cb)
+  }
+  db.addUnboxer = function(unboxer) {
+    codec.unboxers.push(unboxer);
   }
 
   return db
