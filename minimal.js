@@ -14,7 +14,7 @@ var rebox     = require('./util').rebox
 function unbox(data, unboxers) {
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var plaintext = unboxers[i](data.value.content)
+        var plaintext = unboxers[i](data.value.content, data.value)
         if(plaintext) {
             data.value.cyphertext = data.value.content
             data.value.content = plaintext
@@ -52,15 +52,16 @@ function isString (s) {
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
+
   var main_unboxer = function(content) { return _unbox(content, keys); }
+  var unboxers = [ main_unboxer ]
 
   var codec = {
-    unboxers: [ main_unboxer ],
     encode: function (obj) {
       return JSON.stringify(obj, null, 2)
     },
     decode: function (str) {
-      return unbox(JSON.parse(str.toString()), this.unboxers)
+      return unbox(JSON.parse(str.toString()), unboxers)
     },
     buffer: false,
     type: 'ssb'
@@ -176,4 +177,6 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
+
+
 
