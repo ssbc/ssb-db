@@ -172,7 +172,7 @@ module.exports = function (dirname, keys, opts) {
     else flush.push(cb)
   }
   db.addUnboxer = function(unboxer) {
-    codec.unboxers.push(unboxer);
+    unboxers.push(unboxer);
   }
 
   return db
