@@ -44,9 +44,7 @@ module.exports = function (opts) {
           t.end()
         })
       )
-
     })
-
   })
 
 
@@ -86,8 +84,25 @@ module.exports = function (opts) {
 
   })
 
-  
+  tape('error on invalid recps', function (t) {
+    feed.add({
+      recps: true, type:'invalid'
+    }, function (err) {
+      t.ok(err)
+      feed.add({
+        recps: [], type:'invalid'
+      }, function (err) {
+        t.ok(err)
+        feed.add({
+          recps: [feed.id, true], type:'invalid'
+        }, function (err) {
+          t.ok(err)
+          t.end()
+        })
+      })
+    })
 
+  })
 
   tape('retrive already decrypted messages via private: true', function (t) {
 
@@ -135,18 +150,4 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
