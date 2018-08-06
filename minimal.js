@@ -147,15 +147,19 @@ module.exports = function (dirname, keys, opts) {
   })
   db.append = wait(function (opts, cb) {
     try {
-      var content
-      if(isFeed(opts.content.recps) || isArray(opts.content.recps) && opts.content.recps.every(isFeed) && opts.content.recps.length > 0) {
-        var recps = opts.content.recps = [].concat(opts.content.recps) //force to array
-        content = opts.content = box(opts.content, recps)
+      var content = opts.content, recps = opts.content.recps
+      if(recps) {
+        if(isFeed(recps) || isArray(recps) && recps.every(isFeed) && recps.length > 0) {
+          recps = opts.content.recps = [].concat(recps) //force to array
+          content = opts.content = box(opts.content, recps)
+        }
+        else throw new Error('private message must have all valid recipients, was:'+JSON.stringify(recps))
       }
+
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys, opts.hmacKey || hmac_key,
-        opts.content,
+        content,
         timestamp()
       )
     }
@@ -186,4 +190,6 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
+
+
 
