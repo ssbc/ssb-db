@@ -49,6 +49,46 @@ module.exports = function (opts) {
 
   })
 
+
+  tape('add encrypted message', function (t) {
+
+    ssb.post(function (msg) {
+      t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
+    })
+
+    //secret message sent to self
+    feed.add({
+      recps: feed.id,
+      type: 'secret2', secret: "it's a secret!"
+    }, function (err, msg) {
+      if(err) throw err
+      t.notOk(err)
+
+      pull(
+        ssb.messagesByType('secret2'),
+        pull.collect(function (err, ary) {
+          if(err) throw err
+          t.equal(ary.length, 1)
+          var ctxt = ary[0].value.content
+
+          //bob can also decrypt
+          var content = ssbKeys.unbox(ctxt, alice.private)
+          t.deepEqual(content, {
+            type: 'secret2', secret: "it's a secret!",
+            recps: [alice.id]
+          }, 'alice can decrypt')
+
+          t.end()
+        })
+      )
+
+    })
+
+  })
+
+  
+
+
   tape('retrive already decrypted messages via private: true', function (t) {
 
     pull(
@@ -95,6 +135,12 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
+
+
+
+
+
 
 
 

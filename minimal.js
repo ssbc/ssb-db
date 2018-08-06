@@ -8,8 +8,12 @@ var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv       = require('obv')
 var _unbox    = require('ssb-keys').unbox
+var box    = require('ssb-keys').box
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
+var isFeed = require('ssb-ref').isFeed
+
+var isArray = Array.isArray
 
 function unbox(data, unboxers) {
   if(data && isString(data.value.content)) {
@@ -143,6 +147,11 @@ module.exports = function (dirname, keys, opts) {
   })
   db.append = wait(function (opts, cb) {
     try {
+      var content
+      if(isFeed(opts.content.recps) || isArray(opts.content.recps) && opts.content.recps.every(isFeed) && opts.content.recps.length > 0) {
+        var recps = opts.content.recps = [].concat(opts.content.recps) //force to array
+        content = opts.content = box(opts.content, recps)
+      }
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys, opts.hmacKey || hmac_key,
@@ -177,6 +186,4 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
-
-
 
