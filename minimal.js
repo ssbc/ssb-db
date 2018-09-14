@@ -18,13 +18,10 @@ var isArray = Array.isArray
 function unbox(data, unboxers) {
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var plaintext = unboxers[i](data.value.content, data.value)
-        if(plaintext) {
-            data.value.cyphertext = data.value.content
-            data.value.content = plaintext
-            data.value.private = true
-            return data
-        }
+      var plaintext = unboxers[i](data.value)
+      if(plaintext) {
+        data.value = plaintext
+      }
     }
   }
   return data
@@ -57,7 +54,15 @@ module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
 
-  var main_unboxer = function(content) { return _unbox(content, keys); }
+  var main_unboxer = function(value) {
+    var plaintext = _unbox(value.content, keys);
+    if (plaintext) {
+      value.cyphertext = value.content
+      value.content = plaintext
+      value.private = true
+    }
+    return value
+  }
   var unboxers = [ main_unboxer ]
 
   var codec = {
