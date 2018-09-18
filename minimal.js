@@ -12,6 +12,7 @@ var box    = require('ssb-keys').box
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
 var isFeed = require('ssb-ref').isFeed
+var fs = require('fs')
 
 var isArray = Array.isArray
 
@@ -50,20 +51,65 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isBlob (s) {
+  return isString(s) && s.indexOf('&') === 0;
+}
+
+function base64toHex(s) {
+  var raw = atob(s);
+  var res = '';
+
+  for (var i = 0; i < raw.length; i++ ) {
+    var hex = raw.charCodeAt(i).toString(16)
+    res += (hex.length == 2 ? hex : '0' + hex);
+  }
+  return res
+}
+
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
+  var blob_unboxer = function(value) {
+    if (isBlob(value.content)) {
+
+      const split = value.content.split('.')
+      const hex = base64toHex(split[0].slice(1))
+      const alg = split[1]
+      const first = hex.slice(0,2)
+      const last = hex.slice(2)
+      const blobPath = path.join(dirname, '..', 'blobs', alg, first, last)
+
+      try {
+        const blobContent = fs.readFileSync(blobPath, 'utf8')
+        const plaintext = JSON.parse(blobContent)
+        value.blob = value.content
+        value.content = plaintext
+        value.blobContent = true
+      } catch(e) {
+        return false
+      }
+    } else {
+      return false
+    }
+  }
 
   var main_unboxer = function(value) {
-    var plaintext = _unbox(value.content, keys);
-    if (plaintext) {
-      value.cyphertext = value.content
-      value.content = plaintext
-      value.private = true
+    if (isString(value.content) && !isBlob(value.content)) {
+      var plaintext = _unbox(value.content, keys);
+      if (plaintext) {
+        value.cyphertext = value.content
+        value.content = plaintext
+        value.private = true
+        return value
+      } else {
+        return false
+      }
+    } else {
+      return false
     }
-    return value
   }
-  var unboxers = [ main_unboxer ]
+
+  var unboxers = [ blob_unboxer, main_unboxer ]
 
   var codec = {
     encode: function (obj) {
