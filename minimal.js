@@ -18,7 +18,11 @@ var isArray = Array.isArray
 function unbox(data, unboxers) {
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var plaintext = unboxers[i](data.value.content, data.value)
+        var plaintext
+        try {
+          plaintext = unboxers[i](data.value.content, data.value)
+        } catch (_) { }
+
         if(plaintext) {
             data.value.cyphertext = data.value.content
             data.value.content = plaintext
