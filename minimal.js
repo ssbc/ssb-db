@@ -17,7 +17,7 @@ var fs = require('fs')
 var isArray = Array.isArray
 
 function unbox(data, unboxers) {
-  if(data && isString(data.value.content)) {
+  if(data) {
     for(var i = 0;i < unboxers.length;i++) {
       var plaintext = unboxers[i](data.value)
       if(plaintext) {
@@ -51,8 +51,16 @@ function isString (s) {
   return 'string' === typeof s
 }
 
-function isBlob (s) {
-  return isString(s) && s.indexOf('&') === 0;
+function isBlobString (s) {
+  return isString(s) && 0 === s.indexOf('&');
+}
+
+function isBlobContent (c) {
+  return 'blob' === c.type && isBlobString(c.blob);
+}
+
+function atob(x) {
+  return Buffer.from(x, 'base64').toString('binary')
 }
 
 function base64toHex(s) {
@@ -70,9 +78,8 @@ module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
   var blob_unboxer = function(value) {
-    if (isBlob(value.content)) {
-
-      const split = value.content.split('.')
+    if (isBlobContent(value.content)) {
+      const split = value.content.blob.split('.')
       const hex = base64toHex(split[0].slice(1))
       const alg = split[1]
       const first = hex.slice(0,2)
@@ -82,7 +89,7 @@ module.exports = function (dirname, keys, opts) {
       try {
         const blobContent = fs.readFileSync(blobPath, 'utf8')
         const plaintext = JSON.parse(blobContent)
-        value.blob = value.content
+        value.blob = value.content.blob
         value.content = plaintext
         value.blobContent = true
       } catch(e) {
@@ -94,7 +101,7 @@ module.exports = function (dirname, keys, opts) {
   }
 
   var main_unboxer = function(value) {
-    if (isString(value.content) && !isBlob(value.content)) {
+    if (isString(value.content)) {
       var plaintext = _unbox(value.content, keys);
       if (plaintext) {
         value.cyphertext = value.content
