@@ -17,15 +17,20 @@ var fs = require('fs')
 var isArray = Array.isArray
 
 function unbox(data, unboxers) {
-  if(data) {
-    for(var i = 0;i < unboxers.length;i++) {
-      var plaintext = unboxers[i](data.value)
-      if(plaintext) {
-        data.value = plaintext
-      }
+  return unboxers.reduce((promiseChain, currentTask) => {
+    return promiseChain.then(chainResults =>
+      currentTask(data.value).then(currentResult =>
+        [ ...chainResults, currentResult ]
+      )
+    );
+  }, Promise.resolve([])).then(arrayOfResults => {
+
+    if (arrayOfResults.some(x => x !== false)) {
+      data.value = Object.assign({}, ...arrayOfResults)
     }
-  }
-  return data
+
+    return data
+  });
 }
 
 /*
@@ -77,7 +82,7 @@ function base64toHex(s) {
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
-  var blob_unboxer = function(value) {
+  var blob_unboxer = async function(value) {
     if (isBlobContent(value.content)) {
       const split = value.content.blob.split('.')
       const hex = base64toHex(split[0].slice(1))
@@ -100,20 +105,22 @@ module.exports = function (dirname, keys, opts) {
     }
   }
 
-  var main_unboxer = function(value) {
-    if (isString(value.content)) {
-      var plaintext = _unbox(value.content, keys);
-      if (plaintext) {
-        value.cyphertext = value.content
-        value.content = plaintext
-        value.private = true
-        return value
+  var main_unboxer = async function(value) {
+    return new Promise(function (resolve) {
+      if (isString(value.content)) {
+        var plaintext = _unbox(value.content, keys);
+        if (plaintext) {
+          value.cyphertext = value.content
+          value.content = plaintext
+          value.private = true
+          resolve(value)
+        } else {
+          resolve(false)
+        }
       } else {
-        return false
+        resolve(false)
       }
-    } else {
-      return false
-    }
+    })
   }
 
   var unboxers = [ blob_unboxer, main_unboxer ]

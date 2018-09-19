@@ -14,7 +14,7 @@
     "explain-error": "~1.0.1",
     "flumecodec": "0.0.1",
     "flumedb": "^0.4.2",
-    "flumelog-offset": "^3.3.1",
+    "flumelog-offset": "git+https://github.com/christianbundy/flumelog-offset.git#async-codecs",
     "flumeview-hashtable": "^1.0.3",
     "flumeview-level": "^3.0.5",
     "flumeview-reduce": "^1.3.9",
