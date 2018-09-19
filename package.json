@@ -22,6 +22,7 @@
     "level-sublevel": "^6.6.2",
     "ltgt": "^2.2.0",
     "monotonic-timestamp": "~0.0.8",
+    "multiblob": "^1.13.1",
     "obv": "0.0.1",
     "pull-cont": "0.0.0",
     "pull-level": "^2.0.3",

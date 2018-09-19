@@ -12,7 +12,8 @@ var box    = require('ssb-keys').box
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
 var isFeed = require('ssb-ref').isFeed
-var fs = require('fs')
+var Blobs = require('multiblob')
+var console = require('console')
 
 var isArray = Array.isArray
 
@@ -61,45 +62,44 @@ function isBlobString (s) {
 }
 
 function isBlobContent (c) {
-  return 'blob' === c.type && isBlobString(c.blob);
+  return 'object' === typeof c &&'blob' === c.type && isBlobString(c.blob);
 }
 
-function atob(x) {
-  return Buffer.from(x, 'base64').toString('binary')
-}
-
-function base64toHex(s) {
-  var raw = atob(s);
-  var res = '';
-
-  for (var i = 0; i < raw.length; i++ ) {
-    var hex = raw.charCodeAt(i).toString(16)
-    res += (hex.length == 2 ? hex : '0' + hex);
-  }
-  return res
+function getBlobHash (x) {
+  return x.slice(1)
 }
 
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
+  var blobs = Blobs({
+    dir: path.join(dirname, '..', 'blobs'),
+    alg: 'sha256'
+  })
 
   var blob_unboxer = async function(value) {
     if (isBlobContent(value.content)) {
-      const split = value.content.blob.split('.')
-      const hex = base64toHex(split[0].slice(1))
-      const alg = split[1]
-      const first = hex.slice(0,2)
-      const last = hex.slice(2)
-      const blobPath = path.join(dirname, '..', 'blobs', alg, first, last)
-
-      try {
-        const blobContent = fs.readFileSync(blobPath, 'utf8')
-        const plaintext = JSON.parse(blobContent)
-        value.blob = value.content.blob
-        value.content = plaintext
-        value.blobContent = true
-      } catch(e) {
-        return false
-      }
+      return new Promise(function (resolve) {
+        pull(
+          blobs.get(getBlobHash(value.content.blob)),
+          pull.collect(function (err, bufs) {
+            if (err) {
+              console.warn(err)
+              resolve(false)
+            } else {
+              try {
+                var plaintext = JSON.parse(Buffer.concat(bufs))
+                value.blob = value.content.blob
+                value.content = plaintext
+                value.blobContent = true
+                resolve(value)
+              } catch(e) {
+                console.warn(e)
+                resolve(false)
+              }
+            }
+          })
+        )
+      })
     } else {
       return false
     }
