@@ -16,18 +16,21 @@ var isFeed = require('ssb-ref').isFeed
 var isArray = Array.isArray
 
 function unbox(data, unboxers) {
-  if(data && isString(data.value.content)) {
-    for(var i = 0;i < unboxers.length;i++) {
-        var plaintext = unboxers[i](data.value.content, data.value)
-        if(plaintext) {
-            data.value.cyphertext = data.value.content
-            data.value.content = plaintext
-            data.value.private = true
-            return data
-        }
+  // pass results from one unboxer to the next
+  return unboxers.reduce((promises, unboxer) => {
+    return promises.then(previous =>
+      unboxer(data.value).then(result =>
+        [ ...previous, result ]
+      )
+    );
+  }, Promise.resolve([])).then(results => {
+
+    if (results.some(x => x !== false)) {
+      data.value = Object.assign({}, ...results)
     }
-  }
-  return data
+
+    return data
+  });
 }
 
 /*
@@ -56,8 +59,23 @@ function isString (s) {
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
-
-  var main_unboxer = function(content) { return _unbox(content, keys); }
+  var main_unboxer = async function(value) {
+    return new Promise(function (resolve) {
+      if (isString(value.content)) {
+        var plaintext = _unbox(value.content, keys);
+        if (plaintext) {
+          value.cyphertext = value.content
+          value.content = plaintext
+          value.private = true
+          resolve(value)
+        } else {
+          resolve(false)
+        }
+      } else {
+        resolve(false)
+      }
+    })
+  }
   var unboxers = [ main_unboxer ]
 
   var codec = {
