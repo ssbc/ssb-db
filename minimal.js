@@ -16,15 +16,15 @@ var isFeed = require('ssb-ref').isFeed
 var isArray = Array.isArray
 
 function unbox(data, unboxers) {
-  if(data && isString(data.value.content)) {
-    for(var i = 0;i < unboxers.length;i++) {
-      var plaintext = unboxers[i](data.value)
-      if(plaintext) {
-        data.value = plaintext
-      }
-    }
-  }
-  return data
+  return Promise.all(unboxers.map(unbox =>
+    unbox(data.value)
+    .then(resolution => Promise.reject(resolution)) // break from loop
+    .catch(rejection => Promise.resolve(rejection)) // don't break from loop
+  )).then(rejections => Promise.resolve(data))      // return original `data` object
+    .catch(result => {                              // modify `data.value` and return new `data`
+      data.value = result
+      Promise.resolve(data)
+    })
 }
 
 /*
@@ -53,15 +53,20 @@ function isString (s) {
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
-
-  var main_unboxer = function(value) {
-    var plaintext = _unbox(value.content, keys);
-    if (plaintext) {
-      value.cyphertext = value.content
-      value.content = plaintext
-      value.private = true
+  var main_unboxer = async function(value) {
+    if (isString(value.content)) {
+      var plaintext = _unbox(value.content, keys);
+      if (plaintext) {
+        value.cyphertext = value.content
+        value.content = plaintext
+        value.private = true
+        return Promise.resolve(value)
+      } else {
+        return Promise.reject()
+      }
+    } else {
+      return Promise.reject()
     }
-    return value
   }
   var unboxers = [ main_unboxer ]
 
