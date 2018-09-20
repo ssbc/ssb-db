@@ -7,21 +7,34 @@ var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv       = require('obv')
-var _unbox    = require('ssb-keys').unbox
-var box    = require('ssb-keys').box
+var ssbKeys   = require('ssb-keys')
+var box       = ssbKeys.box
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
 var isFeed = require('ssb-ref').isFeed
 
 var isArray = Array.isArray
+function isFunction (f) { return 'function' === typeof f }
 
-function unbox(data, unboxers) {
+function unbox(data, unboxers, key) {
+  var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var plaintext = unboxers[i](data.value.content, data.value)
+        var unbox = unboxers[i], value
+        if(isFunction(unbox)) {
+          plaintext = unbox(data.value.content, data.value)
+        }
+        else if(!key && unbox.key) {
+          key = unbox.key(data.value.content, data.value)
+        }
+
+        if(key)
+          plaintext = unbox.value(data.value.content, key)
+
         if(plaintext) {
             data.value.cyphertext = data.value.content
             data.value.content = plaintext
+            data.value.unbox = key.toString('base64')
             data.value.private = true
             return data
         }
@@ -57,7 +70,10 @@ module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
 
-  var main_unboxer = function(content) { return _unbox(content, keys); }
+  var main_unboxer = {
+    key: function (content) { return ssbKeys.unboxKey(content, keys) },
+    value: function (content, key) { return ssbKeys.unboxBody(content, key) }
+  }
   var unboxers = [ main_unboxer ]
 
   var codec = {
@@ -190,6 +206,4 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
-
-
 
