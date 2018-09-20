@@ -204,6 +204,10 @@ module.exports = function (dirname, keys, opts) {
     unboxers.push(unboxer);
   }
 
+  db.unbox = function (data, key) {
+    return unbox(data, unboxers, key)
+  }
+
   return db
 }
 
