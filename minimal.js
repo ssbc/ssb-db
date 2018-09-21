@@ -32,11 +32,15 @@ function unbox(data, unboxers, key) {
           plaintext = unbox.value(data.value.content, key)
 
         if(plaintext) {
-            data.value.cyphertext = data.value.content
-            data.value.content = plaintext
-            data.value.unbox = key.toString('base64')
-            data.value.private = true
-            return data
+            var msg = {}
+            for(var k in data.value)
+              msg[k] = data.value[k]
+
+            msg.cyphertext = data.value.content
+            msg.content = plaintext
+            msg.unbox = key.toString('base64')
+            msg.private = true
+            return {key: data.key, value: msg, timestamp: data.timestamp}
         }
     }
   }
@@ -69,11 +73,11 @@ function isString (s) {
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
-
   var main_unboxer = {
     key: function (content) { return ssbKeys.unboxKey(content, keys) },
     value: function (content, key) { return ssbKeys.unboxBody(content, key) }
   }
+
   var unboxers = [ main_unboxer ]
 
   var codec = {
