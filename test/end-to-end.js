@@ -49,6 +49,7 @@ module.exports = function (opts) {
           var pmsg = ssb.unbox(ary[0])
           t.notOk(msg.unbox, 'did not mutate original message')
           var unbox_key = pmsg.value.unbox
+          t.equal(typeof unbox_key, 'string')
           t.ok(pmsg)
           t.deepEqual(pmsg.value.content, content2)
 
