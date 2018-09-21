@@ -65,13 +65,15 @@ module.exports = function (_db, opts, keys, path) {
   var _get = db.get
 
   db.get = function (key, cb) {
-    var isPrivate = false
+    var isPrivate = false, unbox
     if('object' === typeof key) {
       isPrivate = key.private === true
+      unbox = key.unbox
       key = key.id
     }
     if(ref.isMsg(key))
       return db.keys.get(key, function (err, data) {
+        if(isPrivate && unbox) data = db.unbox(data, unbox)
         if(err) cb(err)
         else cb(null, data && u.reboxValue(data.value, isPrivate))
       })
@@ -174,3 +176,4 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
