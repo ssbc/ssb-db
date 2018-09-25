@@ -55,6 +55,7 @@ module.exports = function (opts) {
 
           console.log('boxed', ary[0].value)
           ssb2.add(ary[0].value, function (err) {
+            if(err) throw err
             ssb2.get({id:pmsg.key, private: true}, function (err, _msg) {
               if(err) throw err
               console.log("LOAD", _msg)
@@ -65,8 +66,10 @@ module.exports = function (opts) {
               t.deepEqual(pmsg2.value, pmsg.value)
 
               ssb2.get({id:pmsg.key, private: true, unbox: unbox_key}, function (err, __msg) {
+                if(err) throw err
                 t.deepEqual(__msg, pmsg.value)
                 ssb2.get(pmsg.key+'?unbox='+unbox_key, function (err, __msg) {
+                  if(err) throw err
                   t.deepEqual(__msg, pmsg.value)
                   t.end()
                 })
