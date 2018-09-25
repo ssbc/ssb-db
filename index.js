@@ -80,7 +80,8 @@ module.exports = function (_db, opts, keys, path) {
       })
     else if(ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
-      return db.get({id: link.link, private: !!link.query.unbox, unbox: link.query.unbox}, cb)
+      console.log("UNBOX:", link)
+      return db.get({id: link.link, private: !!link.query.unbox, unbox: link.query.unbox.replace(/\s/g, '+')}, cb)
     }
     else if(Number.isInteger(key))
       _get(key, cb) //seq
