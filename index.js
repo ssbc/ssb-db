@@ -71,13 +71,18 @@ module.exports = function (_db, opts, keys, path) {
       unbox = key.unbox
       key = key.id
     }
+    console.log(key, ref.isMsg(key), ref.isMsgLink(key))
     if(ref.isMsg(key))
       return db.keys.get(key, function (err, data) {
         if(isPrivate && unbox) data = db.unbox(data, unbox)
         if(err) cb(err)
         else cb(null, data && u.reboxValue(data.value, isPrivate))
       })
-    else if(Number.isInteger(key)) 
+    else if(ref.isMsgLink(key)) {
+      var link = ref.parseLink(key)
+      return db.get({id: link.link, private: !!link.query.unbox, unbox: link.query.unbox}, cb)
+    }
+    else if(Number.isInteger(key))
       _get(key, cb) //seq
     else
       throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
