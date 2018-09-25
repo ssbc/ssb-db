@@ -31,7 +31,7 @@
     "pull-stream": "^3.4.0",
     "ssb-keys": "^7.0.15",
     "ssb-msgs": "^5.0.0",
-    "ssb-ref": "^2.0.0",
+    "ssb-ref": "^2.12.0",
     "ssb-validate": "^3.0.1",
     "typewiselite": "^1.0.0"
   },
