@@ -66,7 +66,10 @@ module.exports = function (opts) {
 
               ssb2.get({id:pmsg.key, private: true, unbox: unbox_key}, function (err, __msg) {
                 t.deepEqual(__msg, pmsg.value)
-                t.end()
+                ssb2.get(pmsg.key+'?unbox='+unbox_key, function (err, __msg) {
+                  t.deepEqual(__msg, pmsg.value)
+                  t.end()
+                })
               })
             })
             })
@@ -178,6 +181,7 @@ module.exports = function (opts) {
 
 if(!module.parent)
   module.exports(require('../defaults'))
+
 
 
 
