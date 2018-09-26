@@ -71,7 +71,7 @@ module.exports = function (_db, opts, keys, path) {
       unbox = key.unbox
       key = key.id
     }
-    console.log(key, ref.isMsg(key), ref.isMsgLink(key))
+
     if(ref.isMsg(key))
       return db.keys.get(key, function (err, data) {
         if(isPrivate && unbox) data = db.unbox(data, unbox)
@@ -80,7 +80,6 @@ module.exports = function (_db, opts, keys, path) {
       })
     else if(ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
-      console.log("UNBOX:", link)
       return db.get({id: link.link, private: !!link.query.unbox, unbox: link.query.unbox.replace(/\s/g, '+')}, cb)
     }
     else if(Number.isInteger(key))
@@ -182,4 +181,6 @@ module.exports = function (_db, opts, keys, path) {
   }
   return db
 }
+
+
 
