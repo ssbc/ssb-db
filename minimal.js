@@ -12,6 +12,7 @@ var box       = ssbKeys.box
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
 var isFeed = require('ssb-ref').isFeed
+var Blobs = require('multiblob')
 
 var isArray = Array.isArray
 function isFunction (f) { return 'function' === typeof f }
@@ -70,8 +71,24 @@ function isString (s) {
   return 'string' === typeof s
 }
 
+function isBlobString (s) {
+  return isString(s) && 0 === s.indexOf('&');
+}
+
+function isBlobContent (c) {
+  return 'object' === typeof c &&'blob' === c.type && isBlobString(c.blob);
+}
+
+function getBlobHash (x) {
+  return x.slice(1)
+}
+
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
+  var blobs = Blobs({
+    dir: path.join(dirname, '..', 'blobs'),
+    alg: 'sha256'
+  })
 
   var main_unboxer = {
     key: function (content) { return ssbKeys.unboxKey(content, keys) },
@@ -95,7 +112,40 @@ module.exports = function (dirname, keys, opts) {
 
   //NOTE: must use db.ready.set(true) at when migration is complete
 
-  var db = Flume(log, false) //false says the database is not ready yet!
+  var db = Flume(log, false, (val, cb) => {
+    if (!isBlobContent(val.value.content)) return cb(null, val)
+
+    pull(
+      blobs.get(getBlobHash(val.value.content.blob)),
+      pull.collect(function (err, bufs) {
+        if (err) {
+          console.warn(
+            `Key: ${val.key}`,
+            `Blob: ${val.value.content.blob}`,
+            err
+          )
+          cb(null, val)
+        } else {
+          try {
+            var contentString = Buffer.concat(bufs)
+            var blobContent = JSON.parse(contentString)
+            val.value.blob = val.value.content.blob
+            val.value.content = blobContent
+            val.value.blobContent = true
+          } catch(e) {
+            console.warn(
+              `Key: ${val.key}`,
+              `Blob: ${val.value.content.blob}`,
+              `Content: ${contentString}`,
+              e
+            )
+          }
+
+          cb(null, val)
+        }
+      })
+    )
+  })
   .use('last', require('./indexes/last')())
 
   var state = V.initial(), ready = false
