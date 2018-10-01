@@ -108,7 +108,7 @@ module.exports = function (dirname, keys, opts) {
 
   //NOTE: must use db.ready.set(true) at when migration is complete
   //false says the database is not ready yet!
-  var db = Flume(log, false, maps ? chainMaps : null)
+  var db = Flume(log, false, maps.length ? chainMaps : null)
   .use('last', require('./indexes/last')())
 
   var state = V.initial(), ready = false
