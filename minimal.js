@@ -95,17 +95,22 @@ module.exports = function (dirname, keys, opts) {
 
   const maps = []
   const chainMaps = (val, cb) => {
-    if (!maps.length) return cb(null, val)
-
-    let idx = -1 // haven't entered the chain yet
-    const next = (err, val) => {
-      idx += 1
-      if (err || idx === maps.length)
-        cb(err, val)
-      else
-        maps[idx](val, next)
+    const mapCount = maps.length
+    if (!mapCount) {
+      return cb(null, val)
+    } else if (mapCount === 1) {
+      maps[0](val, cb)
+    } else {
+      let idx = -1 // haven't entered the chain yet
+      const next = (err, val) => {
+        idx += 1
+        if (err || idx === maps.length)
+          cb(err, val)
+        else
+          maps[idx](val, next)
+      }
+      next(null, val)
     }
-    next(null, val)
   }
 
   //NOTE: must use db.ready.set(true) at when migration is complete
