@@ -205,6 +205,11 @@ This is the recommended way to append messages.
 message is a javascript object. It must be a `{}` object with a `type`
 property that is a string between 3 and 32 chars long.
 
+If `message` has `recps` property which is an array of feed ids, then the message
+content will be encrypted using [private-box](https://github.com/auditdrivencrypto/private-box) to
+those recipients. Any invalid recipients will cause an error, instead of accidentially posting
+a message publically or without a recipient.
+
 #### Feed#id
 
 the id of the feed (which is the feed's public key)
@@ -280,6 +285,7 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
+
 
 
 

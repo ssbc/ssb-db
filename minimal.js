@@ -7,19 +7,40 @@ var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv       = require('obv')
-var _unbox    = require('ssb-keys').unbox
+var ssbKeys   = require('ssb-keys')
+var box       = ssbKeys.box
 var pull      = require('pull-stream')
 var rebox     = require('./util').rebox
+var isFeed = require('ssb-ref').isFeed
 
-function unbox(data, unboxers) {
+var isArray = Array.isArray
+function isFunction (f) { return 'function' === typeof f }
+
+function unbox(data, unboxers, key) {
+  var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var plaintext = unboxers[i](data.value.content, data.value)
+        var unbox = unboxers[i], value
+        if(isFunction(unbox)) {
+          plaintext = unbox(data.value.content, data.value)
+        }
+        else if(!key && unbox.key) {
+          key = unbox.key(data.value.content, data.value)
+        }
+
+        if(key)
+          plaintext = unbox.value(data.value.content, key)
+
         if(plaintext) {
-            data.value.cyphertext = data.value.content
-            data.value.content = plaintext
-            data.value.private = true
-            return data
+            var msg = {}
+            for(var k in data.value)
+              msg[k] = data.value[k]
+
+            msg.cyphertext = data.value.content
+            msg.content = plaintext
+            msg.unbox = key.toString('base64')
+            msg.private = true
+            return {key: data.key, value: msg, timestamp: data.timestamp}
         }
     }
   }
@@ -52,8 +73,11 @@ function isString (s) {
 module.exports = function (dirname, keys, opts) {
   var hmac_key = opts && opts.caps && opts.caps.sign
 
+  var main_unboxer = {
+    key: function (content) { return ssbKeys.unboxKey(content, keys) },
+    value: function (content, key) { return ssbKeys.unboxBody(content, key) }
+  }
 
-  var main_unboxer = function(content) { return _unbox(content, keys); }
   var unboxers = [ main_unboxer ]
 
   var codec = {
@@ -143,10 +167,19 @@ module.exports = function (dirname, keys, opts) {
   })
   db.append = wait(function (opts, cb) {
     try {
+      var content = opts.content, recps = opts.content.recps
+      if(recps) {
+        if(isFeed(recps) || isArray(recps) && recps.every(isFeed) && recps.length > 0) {
+          recps = opts.content.recps = [].concat(recps) //force to array
+          content = opts.content = box(opts.content, recps)
+        }
+        else throw new Error('private message must have all valid recipients, was:'+JSON.stringify(recps))
+      }
+
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys, opts.hmacKey || hmac_key,
-        opts.content,
+        content,
         timestamp()
       )
     }
@@ -175,8 +208,10 @@ module.exports = function (dirname, keys, opts) {
     unboxers.push(unboxer);
   }
 
+  db.unbox = function (data, key) {
+    return unbox(data, unboxers, key)
+  }
+
   return db
 }
-
-
 

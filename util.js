@@ -50,7 +50,7 @@ var reboxValue = exports.reboxValue = function (value, isPrivate) {
   for (var key in value) {
     if (key == 'content')
       o[key] = value.cyphertext || value.content
-    else if (key != 'cyphertext' && key != 'private')
+    else if (key != 'cyphertext' && key != 'private' && key != 'unbox')
       o[key] = value[key]
   }
 
