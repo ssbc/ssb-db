@@ -20,28 +20,28 @@ function unbox(data, unboxers, key) {
   var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var unbox = unboxers[i], value
-        if(isFunction(unbox)) {
-          plaintext = unbox(data.value.content, data.value)
-        }
-        else if(!key && unbox.key) {
-          key = unbox.key(data.value.content, data.value)
-        }
+      var unbox = unboxers[i], value
+      if(isFunction(unbox)) {
+        plaintext = unbox(data.value.content, data.value)
+      }
+      else if(!key && unbox.key) {
+        key = unbox.key(data.value.content, data.value)
+      }
 
-        if(key)
-          plaintext = unbox.value(data.value.content, key)
+      if(key)
+        plaintext = unbox.value(data.value.content, key)
 
-        if(plaintext) {
-            var msg = {}
-            for(var k in data.value)
-              msg[k] = data.value[k]
+      if(plaintext) {
+        var msg = {}
+        for(var k in data.value)
+          msg[k] = data.value[k]
 
-            msg.cyphertext = data.value.content
-            msg.content = plaintext
-            msg.unbox = key.toString('base64')
-            msg.private = true
-            return {key: data.key, value: msg, timestamp: data.timestamp}
-        }
+        msg.cyphertext = data.value.content
+        msg.content = plaintext
+        msg.unbox = key.toString('base64')
+        msg.private = true
+        return {key: data.key, value: msg, timestamp: data.timestamp}
+      }
     }
   }
   return data
@@ -58,9 +58,9 @@ possible, cb when the message is queued.
 write a message, callback once it's definitely written.
 */
 
-function toKeyValueTimestamp(msg) {
+function toKeyValueTimestamp(msg, id) {
   return {
-    key: V.id(msg),
+    key: id ? id : V.id(msg),
     value: msg,
     timestamp: timestamp()
   }
@@ -114,7 +114,7 @@ module.exports = function (dirname, keys, opts) {
     })
   }, function reduce(_, msg) {
     state = V.append(state, hmac_key, msg)
-    state.queue[state.queue.length-1] = toKeyValueTimestamp(state.queue[state.queue.length-1])
+    state.queue[state.queue.length-1] = toKeyValueTimestamp(state.queue[state.queue.length-1], state.feeds[msg.author].id)
     return state
   }, function (_state) {
     return state.queue.length > 1000
@@ -165,6 +165,7 @@ module.exports = function (dirname, keys, opts) {
       else cb(null, toKeyValueTimestamp(msg))
     })
   })
+
   db.append = wait(function (opts, cb) {
     try {
       var content = opts.content, recps = opts.content.recps
@@ -196,14 +197,17 @@ module.exports = function (dirname, keys, opts) {
       })
     })
   })
+
   db.buffer = function () {
     return queue.buffer
   }
+
   db.flush = function (cb) {
     //maybe need to check if there is anything currently writing?
     if(!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
     else flush.push(cb)
   }
+
   db.addUnboxer = function(unboxer) {
     unboxers.push(unboxer);
   }
