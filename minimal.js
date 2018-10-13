@@ -93,9 +93,29 @@ module.exports = function (dirname, keys, opts) {
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
 
-  //NOTE: must use db.ready.set(true) at when migration is complete
+  const maps = []
+  const chainMaps = (val, cb) => {
+    const mapCount = maps.length
+    if (!mapCount) {
+      return cb(null, val)
+    } else if (mapCount === 1) {
+      maps[0](val, cb)
+    } else {
+      let idx = -1 // haven't entered the chain yet
+      const next = (err, val) => {
+        idx += 1
+        if (err || idx === maps.length)
+          cb(err, val)
+        else
+          maps[idx](val, next)
+      }
+      next(null, val)
+    }
+  }
 
-  var db = Flume(log, false) //false says the database is not ready yet!
+  //NOTE: must use db.ready.set(true) at when migration is complete
+  //false says the database is not ready yet!
+  var db = Flume(log, false, chainMaps)
   .use('last', require('./indexes/last')())
 
   var state = V.initial(), ready = false
@@ -210,6 +230,9 @@ module.exports = function (dirname, keys, opts) {
 
   db.unbox = function (data, key) {
     return unbox(data, unboxers, key)
+  }
+  db.addMap = function(fn) {
+    maps.push(fn);
   }
 
   return db
