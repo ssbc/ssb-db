@@ -85,7 +85,7 @@ module.exports = function (dirname, keys, opts) {
       return JSON.stringify(obj, null, 2)
     },
     decode: function (str) {
-      return unbox(JSON.parse(str.toString()), unboxers)
+      return JSON.parse(str.toString())
     },
     buffer: false,
     type: 'ssb'
@@ -93,12 +93,16 @@ module.exports = function (dirname, keys, opts) {
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
 
-  const maps = []
+  const unboxerMap = (data, cb) => {
+    data = db.unbox(data)
+    cb(null, data)
+  }
+
+  const maps = [ unboxerMap ]
+
   const chainMaps = (val, cb) => {
-    const mapCount = maps.length
-    if (!mapCount) {
-      return cb(null, val)
-    } else if (mapCount === 1) {
+    // assumes `maps.length >= 1`
+    if (maps.length === 1) {
       maps[0](val, cb)
     } else {
       let idx = -1 // haven't entered the chain yet
