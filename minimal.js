@@ -56,13 +56,9 @@ function unbox(data, unboxers, key) {
         msg.meta.private = true
         msg.meta.unbox = key.toString('base64')
 
-        // backward-compatibility with previous property name
-        // this property may be deprecated in favor of `msg.meta.original.content`
-        msg.meta.cyphertext = msg.meta.original.content
-
         // backward-compatibility with previous property location
         // this property location may be deprecated in favor of `msg.meta`
-        msg.cyphertext = msg.meta.cyphertext
+        msg.cyphertext = msg.meta.original.content
         msg.private = msg.meta.private
         msg.unbox = msg.meta.unbox
 
@@ -120,9 +116,7 @@ module.exports = function (dirname, keys, opts) {
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
 
   const unboxerMap = (val, cb) => cb(null, db.unbox(val))
-
   const maps = [ unboxerMap ]
-
   const chainMaps = (val, cb) => {
     // assumes `maps.length >= 1`
     if (maps.length === 1) {
