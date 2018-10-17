@@ -93,13 +93,8 @@ module.exports = function (dirname, keys, opts) {
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
 
-  const unboxerMap = (data, cb) => {
-    data = db.unbox(data)
-    cb(null, data)
-  }
-
+  const unboxerMap = (msg, cb) => cb(null, db.unbox(msg))
   const maps = [ unboxerMap ]
-
   const chainMaps = (val, cb) => {
     // assumes `maps.length >= 1`
     if (maps.length === 1) {
