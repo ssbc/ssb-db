@@ -20,28 +20,54 @@ function unbox(data, unboxers, key) {
   var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var unbox = unboxers[i], value
-        if(isFunction(unbox)) {
-          plaintext = unbox(data.value.content, data.value)
-        }
-        else if(!key && unbox.key) {
-          key = unbox.key(data.value.content, data.value)
+      var unbox = unboxers[i], value
+      if(isFunction(unbox)) {
+        plaintext = unbox(data.value.content, data.value)
+      }
+      else if(!key && unbox.key) {
+        key = unbox.key(data.value.content, data.value)
+      }
+
+      if(key)
+        plaintext = unbox.value(data.value.content, key)
+
+      if(plaintext) {
+        var msg = {}
+        for(var k in data.value)
+          msg[k] = data.value[k]
+
+        const original = {
+          content: data.value.content
         }
 
-        if(key)
-          plaintext = unbox.value(data.value.content, key)
-
-        if(plaintext) {
-            var msg = {}
-            for(var k in data.value)
-              msg[k] = data.value[k]
-
-            msg.cyphertext = data.value.content
-            msg.content = plaintext
-            msg.unbox = key.toString('base64')
-            msg.private = true
-            return {key: data.key, value: msg, timestamp: data.timestamp}
+        // set `meta.original.content`
+        if (!msg.meta) {
+          msg.meta = { original }
+        } else if (!msg.meta.original) {
+          msg.meta.original = original
+        } else if (!msg.meta.original.content) {
+          msg.meta.original.content = original.content
         }
+
+        // modify content now that it's saved at `meta.original.content`
+        msg.content = plaintext
+
+        // set meta properties for private messages
+        msg.meta.private = true
+        msg.meta.unbox = key.toString('base64')
+
+        // backward-compatibility with previous property name
+        // this property may be deprecated in favor of `msg.meta.original.content`
+        msg.meta.cyphertext = msg.meta.original.content
+
+        // backward-compatibility with previous property location
+        // this property location may be deprecated in favor of `msg.meta`
+        msg.cyphertext = msg.meta.cyphertext
+        msg.private = msg.meta.private
+        msg.unbox = msg.meta.unbox
+
+        return {key: data.key, value: msg, timestamp: data.timestamp}
+      }
     }
   }
   return data
@@ -93,27 +119,7 @@ module.exports = function (dirname, keys, opts) {
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
 
-  const unboxerMap = (data, cb) => {
-    if (typeof data.value.content === 'string') {
-      const original = data.value
-      const result = db.unbox(data)
-      if (original.content !== result.value.content) {
-        data = result
-        // assumes this is the first map, sets `meta`
-        data.value.meta = {
-          original: {
-            content: original.content
-          },
-          private: result.value.private,
-          cyphertext: result.value.cyphertext,
-          unbox: result.value.unbox
-        }
-      }
-    }
-
-
-    cb(null, data)
-  }
+  const unboxerMap = (val, cb) => cb(null, db.unbox(val))
 
   const maps = [ unboxerMap ]
 
