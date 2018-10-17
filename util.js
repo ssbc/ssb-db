@@ -49,7 +49,7 @@ var reboxValue = exports.reboxValue = function (value, isPrivate) {
   // setting `privateProps` for backward-compatibility
   const privateProps = ['cyphertext', 'private', 'unbox']
   const metaProps = privateProps.concat('meta')
-  const original = value && value.meta && value.meta.original || {}
+  const original = value.meta && value.meta.original || {}
 
   var o = {}
   for (var key in value) {

@@ -280,28 +280,49 @@ If `opts.meta` is unset (default: true) `source, hash, rel` will be left off.
 ### SecureScuttlebutt#addMap (fn)
 
 Add a map function to be applied to all messages on *read*. The `fn` function
-is should expect `(val, cb)`, and must eventually call `cb(err, val)` to finish.
+is should expect `(msg, cb)`, and must eventually call `cb(err, msg)` to finish.
 
 These modifications only change the value being read, but the underlying data is
 never modified. If multiple map functions are added, they are called serially and
-the `val` output by one map function is passed as the input `val` to the next.
+the `msg` output by one map function is passed as the input `msg` to the next.
+
+Additional properties may only be added to `msg.value.meta`, and modifications
+may only be made *after* the original value is saved in `msg.value.meta.original`.
 
 
 ```js
-SecureScuttlebutt.addMap(function (val, cb) {
-  if (val.timestamp % 3 === 0)
-    val.fizz = true
-  if (val.timestamp % 5 === 0)
-    val.buzz = true
-  cb(null, val)
+SecureScuttlebutt.addMap(function (msg, cb) {
+  if (!msg.value.meta) {
+    msg.value.meta = {}
+  }
+
+  if (msg.value.timestamp % 3 === 0)
+    msg.value.meta.fizz = true
+  if (msg.timestamp % 5 === 0)
+    msg.value.meta.buzz = true
+  cb(null, msg)
 })
 
-SecureScuttlebutt.addMap(function (val, cb) {
+SecureScuttlebutt.addMap(function (msg, cb) {
   // This could instead go in the first map function, but it's added as a second
-  // function for demonstration purposes to show that `val` is passed serially.
-  if (val.fizz && val.buzz)
-    val.fizzBuzz = true
-  cb(null, val)
+  // function for demonstration purposes to show that `msg` is passed serially.
+  if (msg.value.meta.fizz && msg.value.meta.buzz) {
+    const original = {
+      content: msg.value.content
+    }
+
+    if (!msg.value.meta.original) {
+      msg.value.meta.original = original
+    } else if (!msg.value.meta.original.content) {
+      msg.value.meta.original.content = original.content
+    }
+
+    msg.value.content = {
+      type: 'post',
+      text: 'fizzBuzz!'
+    }
+  }
+  cb(null, msg)
 })
 ```
 
