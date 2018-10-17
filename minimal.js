@@ -94,7 +94,24 @@ module.exports = function (dirname, keys, opts) {
   var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
 
   const unboxerMap = (data, cb) => {
-    data = db.unbox(data)
+    if (typeof data.value.content === 'string') {
+      const original = data.value
+      const result = db.unbox(data)
+      if (original.content !== result.value.content) {
+        data = result
+        // assumes this is the first map, sets `meta`
+        data.value.meta = {
+          original: {
+            content: original.content
+          },
+          private: result.value.private,
+          cyphertext: result.value.cyphertext,
+          unbox: result.value.unbox
+        }
+      }
+    }
+
+
     cb(null, data)
   }
 

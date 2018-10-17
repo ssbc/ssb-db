@@ -46,12 +46,15 @@ exports.wait = function () {
 var reboxValue = exports.reboxValue = function (value, isPrivate) {
   if (isPrivate === true) return value
 
+  // setting `privateProps` for backward-compatibility
+  const privateProps = ['cyphertext', 'private', 'unbox']
+  const metaProps = privateProps.concat('meta')
+  const original = value && value.meta && value.meta.original || {}
+
   var o = {}
   for (var key in value) {
-    if (key == 'content')
-      o[key] = value.cyphertext || value.content
-    else if (key != 'cyphertext' && key != 'private' && key != 'unbox')
-      o[key] = value[key]
+    if (!metaProps.includes(key))
+      o[key] = original[key] || value[key]
   }
 
   return o
