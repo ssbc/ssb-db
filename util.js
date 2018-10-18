@@ -104,7 +104,7 @@ exports.Format = exports.formatStream = function (keys, values, opts) {
     isPrivate = opts.private === true
     isOriginal = opts.original === true
     if (isPrivate && isOriginal) {
-      cb('the properties `private` and `original` are mutually exclusive')
+      throw new Error('opts.private and opts.original are mutually exclusive')
     }
   }
 
