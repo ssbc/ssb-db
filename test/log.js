@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape      = require('tape')
 var level     = require('level-test')()
@@ -27,7 +28,7 @@ module.exports = function (opts) {
           t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )
@@ -51,7 +52,7 @@ module.exports = function (opts) {
           pull.collect(function (err, ary) {
             if(err) throw err
             t.equal(ary.length, 1)
-            console.log(ary)
+            debug(ary)
             t.end()
           })
         )
@@ -73,7 +74,7 @@ module.exports = function (opts) {
         pull.collect(function (err, ary) {
           if(err) throw err
           t.equal(ary.length, 1)
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )
@@ -95,7 +96,7 @@ module.exports = function (opts) {
           if(err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0], 'string')
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )
@@ -117,7 +118,7 @@ module.exports = function (opts) {
           if(err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0].content.type, 'string')
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )

@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 var createFeed = require('ssb-feed')
 var ssbKeys = require('ssb-keys')
 var timestamp = require('monotonic-timestamp')
@@ -24,7 +25,7 @@ tape('generate fake feed', function (t) {
   while(l--)
     feed.add({type: 'test', text:'hello1', l: l}, function () {})
 
-  console.log('generate', Date.now() - start)
+  debug('generate', Date.now() - start)
   t.end()
 })
 
@@ -49,11 +50,11 @@ tape('populate legacy database', function (t) {
       }
     }), function (err) {
       if(log.length) {
-        console.log(log.length)
+        debug(log.length)
         setTimeout(next)
       }
       else {
-        console.log('legacy-write', Date.now() - start)
+        debug('legacy-write', Date.now() - start)
         t.end()
       }
     })
@@ -66,14 +67,14 @@ tape('migrate', function (t) {
   var flume = require('../db')('/tmp/test-ssb-migration_'+Date.now())
 
   var int = setInterval(function () {
-    console.log(flume.progress)
+    debug(flume.progress)
   },100)
 
   flume.ready(function (isReady) {
     if(isReady) {
-      console.log('ready!', flume.since.value)
-      console.log(flume.progress)
-      console.log('migrate', Date.now() - start)
+      debug('ready!', flume.since.value)
+      debug(flume.progress)
+      debug('migrate', Date.now() - start)
       clearInterval(int)
       t.equal(flume.progress.current, flume.progress.target)
       t.end()
@@ -94,7 +95,7 @@ tape('progress looks right on empty database', function (t) {
 
   flume.ready(function (b) {
     if(b) {
-      console.log('ready?', flume.progress)
+      debug('ready?', flume.progress)
       t.ok(flume.progress, 'progress object is defined')
       t.notOk(flume.progress.migration, 'progress.migration is undefined')
       setTimeout(function () {

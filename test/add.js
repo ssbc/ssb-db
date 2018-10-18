@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
@@ -41,13 +42,13 @@ module.exports = function (opts) {
 
     f.add({type: 'okay'}, function (err, msg, key) {
       if(err) throw err
-      console.log(msg, key)
+      debug(msg, key)
       ssb.get(msg.key, function (err, _msg) {
         if(err) throw err
 
         t.deepEqual(_msg, msg.value)
         f.add({type: 'wtf'}, function (err, msg) {
-          console.log(msg)
+          debug(msg)
           ssb.get(msg.key, function (err, _msg) {
             t.deepEqual(_msg, msg.value)
             t.end()
@@ -59,9 +60,9 @@ module.exports = function (opts) {
 
   tape('log', function (t) {
     pull(ssb.createLogStream({keys: true, values: true}), pull.collect(function (err, ary) {
-      console.log(err, ary)
+      debug(err, ary)
       if(err) throw err
-      console.log(ary)
+      debug(ary)
       t.equal(ary.length, 2)
       t.end()
     }))
@@ -90,7 +91,7 @@ module.exports = function (opts) {
     var ssb = createSSB('test-ssb-sign-cap', opts)
     ssb.createFeed().add({type: 'test', options: opts}, function (err, msg) {
       if(err) throw err
-      console.log(msg)
+      debug(msg)
       t.deepEqual(msg.value.content.options, opts)
       t.end()
     })

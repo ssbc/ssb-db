@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
@@ -35,8 +36,8 @@ module.exports = function (opts) {
         ssb.messagesByType({ type: 'secret', original: true }),
         pull.collect(function (err, ary) {
           if(err) throw err
-          console.log("ALICE", alice.id)
-          console.log('SSB', ssb.id)
+          debug("ALICE", alice.id)
+          debug('SSB', ssb.id)
           var msg = ary[0].value
           var ctxt = msg.content
           var content = ssbKeys.unbox(ctxt, alice.private)
@@ -53,12 +54,12 @@ module.exports = function (opts) {
           t.ok(pmsg)
           t.deepEqual(pmsg.value.content, content2)
 
-          console.log('boxed', ary[0].value)
+          debug('boxed', ary[0].value)
           ssb2.add(ary[0].value, function (err) {
             if(err) throw err
             ssb2.get({id:pmsg.key, private: true}, function (err, _msg) {
               if(err) throw err
-              console.log("LOAD", _msg)
+              debug("LOAD", _msg)
               t.deepEqual(_msg, msg) //not decrypted
               t.equal(typeof _msg.content, 'string')
 //              return t.end()

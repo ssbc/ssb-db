@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
@@ -68,7 +69,7 @@ module.exports = function (opts) {
           if(err) throw err
           reply2 = toKV(reply2)
 
-          console.log("LINKS", {
+          debug("LINKS", {
             dest: msg.key, rel: 'reply',
             meta: false, keys: false, values: true
           })
@@ -146,7 +147,7 @@ module.exports = function (opts) {
         _carol: all(ssb.links({dest: carol.id, source: 'feed'}))
       }) (function (err, r) {
 
-        console.log({
+        debug({
           alice: alice.id,
           bob: bob.id,
           carol: carol.id,

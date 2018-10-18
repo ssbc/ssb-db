@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 var V = require('ssb-validate')
 var tape = require('tape')
 var ssbKeys = require('ssb-keys')
@@ -19,7 +20,7 @@ var db = a = require('../minimal')(dirname)
 db.ready.set(true)
 var MSG
 tape('setup', function (t) {
-  console.log("SETUP:APPEND")
+  debug("SETUP:APPEND")
   a.append({keys: keys, content: {type: 'empty'}}, function (err, msg) {
     if(err) throw err
     MSG = msg
@@ -42,10 +43,10 @@ tape('generate', function (t) {
   var start = Date.now()
   var l = N
   state = V.append(state, null, MSG.value)
-  console.log(state)
+  debug(state)
 
   while(l--) {
-    if(!(l%1000)) console.log(l)
+    if(!(l%1000)) debug(l)
     var keys = K[~~(Math.random()*K.length)]
     var content = {
       date: Date.now(), random: Math.random(), type: 'test'
@@ -58,7 +59,7 @@ tape('generate', function (t) {
     state = V.append(state, null, msg)
     if(state.error) throw explain(err, 'error on generate')
   }
-  console.log('generate', N/((Date.now()-start)/1000))
+  debug('generate', N/((Date.now()-start)/1000))
   t.end()
 })
 
@@ -66,20 +67,20 @@ tape('loads', function (t) {
   var start = Date.now()
   db.since(function (s) {
     k++
-    if(!(k%10)) console.log(j, k, s)
+    if(!(k%10)) debug(j, k, s)
   })
 
   //set j=1 to skip first message, which has already been appended.
   var j = 1, k = 0
   ;(function next () {
     if(j >= state.queue.length) return a.flush(function () {
-      console.log('append', N/((Date.now()-start)/1000))
+      debug('append', N/((Date.now()-start)/1000))
       t.end()
     })
 
     a.queue(state.queue[j], function (err) {
       if(err) throw explain(err, 'queued invalid message')
-      if(!(++j%1000)) console.log(j)
+      if(!(++j%1000)) debug(j)
       if(Math.random() < 0.01)
         setImmediate(next)
       else next()
@@ -106,7 +107,7 @@ tape('read back', function (t) {
       if(err) throw err
       t.equal(_state.queue.length, msgs.length)
 
-      console.log('revalidate', N/((Date.now()-start)/1000))
+      debug('revalidate', N/((Date.now()-start)/1000))
       t.end()
     })
   )

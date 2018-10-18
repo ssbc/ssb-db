@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 
 var tape       = require('tape')
@@ -56,7 +57,7 @@ tape('latest', function (t) {
           return v.id
         })
         t.deepEqual(n.sort(), [alice.id, bob.id, carol.id].sort())
-        console.log(ary)
+        debug(ary)
         t.end()
       })
     )

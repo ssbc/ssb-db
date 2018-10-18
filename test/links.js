@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 
 var tape       = require('tape')
@@ -67,7 +68,7 @@ module.exports = function (opts) {
       pull.collect(function (err, ary) {
         t.notOk(err)
         t.deepEqual(ary, [{source: alice.id, rel: 'yo', dest: alice.id}])
-        console.log(ary)
+        debug(ary)
         t.end()
       })
     )
@@ -106,7 +107,7 @@ module.exports = function (opts) {
   })
 
   tape('realtime', function (t){
-    console.log(from_alice, alice.id)
+    debug(from_alice, alice.id)
     pull(
       db.links({source: alice.id, old: true}),
       pull.collect(function (err, ary) {

@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 var tape = require('tape')
 var cont = require('cont')
 var pull = require('pull-stream')
@@ -44,7 +45,7 @@ module.exports = function (opts) {
             gt: since
           }), function (err, ary) {
             if(err) throw err
-            console.log(ary)
+            debug(ary)
             t.equal(ary.length, 1)
             t.equal(typeof ary[0].key, 'string')
             t.deepEqual(ary[0].value.content, {type: 'foo', foo: 6})

@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
@@ -46,8 +47,8 @@ module.exports = function (opts) {
 
   tape('Message', function (t) {
     var enc = codec.encode(msg)
-    console.log('**** Message ****')
-    console.log(hexpp(enc))
+    debug('**** Message ****')
+    debug(hexpp(enc))
     var o = codec.decode(enc)
     t.deepEqual(o, msg)
     t.end()
@@ -55,8 +56,8 @@ module.exports = function (opts) {
 
   tape('Signed', function (t) {
     var enc = codec.encode(signed)
-    console.log('**** Signed ****')
-    console.log(hexpp(enc))
+    debug('**** Signed ****')
+    debug(hexpp(enc))
     var o = codec.decode(enc)
     t.deepEqual(o, signed)
     t.end()
@@ -78,7 +79,7 @@ module.exports = function (opts) {
         pull.collect(function (err, ary) {
           if(err) throw err
           t.equal(ary.length, 1)
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )

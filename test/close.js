@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 
 'use strict'
 var tape     = require('tape')
@@ -17,7 +18,7 @@ tape('load', function (t) {
   ssb.createFeed().add({type:'whatever'}, function (err, msg) {
     if(err) throw err
   //  t.end()
-    console.log(msg)
+    debug(msg)
     ssb.close(function () {
       t.end()
     })
@@ -30,7 +31,7 @@ tape('reopen', function (t) {
   pull(
     ssb.createLogStream(),
     pull.collect(function (err, ary) {
-      console.log(ary, ssb.since.value)
+      debug(ary, ssb.since.value)
       t.end()
     })
   )

@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
@@ -27,7 +28,7 @@ module.exports = function (opts) {
           t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )
@@ -40,7 +41,7 @@ module.exports = function (opts) {
 
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
-    console.log('add 1'); console.log('add 2');
+    debug('add 1'); debug('add 2');
     var nDrains = 0, nAdds = 2;
     feed.add({type:'msg', value:'hello there!'}, function (err, msg1) {
       if(err) throw err
@@ -49,13 +50,13 @@ module.exports = function (opts) {
         feed.add({type:'msg', value:'message '+nDrains}, function(err, msgX) {
           if(err) throw err
           t.equal(msgX.value.previous, lasthash)
-          console.log(msgX.value.previous, lasthash)
+          debug(msgX.value.previous, lasthash)
           lasthash = msgX.key;
           nAdds++;
-          console.log('add', nAdds);
+          debug('add', nAdds);
           if (err) throw err;
           if (nAdds > 7) {
-            console.log('TIMEOUT');
+            debug('TIMEOUT');
             throw new Error('Should have had 5 drains by now.');
           }
         });
@@ -65,7 +66,7 @@ module.exports = function (opts) {
         ssb.createFeedStream({ tail: true }),
         pull.drain(function (ary) {
           nDrains++;
-          console.log('drain', nDrains)
+          debug('drain', nDrains)
           if (nDrains == 5) {
             t.assert(true);
             t.end()
@@ -83,23 +84,23 @@ module.exports = function (opts) {
 
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
-    console.log('add 1'); console.log('add 2');
+    debug('add 1'); debug('add 2');
     var nDrains = 0, nAdds = 2, l = 7
     feed.add({type:'msg', value:'hello there!'}, function (err, msg1) {
       if(err) throw err
 
       var lasthash = msg1.key
       function addAgain() {
-        console.log('ADD')
+        debug('ADD')
         feed.add({type:'msg', value:'message '+nDrains}, function(err, msgX) {
           t.equal(msgX.value.previous, lasthash)
-          console.log(msgX.value.previous, lasthash)
+          debug(msgX.value.previous, lasthash)
           lasthash = msgX.key;
           nAdds++;
-          console.log('add', nAdds);
+          debug('add', nAdds);
           if (err) throw err;
           if (nAdds > 7) {
- //           console.log('TIMEOUT')
+ //           debug('TIMEOUT')
 //            throw new Error('Should have had 5 drains by now.')
           }
         });
@@ -110,7 +111,7 @@ module.exports = function (opts) {
         ssb.createFeedStream({ tail: true }),
         pull.drain(function (ary) {
           nDrains++;
-          console.log('drain', nDrains)
+          debug('drain', nDrains)
           if (nDrains == 5) {
             t.assert(true);
             t.end()
@@ -134,7 +135,7 @@ module.exports = function (opts) {
           if(err) throw err
           t.equal(ary.length, 1)
           t.ok(typeof ary[0] == 'string')
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )
@@ -155,7 +156,7 @@ module.exports = function (opts) {
           if(err) throw err
           t.equal(ary.length, 1)
           t.ok(typeof ary[0].content.type == 'string')
-          console.log(ary)
+          debug(ary)
           t.end()
         })
       )

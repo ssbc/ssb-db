@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict';
 
 var level     = require('level-test')()
@@ -62,7 +63,7 @@ module.exports = function (opts) {
       pull(ssb.latest(), pull.collect(function (err, ary) {
         if(err) throw err
         delete ary[0].ts
-        console.log(ary)
+        debug(ary)
         t.deepEqual(ary, [
           {id: keys.id, sequence: 8}
         ])
@@ -106,7 +107,7 @@ module.exports = function (opts) {
       ssb.createHistoryStream({ id: id, seq: 1, keys: true }),
       pull.collect(function (err, ary) {
         if(err) throw err
-        console.log(ary)
+        debug(ary)
         t.equal(ary.length, 8)
         t.ok(!!ary[0].key)
         t.ok(!!ary[1].key)
@@ -119,7 +120,7 @@ module.exports = function (opts) {
     pull(
       ssb.createUserStream({id: id, gt: 3, lte: 7, reverse: true}),
       pull.collect(function (err, ary) {
-        console.log('UserStream', ary)
+        debug('UserStream', ary)
         t.equal(ary.length, 4)
         t.equal(ary[3].value.sequence, 4)
         t.equal(ary[2].value.sequence, 5)
@@ -133,7 +134,7 @@ module.exports = function (opts) {
     pull(
       ssb.createHistoryStream({ id: id, values: false }),
       pull.collect(function (err, ary) {
-        console.log(ary)
+        debug(ary)
         t.equal(ary.length, 8)
         ary.forEach(function (v) { t.equal(typeof v, 'string') })
         t.end()
@@ -165,7 +166,7 @@ module.exports = function (opts) {
           setTimeout(function () {
             abortable.abort(err)
           }, 100)
-        console.log(data)
+        debug(data)
       }, function (_err) {
         t.equal(_err, err)
         t.end()

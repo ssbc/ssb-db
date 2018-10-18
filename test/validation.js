@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
@@ -19,7 +20,7 @@ module.exports = function (opts) {
 
   tape('simple', function (t) {
     var keys = generate()
-    console.log('keys', keys)
+    debug('keys', keys)
     var prev
     var messages = [
       prev = create(keys, null, {type: 'init', public: keys.public}),
@@ -36,7 +37,7 @@ module.exports = function (opts) {
 //    var _msg = null
 //    messages.forEach(function (msg) {
 //      validate(msg, function (err) {
-//        console.log('HELLO', hash('HELLLO'))
+//        debug('HELLO', hash('HELLLO'))
 //        if(_msg)
 //          t.deepEqual('%'+hash(codec.encode(_msg)), msg.previous)
 //        _msg = msg
@@ -129,7 +130,7 @@ module.exports = function (opts) {
     for (var i=0; i < 808; i++) str += '1234567890'
     feed.add({ type: 'msg', value: str }, function (err, msg) {
       if(!err) throw new Error('too big was allowed')
-      console.log(err)
+      debug(err)
       feed.add({ type: 'msg', value: 'this ones cool tho' }, function (err) {
         if (err) throw err
         t.end()

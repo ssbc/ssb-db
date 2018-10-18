@@ -1,3 +1,4 @@
+const debug = require("debug")("ssb:secure-scuttlebutt")
 'use strict'
 var tape     = require('tape')
 var level    = require('level-test')()
@@ -23,7 +24,7 @@ module.exports = function (opts) {
       q.push(prev = create(keys, 'msg', {count: l}, prev))
     }
 
-    console.log(q)
+    debug(q)
 
     pull(
       pull.values(q),
@@ -56,7 +57,7 @@ module.exports = function (opts) {
     q.push(q[3])
     q.push(q[4])
 
-    console.log(q)
+    debug(q)
 
     pull(
       pull.values(q),
