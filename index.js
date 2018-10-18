@@ -163,7 +163,7 @@ module.exports = function (_db, opts, keys, path) {
     //will NOT expose private plaintext
     db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
       if(err) cb(err)
-      else cb(null, u.rebox(value))
+      else cb(null, u.originalData(value))
     })
   }
 
