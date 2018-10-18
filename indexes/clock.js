@@ -40,7 +40,7 @@ module.exports = function (db, opts) {
         }),
         //NEVER allow private messages over history stream.
         //createHistoryStream is used for legacy replication.
-        u.Format(keys, values, false)
+        u.Format(keys, values, { original: true })
       )
     }
 
