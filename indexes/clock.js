@@ -55,7 +55,12 @@ module.exports = function (db, opts) {
       opts.keys = false
       opts.values = true
 
-      return pull(index.read(opts), u.Format(keys, values, opts.private === true))
+      const formatOpts = {
+        private: opts.private,
+        original: opts.original
+      }
+
+      return pull(index.read(opts), u.Format(keys, values, formatOpts))
     }
 
     return index

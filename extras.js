@@ -22,7 +22,13 @@ module.exports = function (db, config, keys) {
     var values = opts.values; delete opts.values
     if(opts.gt == null)
       opts.gt = 0
-    return pull(db.time.read(opts), Format(keys, values, opts['private'] === true))
+
+    const formatOpts = {
+      private: opts.private,
+      original: opts.original
+    }
+
+    return pull(db.time.read(opts), Format(keys, values, formatOpts))
   }
 
   //TODO: eventually, this should filter out authors you do not follow.
