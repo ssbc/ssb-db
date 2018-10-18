@@ -108,7 +108,6 @@ exports.Format = exports.formatStream = function (keys, values, opts) {
     }
   }
 
-  if (typeof isPrivate !== 'boolean') throw new Error('isPrivate must be explicit')
 
   let extractData
   let extractValue
