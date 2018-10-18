@@ -32,7 +32,7 @@ module.exports = function (opts) {
       t.notOk(err)
 
       pull(
-        ssb.messagesByType('secret'),
+        ssb.messagesByType({ type: 'secret', original: true }),
         pull.collect(function (err, ary) {
           if(err) throw err
           console.log("ALICE", alice.id)

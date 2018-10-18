@@ -43,11 +43,10 @@ exports.wait = function () {
   }
 }
 
-var reboxValue = exports.reboxValue = function (value, isPrivate) {
-  if (isPrivate === true) return value
-
+const originalValue = exports.originalValue = function (value) {
   // setting `privateProps` for backward-compatibility
   const privateProps = ['cyphertext', 'private', 'unbox']
+
   const metaProps = privateProps.concat('meta')
   const original = value.meta && value.meta.original || {}
 
@@ -60,20 +59,70 @@ var reboxValue = exports.reboxValue = function (value, isPrivate) {
   return o
 }
 
-var rebox = exports.rebox = function (data, isPrivate) {
-  return isPrivate === true ? data : {
-    key: data.key, value: reboxValue(data.value, isPrivate),
+var originalData = exports.originalData = function (data) {
+  return {
+    key: data.key,
+    value: originalValue(data.value),
     timestamp: data.timestamp,
     rts: data.rts
   }
 }
 
-exports.Format =
-exports.formatStream = function (keys, values, isPrivate) {
-  if('boolean' !== typeof isPrivate) throw new Error('isPrivate must be explicit')
-  return Map(function (data) {
-    if(data.sync) return data
-    return keys && values ? rebox(data.value, isPrivate) : keys ? data.value.key : reboxValue(data.value.value, isPrivate)
-  })
+const reboxValue = exports.reboxValue =  function (value, isPrivate) {
+  if (isPrivate === true) return value
+
+  const privateProps = ['cyphertext', 'private', 'unbox']
+
+  var o = {}
+  for (var key in value) {
+    if (key == 'content')
+      o[key] = value.cyphertext || value.content
+    else if (!privateProps.includes(key))
+      o[key] = value[key]
+  }
+
+  return o
 }
 
+var rebox = exports.rebox = function (data, isPrivate) {
+  return isPrivate === true ? data : {
+    key: data.key,
+    value: reboxValue(data.value, isPrivate),
+    timestamp: data.timestamp,
+    rts: data.rts
+  }
+}
+
+exports.Format = exports.formatStream = function (keys, values, opts) {
+  let isPrivate
+  let isOriginal
+
+  if (typeof opts === 'boolean') {
+    // backward-compat with legacy `isPrivate`
+    isPrivate = opts
+  } else {
+    isPrivate = opts.private === true
+    isOriginal = opts.original === true
+    if (isPrivate && isOriginal) {
+      cb('the properties `private` and `original` are mutually exclusive')
+    }
+  }
+
+  if (typeof isPrivate !== 'boolean') throw new Error('isPrivate must be explicit')
+
+  let extractData
+  let extractValue
+
+  if (isOriginal) {
+    extractData = originalData
+    extractValue = originalValue
+  } else {
+    extractData = rebox
+    extractValue = reboxValue
+  }
+
+  return Map(function (data) {
+    if (data.sync) return data
+    return keys && values ? extractData(data.value, isPrivate) : keys ? data.value.key : extractValue(data.value.value, isPrivate)
+  })
+}
