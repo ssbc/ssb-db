@@ -1,4 +1,4 @@
-const debug = require("debug")("ssb:secure-scuttlebutt")
+const debug = require("debug")("ssb:secure-scuttlebutt:test")
 var createFeed = require('ssb-feed')
 var ssbKeys = require('ssb-keys')
 var timestamp = require('monotonic-timestamp')

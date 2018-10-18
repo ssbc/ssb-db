@@ -1,4 +1,4 @@
-const debug = require("debug")("ssb:secure-scuttlebutt")
+const debug = require("debug")("ssb:secure-scuttlebutt:test")
 'use strict';
 
 var level     = require('level-test')()

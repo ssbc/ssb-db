@@ -1,4 +1,5 @@
 'use strict'
+const debug = require('debug')('ssb:secure-scuttlebutt:legacy')
 var pull      = require('pull-stream')
 var pl        = require('pull-level')
 var Live      = require('pull-live')
@@ -45,6 +46,7 @@ module.exports = function (db, flumedb) {
   }
 
   db.createLogStream = Limit(Live(function (opts) {
+    debug('createLogStream(%O)', opts)
     opts = stdopts(opts)
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values

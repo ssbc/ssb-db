@@ -1,3 +1,4 @@
+const debug = require('debug')('ssb:secure-scuttlebutt:extras')
 var pull      = require('pull-stream')
 var ViewLevel = require('flumeview-level')
 var u         = require('./util')
@@ -14,6 +15,7 @@ module.exports = function (db, config, keys) {
     .use('links', require('./indexes/links')())
 
   db.createLogStream = function (opts) {
+    debug('db.createLogStream(%O)', opts)
     opts = stdopts(opts)
     if(opts.raw)
       return db.stream()
@@ -23,9 +25,10 @@ module.exports = function (db, config, keys) {
     if(opts.gt == null)
       opts.gt = 0
 
-    const formatOpts = {
-      private: opts.private,
-      original: opts.original
+    let formatOpts = {}
+
+    if (!opts.private) {
+      formatOpts.original = true
     }
 
     return pull(db.time.read(opts), Format(keys, values, formatOpts))

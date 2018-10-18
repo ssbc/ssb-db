@@ -1,4 +1,4 @@
-const debug = require("debug")("ssb:secure-scuttlebutt")
+const debug = require("debug")("ssb:secure-scuttlebutt:test")
 var tape = require('tape')
 var cont = require('cont')
 var pull = require('pull-stream')

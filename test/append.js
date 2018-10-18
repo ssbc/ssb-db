@@ -1,4 +1,4 @@
-const debug = require("debug")("ssb:secure-scuttlebutt")
+const debug = require("debug")("ssb:secure-scuttlebutt:test")
 var V = require('ssb-validate')
 var tape = require('tape')
 var ssbKeys = require('ssb-keys')

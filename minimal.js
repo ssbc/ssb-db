@@ -10,7 +10,7 @@ var Obv       = require('obv')
 var ssbKeys   = require('ssb-keys')
 var box       = ssbKeys.box
 var pull      = require('pull-stream')
-var rebox     = require('./util').rebox
+var originalData = require('./util').originalData
 var isFeed = require('ssb-ref').isFeed
 
 var isArray = Array.isArray
@@ -149,7 +149,7 @@ module.exports = function (dirname, keys, opts) {
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
-        db.post.set(rebox(data))
+        db.post.set(originalData(data))
       })
       cb(err, v)
     })

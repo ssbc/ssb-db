@@ -1,22 +1,26 @@
+const debug = require('debug')('ssb:secure-scuttlebutt:util')
 var Map = require('pull-stream/throughs/map')
+const console = require('console')
 
-  // opts standardized to work like levelup api
-  function stdopts (opts) {
-    opts = opts || {}
-    opts.keys   = opts.keys   !== false //default keys to true
-    opts.values = opts.values !== false //default values to true
-    return opts
-  }
+// opts standardized to work like levelup api
+function stdopts (opts) {
+  debug('stdopts: %o', opts)
+  opts = opts || {}
+  opts.keys   = opts.keys   !== false //default keys to true
+  opts.values = opts.values !== false //default values to true
+  return opts
+}
 
-  function msgFmt (keys, values, obj) {
-    if (keys && values)
-      return obj
-    if (keys)
-      return obj.key
-    if (values)
-      return obj.value
-    return null // i guess?
-  }
+function msgFmt (keys, values, obj) {
+  debug('msgFmt: %o', opts)
+  if (keys && values)
+    return obj
+  if (keys)
+    return obj.key
+  if (values)
+    return obj.value
+  return null // i guess?
+}
 
 exports.options = stdopts
 exports.format = msgFmt
@@ -94,8 +98,9 @@ var rebox = exports.rebox = function (data, isPrivate) {
 }
 
 exports.Format = exports.formatStream = function (keys, values, opts) {
-  let isPrivate
-  let isOriginal
+  debug('formatStream(keys, values, %o)', opts)
+  let isPrivate = false
+  let isOriginal = false
 
   if (typeof opts === 'boolean') {
     // backward-compat with legacy `isPrivate`

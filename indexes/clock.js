@@ -1,3 +1,4 @@
+const debug = require('debug')('ssb:secure-scuttlebutt:indexes:clock')
 var ref    = require('ssb-ref')
 var path = require('path')
 var pull = require('pull-stream')
@@ -22,6 +23,7 @@ module.exports = function (db, opts) {
     index.methods.createUserStream = 'source'
 
     index.createHistoryStream = function (opts) {
+      debug('createHistoryStream(%O)', opts)
       var opts    = u.options(opts)
       var id      = opts.id
       var seq     = opts.sequence || opts.seq || 0
@@ -45,6 +47,7 @@ module.exports = function (db, opts) {
     }
 
     index.createUserStream = function (opts) {
+      debug('createUserStream(%O)', opts)
       opts = u.options(opts)
       //mutates opts
       ltgt.toLtgt(opts, opts, function (value) {

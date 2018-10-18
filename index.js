@@ -1,5 +1,6 @@
 'use strict';
 
+const debug = require('debug')('ssb:secure-scuttlebutt:index')
 var join      = require('path').join
 var EventEmitter = require('events')
 //var Obv       = require('obv')
@@ -129,6 +130,7 @@ module.exports = function (_db, opts, keys, path) {
   }
 
   db.createRawLogStream = function (opts) {
+    debug('db.createRawLogStream(%O)', opts)
     return db.stream(opts)
   }
 
@@ -163,7 +165,7 @@ module.exports = function (_db, opts, keys, path) {
     //will NOT expose private plaintext
     db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
       if(err) cb(err)
-      else cb(null, u.rebox(value))
+      else cb(null, u.originalData(value))
     })
   }
 
