@@ -35,11 +35,6 @@ module.exports = function (db) {
       opts.keys = true
       opts.values = true
 
-      const formatOpts = {
-        private: opts.private,
-        original: opts.original
-      }
-
       return pull(
         index.read(opts),
         pull.through(item => {
@@ -48,7 +43,7 @@ module.exports = function (db) {
             item.value.rts = item.key[0]
           }
         }),
-        u.Format(keys, values, formatOpts)
+        u.Format(keys, values, opts.original)
       )
     }
 

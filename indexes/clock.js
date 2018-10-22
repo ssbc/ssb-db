@@ -38,9 +38,9 @@ module.exports = function (db, opts) {
           sync: false === (opts && opts.sync),
           limit: limit
         }),
-        //NEVER allow private messages over history stream.
-        //createHistoryStream is used for legacy replication.
-        u.Format(keys, values, { original: true })
+        // NEVER allow private messages over history stream.
+        // createHistoryStream is used for legacy replication.
+        u.Format(keys, values, true)
       )
     }
 
@@ -55,12 +55,7 @@ module.exports = function (db, opts) {
       opts.keys = false
       opts.values = true
 
-      const formatOpts = {
-        private: opts.private,
-        original: opts.original
-      }
-
-      return pull(index.read(opts), u.Format(keys, values, formatOpts))
+      return pull(index.read(opts), u.Format(keys, values, opts.original))
     }
 
     return index

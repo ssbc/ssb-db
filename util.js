@@ -1,22 +1,22 @@
 var Map = require('pull-stream/throughs/map')
 
-  // opts standardized to work like levelup api
-  function stdopts (opts) {
-    opts = opts || {}
-    opts.keys   = opts.keys   !== false //default keys to true
-    opts.values = opts.values !== false //default values to true
-    return opts
-  }
+// opts standardized to work like levelup api
+function stdopts (opts) {
+  opts = opts || {}
+  opts.keys   = opts.keys   !== false //default keys to true
+  opts.values = opts.values !== false //default values to true
+  return opts
+}
 
-  function msgFmt (keys, values, obj) {
-    if (keys && values)
-      return obj
-    if (keys)
-      return obj.key
-    if (values)
-      return obj.value
-    return null // i guess?
-  }
+function msgFmt (keys, values, obj) {
+  if (keys && values)
+    return obj
+  if (keys)
+    return obj.key
+  if (values)
+    return obj.value
+  return null // i guess?
+}
 
 exports.options = stdopts
 exports.format = msgFmt
@@ -44,10 +44,10 @@ exports.wait = function () {
 }
 
 const originalValue = exports.originalValue = function (value) {
-  // setting `privateProps` for backward-compatibility
-  const privateProps = ['cyphertext', 'private', 'unbox']
+  // setting `oldProps` for backward-compatibility with old metadta
+  const oldProps = ['cyphertext', 'private', 'unbox']
 
-  const metaProps = privateProps.concat('meta')
+  const metaProps = oldProps.concat('meta')
   const original = value.meta && value.meta.original || {}
 
   var o = {}
@@ -68,60 +68,21 @@ var originalData = exports.originalData = function (data) {
   }
 }
 
-const reboxValue = exports.reboxValue =  function (value, isPrivate) {
-  if (isPrivate === true) return value
-
-  const privateProps = ['cyphertext', 'private', 'unbox']
-
-  var o = {}
-  for (var key in value) {
-    if (key == 'content')
-      o[key] = value.cyphertext || value.content
-    else if (!privateProps.includes(key))
-      o[key] = value[key]
-  }
-
-  return o
-}
-
-var rebox = exports.rebox = function (data, isPrivate) {
-  return isPrivate === true ? data : {
-    key: data.key,
-    value: reboxValue(data.value, isPrivate),
-    timestamp: data.timestamp,
-    rts: data.rts
-  }
-}
-
-exports.Format = exports.formatStream = function (keys, values, opts) {
-  let isPrivate
-  let isOriginal
-
-  if (typeof opts === 'boolean') {
-    // backward-compat with legacy `isPrivate`
-    isPrivate = opts
-  } else {
-    isPrivate = opts.private === true
-    isOriginal = opts.original === true
-    if (isPrivate && isOriginal) {
-      throw new Error('opts.private and opts.original are mutually exclusive')
-    }
-  }
-
-
-  let extractData
-  let extractValue
+exports.Format = exports.formatStream = function (keys, values, isOriginal) {
+  let extract
 
   if (isOriginal) {
-    extractData = originalData
-    extractValue = originalValue
+    extract = data => {
+      return keys && values ? originalData(data.value) : keys ? data.value.key : originalValue(data.value.value)
+    }
   } else {
-    extractData = rebox
-    extractValue = reboxValue
+    extract = data => {
+      return keys && values ? data.value : keys ? data.value.key : data.value.value
+    }
   }
 
   return Map(function (data) {
     if (data.sync) return data
-    return keys && values ? extractData(data.value, isPrivate) : keys ? data.value.key : extractValue(data.value.value, isPrivate)
+    return extract(data)
   })
 }

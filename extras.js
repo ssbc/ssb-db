@@ -23,13 +23,7 @@ module.exports = function (db, config, keys) {
     if(opts.gt == null)
       opts.gt = 0
 
-    let formatOpts = {}
-    if (!opts.private) {
-      // XXX: API behavior expected by sbot, maybe semantically inconsistent?
-      formatOpts.original = true
-    }
-
-    return pull(db.time.read(opts), Format(keys, values, formatOpts))
+    return pull(db.time.read(opts), Format(keys, values, opts.original))
   }
 
   //TODO: eventually, this should filter out authors you do not follow.

@@ -65,40 +65,35 @@ module.exports = function (_db, opts, keys, path) {
   var _get = db.get
 
   db.get = function (key, cb) {
-    let isPrivate = false
     let isOriginal = false
     let unbox
     if (typeof key === 'object') {
-      isPrivate = key.private === true
       isOriginal = key.original === true
-      if (isPrivate && isOriginal) {
-        throw new Error('secure-scuttlebutt.get: private and original are mutually exclusive')
-      }
       unbox = key.unbox
       key = key.id
     }
 
-    if(ref.isMsg(key))
+    if(ref.isMsg(key)) {
       return db.keys.get(key, function (err, data) {
         if (err) return cb(err)
 
-        if (isPrivate && unbox) {
+        if (unbox) {
           data = db.unbox(data, unbox)
         }
 
         let result
 
         if (isOriginal) {
-          result = data && u.originalValue(data.value)
+          result = result && u.originalValue(data.value)
         } else {
-          result = data && u.reboxValue(data.value, isPrivate)
+          result = data.value
         }
 
         cb(null, result)
       })
-    else if(ref.isMsgLink(key)) {
+    } else if(ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
-      return db.get({id: link.link, private: !!link.query.unbox, unbox: link.query.unbox.replace(/\s/g, '+')}, cb)
+      return db.get({id: link.link, unbox: link.query.unbox.replace(/\s/g, '+')}, cb)
     } else if (Number.isInteger(key)) {
       _get(key, cb) // seq
     } else {
