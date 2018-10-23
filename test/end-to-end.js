@@ -1,15 +1,14 @@
 'use strict'
-var tape     = require('tape')
-var level    = require('level-test')()
+var tape = require('tape')
+var level = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
-var pull     = require('pull-stream')
-var ssbKeys  = require('ssb-keys')
+var pull = require('pull-stream')
+var ssbKeys = require('ssb-keys')
 
 var createFeed = require('ssb-feed')
-var createSSB  = require('./util')
+var createSSB = require('./util')
 
 module.exports = function (opts) {
-
   var alice = ssbKeys.generate()
   var bob = ssbKeys.generate()
   var charles = ssbKeys.generate()
@@ -20,7 +19,6 @@ module.exports = function (opts) {
   var feed = ssb.createFeed(alice)
 
   tape('add encrypted message', function (t) {
-
     var boxed = ssbKeys.box({type: 'secret', okay: true}, [alice.public, bob.public])
 
     ssb.post(function (msg) {
@@ -28,21 +26,21 @@ module.exports = function (opts) {
     })
 
     feed.add(boxed, function (err, msg) {
-      if(err) throw err
+      if (err) throw err
       t.notOk(err)
 
       pull(
         ssb.messagesByType('secret'),
         pull.collect(function (err, ary) {
-          if(err) throw err
-          console.log("ALICE", alice.id)
+          if (err) throw err
+          console.log('ALICE', alice.id)
           console.log('SSB', ssb.id)
           var msg = ary[0].value
           var ctxt = msg.content
           var content = ssbKeys.unbox(ctxt, alice.private)
           t.deepEqual(content, {type: 'secret', okay: true}, 'alice can decrypt')
 
-          //bob can also decrypt
+          // bob can also decrypt
           var content2 = ssbKeys.unbox(ctxt, bob.private)
           t.deepEqual(content, {type: 'secret', okay: true}, 'bob can decrypt')
 
@@ -55,122 +53,114 @@ module.exports = function (opts) {
 
           console.log('boxed', ary[0].value)
           ssb2.add(ary[0].value, function (err) {
-            if(err) throw err
-            ssb2.get({id:pmsg.key, private: true}, function (err, _msg) {
-              if(err) throw err
-              console.log("LOAD", _msg)
-              t.deepEqual(_msg, msg) //not decrypted
+            if (err) throw err
+            ssb2.get({id: pmsg.key, private: true}, function (err, _msg) {
+              if (err) throw err
+              console.log('LOAD', _msg)
+              t.deepEqual(_msg, msg) // not decrypted
               t.equal(typeof _msg.content, 'string')
-//              return t.end()
+              //              return t.end()
               var pmsg2 = ssb2.unbox({value: _msg}, unbox_key)
               t.deepEqual(pmsg2.value, pmsg.value)
 
-              ssb2.get({id:pmsg.key, private: true, unbox: unbox_key}, function (err, __msg) {
-                if(err) throw err
+              ssb2.get({id: pmsg.key, private: true, unbox: unbox_key}, function (err, __msg) {
+                if (err) throw err
                 t.deepEqual(__msg, pmsg.value)
-                ssb2.get(pmsg.key+'?unbox='+unbox_key, function (err, __msg) {
-                  if(err) throw err
+                ssb2.get(pmsg.key + '?unbox=' + unbox_key, function (err, __msg) {
+                  if (err) throw err
                   t.deepEqual(__msg, pmsg.value)
                   t.end()
                 })
               })
             })
-            })
+          })
         })
       )
     })
   })
 
-
   tape('add encrypted message', function (t) {
-
     ssb.post(function (msg) {
       t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
     })
 
-    //secret message sent to self
+    // secret message sent to self
     feed.add({
       recps: feed.id,
-      type: 'secret2', secret: "it's a secret!"
+      type: 'secret2',
+      secret: "it's a secret!"
     }, function (err, msg) {
-      if(err) throw err
+      if (err) throw err
       t.notOk(err)
 
       pull(
         ssb.messagesByType('secret2'),
         pull.collect(function (err, ary) {
-          if(err) throw err
+          if (err) throw err
           t.equal(ary.length, 1)
           var ctxt = ary[0].value.content
 
-          //bob can also decrypt
+          // bob can also decrypt
           var content = ssbKeys.unbox(ctxt, alice.private)
           t.deepEqual(content, {
-            type: 'secret2', secret: "it's a secret!",
+            type: 'secret2',
+            secret: "it's a secret!",
             recps: [alice.id]
           }, 'alice can decrypt')
 
           t.end()
         })
       )
-
     })
-
   })
 
   tape('error on invalid recps', function (t) {
     feed.add({
-      recps: true, type:'invalid'
+      recps: true, type: 'invalid'
     }, function (err) {
       t.ok(err)
       feed.add({
-        recps: [], type:'invalid'
+        recps: [], type: 'invalid'
       }, function (err) {
         t.ok(err)
         feed.add({
-          recps: [feed.id, true], type:'invalid'
+          recps: [feed.id, true], type: 'invalid'
         }, function (err) {
           t.ok(err)
           t.end()
         })
       })
     })
-
   })
 
   tape('retrive already decrypted messages via private: true', function (t) {
-
     pull(
-      ssb.messagesByType({type:'secret', private: true}),
+      ssb.messagesByType({type: 'secret', private: true}),
       pull.collect(function (err, ary) {
-        if(err) throw err
+        if (err) throw err
         var content = ary[0].value.content
         t.deepEqual(content, {type: 'secret', okay: true}, 'alice can decrypt')
 
         t.end()
       })
     )
-
   })
 
-
   tape('test indexes on end-to-end messages', function (t) {
-
-
     feed.add(ssbKeys.box({
       type: 'secret', okay: true
-      }, [alice.public, bob.public]
+    }, [alice.public, bob.public]
     ), function (err, msg) {
       feed.add(ssbKeys.box({
-          type: 'secret', post: 'wow', reply: msg.key
-        }, [alice.public, bob.public]
+        type: 'secret', post: 'wow', reply: msg.key
+      }, [alice.public, bob.public]
       ), function (err, msg2) {
-
         pull(
           ssb.links({dest: msg.key, type: 'msg', keys: false}),
           pull.collect(function (err, ary) {
             t.deepEqual(ary, [{
-              source: msg2.value.author, rel: 'reply',
+              source: msg2.value.author,
+              rel: 'reply',
               dest: msg.key
             }])
             t.end()
@@ -179,22 +169,6 @@ module.exports = function (opts) {
       })
     })
   })
-
 }
 
-if(!module.parent)
-  module.exports(require('../defaults'))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if (!module.parent) { module.exports(require('../defaults')) }

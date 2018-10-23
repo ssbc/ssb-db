@@ -3,7 +3,7 @@ var path = require('path')
 var ltgt = require('ltgt')
 var u = require('../util')
 var pCont = require('pull-cont')
-//var ViewLevel = require('flumeview-level')
+// var ViewLevel = require('flumeview-level')
 var Reduce = require('flumeview-reduce')
 function isNumber (n) {
   return typeof n === 'number'
@@ -14,10 +14,9 @@ function toSeq (latest) {
 }
 
 module.exports = function () {
-
-  //TODO: rewrite as a flumeview-reduce
+  // TODO: rewrite as a flumeview-reduce
   var createIndex = Reduce(1, function (acc, data) {
-    if(!acc) acc = {}
+    if (!acc) acc = {}
     acc[data.value.author] = {id: data.key, sequence: data.value.sequence, ts: data.value.timestamp}
     return acc
   })
@@ -29,8 +28,8 @@ module.exports = function () {
     index.latest = function (opts) {
       return pCont(function (cb) {
         index.get([], function (err, val) {
-          if(err) return cb(err)
-          cb(null, pull.values(Object.keys(val||{}).map(function (author) {
+          if (err) return cb(err)
+          cb(null, pull.values(Object.keys(val || {}).map(function (author) {
             return {id: author, sequence: val[author].sequence, ts: val[author].ts}
           })))
         })
@@ -38,12 +37,5 @@ module.exports = function () {
     }
 
     return index
-
   }
 }
-
-
-
-
-
-

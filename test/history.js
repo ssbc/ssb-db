@@ -1,25 +1,24 @@
-'use strict';
+'use strict'
 
-var level     = require('level-test')()
-var sublevel  = require('level-sublevel/bytewise')
-var pull      = require('pull-stream')
-var tape      = require('tape')
+var level = require('level-test')()
+var sublevel = require('level-sublevel/bytewise')
+var pull = require('pull-stream')
+var tape = require('tape')
 
 var Abortable = require('pull-abortable')
 
-var SSB       = require('../')
+var SSB = require('../')
 var createSSB = require('./util')
 
-var compare   = require('ltgt').compare
-var generate  = require('ssb-keys').generate
+var compare = require('ltgt').compare
+var generate = require('ssb-keys').generate
 
-//create a instance with a feed
-//then have another instance follow it.
+// create a instance with a feed
+// then have another instance follow it.
 
 function rand (n) {
   var a = []
-  while(n--)
-    a.push(Math.random())
+  while (n--) { a.push(Math.random()) }
   return a
 }
 
@@ -29,9 +28,7 @@ function sort (ary) {
   })
 }
 
-
 module.exports = function (opts) {
-
   var create = require('ssb-feed/util').create
 
   var MESSAGE = new Buffer('msg')
@@ -45,7 +42,7 @@ module.exports = function (opts) {
         pull.values(rand(n)),
         pull.asyncMap(function (r, cb) {
           ssb.add(prev =
-            create(keys, 'msg', ''+r, prev), cb)
+            create(keys, 'msg', '' + r, prev), cb)
         }),
         pull.drain(null, cb)
       )
@@ -58,9 +55,9 @@ module.exports = function (opts) {
   var keys, id, keys2, id2
   tape('history', function (t) {
     keys = init(ssb, 7, function (err) {
-      if(err) throw err
+      if (err) throw err
       pull(ssb.latest(), pull.collect(function (err, ary) {
-        if(err) throw err
+        if (err) throw err
         delete ary[0].ts
         console.log(ary)
         t.deepEqual(ary, [
@@ -70,12 +67,12 @@ module.exports = function (opts) {
       }))
     })
 
-    id = keys.id //opts.hash(keys.public)
+    id = keys.id // opts.hash(keys.public)
   })
 
   tape('since', function (t) {
     pull(
-      ssb.createHistoryStream({id: id, seq:1}),
+      ssb.createHistoryStream({id: id, seq: 1}),
       pull.collect(function (err, ary) {
         t.equal(ary.length, 8)
         t.end()
@@ -84,10 +81,9 @@ module.exports = function (opts) {
   })
 
   tape('two keys', function (t) {
-
     keys2 = init(ssb, 4, function (err) {
       pull(ssb.latest(), pull.collect(function (err, ary) {
-        if(err) throw err
+        if (err) throw err
         t.deepEqual(
           sort(ary.map(function (e) { delete e.ts; return e })),
           sort([
@@ -98,14 +94,13 @@ module.exports = function (opts) {
         t.end()
       }))
     })
-
   })
 
   tape('keys & since', function (t) {
     pull(
       ssb.createHistoryStream({ id: id, seq: 1, keys: true }),
       pull.collect(function (err, ary) {
-        if(err) throw err
+        if (err) throw err
         console.log(ary)
         t.equal(ary.length, 8)
         t.ok(!!ary[0].key)
@@ -157,14 +152,15 @@ module.exports = function (opts) {
 
     pull(
       ssb.createHistoryStream({
-        id: id, keys: false, live: true,
+        id: id, keys: false, live: true
       }),
       abortable,
       pull.through(function (data) {
-        if(++i == 8)
+        if (++i == 8) {
           setTimeout(function () {
             abortable.abort(err)
           }, 100)
+        }
         console.log(data)
       }, function (_err) {
         t.equal(_err, err)
@@ -174,17 +170,15 @@ module.exports = function (opts) {
         t.equal(ary.length, 8)
       })
     )
-
   })
 
   tape('createHistoryStream with limit', function (t) {
-
     pull(
       ssb.createHistoryStream({
         id: id, keys: false, limit: 5
       }),
       pull.collect(function (err, ary) {
-        if(err) throw err
+        if (err) throw err
         t.equal(ary.length, 5)
         t.end()
       })
@@ -192,6 +186,4 @@ module.exports = function (opts) {
   })
 }
 
-if(!module.parent)
-  module.exports(require('../defaults'))
-
+if (!module.parent) { module.exports(require('../defaults')) }

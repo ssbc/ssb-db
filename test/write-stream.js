@@ -1,11 +1,10 @@
 'use strict'
-var tape     = require('tape')
-var level    = require('level-test')()
+var tape = require('tape')
+var level = require('level-test')()
 var sublevel = require('level-sublevel/bytewise')
-var pull     = require('pull-stream')
-var ssbKeys  = require('ssb-keys')
-var createSSB  = require('./util')
-
+var pull = require('pull-stream')
+var ssbKeys = require('ssb-keys')
+var createSSB = require('./util')
 
 module.exports = function (opts) {
   var ssb = createSSB('test-ssb-feed')
@@ -19,7 +18,7 @@ module.exports = function (opts) {
     var q = [init]
 
     var l = 5
-    while(l--) {
+    while (l--) {
       q.push(prev = create(keys, 'msg', {count: l}, prev))
     }
 
@@ -30,18 +29,16 @@ module.exports = function (opts) {
       pull.asyncMap(function (data, cb) {
         setTimeout(function () {
           cb(null, data)
-        }, ~~(Math.random()*500))
+        }, ~~(Math.random() * 500))
       }),
       ssb.createWriteStream(function (err) {
-        if(err) throw err
+        if (err) throw err
         t.end()
       })
     )
-
   })
 
   tape('write-stream, overwrite', function (t) {
-
     var keys = ssbKeys.generate()
 
     var prev
@@ -49,7 +46,7 @@ module.exports = function (opts) {
     var q = [init]
 
     var l = 5
-    while(l--) {
+    while (l--) {
       q.push(prev = create(keys, 'msg', {count: l}, prev))
     }
 
@@ -63,24 +60,14 @@ module.exports = function (opts) {
       pull.asyncMap(function (data, cb) {
         setTimeout(function () {
           cb(null, data)
-        }, ~~(Math.random()*500))
+        }, ~~(Math.random() * 500))
       }),
       ssb.createWriteStream(function (err) {
-        if(err) throw err
+        if (err) throw err
         t.end()
       })
     )
-
   })
-
-
 }
 
-if(!module.parent)
-  module.exports(require('../defaults'))
-
-
-
-
-
-
+if (!module.parent) { module.exports(require('../defaults')) }

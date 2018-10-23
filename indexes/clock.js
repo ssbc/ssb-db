@@ -1,52 +1,50 @@
-var ref    = require('ssb-ref')
+var ref = require('ssb-ref')
 var path = require('path')
 var pull = require('pull-stream')
 var ltgt = require('ltgt')
-//53 bit integer
-var MAX_INT  = 0x1fffffffffffff
+// 53 bit integer
+var MAX_INT = 0x1fffffffffffff
 var u = require('../util')
 
 var ViewLevel = require('flumeview-level')
 
 module.exports = function (db, opts) {
-
   var createIndex = ViewLevel(2, function (data) {
     return [[data.value.author, data.value.sequence]]
   })
 
   return function (log, name) {
-
     var index = createIndex(log, name)
 
     index.methods.createHistoryStream = 'source'
     index.methods.createUserStream = 'source'
 
     index.createHistoryStream = function (opts) {
-      var opts    = u.options(opts)
-      var id      = opts.id
-      var seq     = opts.sequence || opts.seq || 0
-      var limit   = opts.limit
+      var opts = u.options(opts)
+      var id = opts.id
+      var seq = opts.sequence || opts.seq || 0
+      var limit = opts.limit
       var keys = opts.keys
       var values = opts.values
       return pull(
         index.read({
-          gte:  [id, seq],
-          lte:  [id, MAX_INT],
+          gte: [id, seq],
+          lte: [id, MAX_INT],
           live: opts && opts.live,
           old: opts && opts.old,
           keys: false,
-          sync: false === (opts && opts.sync),
+          sync: (opts && opts.sync) === false,
           limit: limit
         }),
-        //NEVER allow private messages over history stream.
-        //createHistoryStream is used for legacy replication.
+        // NEVER allow private messages over history stream.
+        // createHistoryStream is used for legacy replication.
         u.Format(keys, values, false)
       )
     }
 
     index.createUserStream = function (opts) {
       opts = u.options(opts)
-      //mutates opts
+      // mutates opts
       ltgt.toLtgt(opts, opts, function (value) {
         return [opts.id, value]
       }, u.lo, u.hi)
@@ -59,7 +57,5 @@ module.exports = function (db, opts) {
     }
 
     return index
-
   }
 }
-

@@ -1,13 +1,13 @@
 'use strict'
 
-var tape       = require('tape')
-var level      = require('level-test')()
-var sublevel   = require('level-sublevel/bytewise')
-var pull       = require('pull-stream')
-var ssbKeys    = require('ssb-keys')
+var tape = require('tape')
+var level = require('level-test')()
+var sublevel = require('level-sublevel/bytewise')
+var pull = require('pull-stream')
+var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
-var cont       = require('cont')
-var createSSB  = require('./util')
+var cont = require('cont')
+var createSSB = require('./util')
 
 function cmpstr (a, b) {
   return a < b ? -1 : a === b ? 0 : 1
@@ -36,7 +36,6 @@ module.exports = function (opts) {
   )
 
   tape('initialize', function (t) {
-
     cont.para([
       alice.add({type: 'yo!', yo: alice.id}),
       alice.add({type: 'contact', follow: bob.id, okay: true}),
@@ -52,12 +51,9 @@ module.exports = function (opts) {
         t.notOk(err); t.end()
       })
     })
-
   })
 
-
   tape('query only rel type', function (t) {
-    
     pull(
       db.links({rel: 'yo'}),
       pull.through(function (data) {
@@ -74,7 +70,7 @@ module.exports = function (opts) {
   })
 
   function createTest (t) {
-    return function test(name, query, results) {
+    return function test (name, query, results) {
       t.test(name, function (t) {
         pull(
           db.links(query),
@@ -95,7 +91,7 @@ module.exports = function (opts) {
       source: bob.id,
       rel: 'mentions',
       dest: msgs[2].key,
-      key: msgs[4].key,
+      key: msgs[4].key
     }
     test('equal, query dest: %',
       {dest: '%'}, [mention])
@@ -105,12 +101,12 @@ module.exports = function (opts) {
       {dest: msgs[2].key, rel: 'mentions'}, [mention])
   })
 
-  tape('realtime', function (t){
+  tape('realtime', function (t) {
     console.log(from_alice, alice.id)
     pull(
       db.links({source: alice.id, old: true}),
       pull.collect(function (err, ary) {
-        if(err) throw err
+        if (err) throw err
         t.equal(ary.length, 3)
         t.equal(from_alice.length, 3)
         t.deepEqual(from_alice.sort(compare), ary.sort(compare))
@@ -126,8 +122,11 @@ module.exports = function (opts) {
       db.links({old: false, live: true, values: true}),
       pull.drain(function (data) {
         t.deepEqual(data,
-          {key: msg.key, value: msg.value,
-            source: alice.id, dest: bob.id, rel: 'foo'})
+          {key: msg.key,
+            value: msg.value,
+            source: alice.id,
+            dest: bob.id,
+            rel: 'foo'})
         t.end()
       })
     )
@@ -137,11 +136,6 @@ module.exports = function (opts) {
       t.error(err, 'publish')
     })
   })
-
 }
 
-if(!module.parent)
-  module.exports(require('../defaults'))
-
-
-
+if (!module.parent) { module.exports(require('../defaults')) }

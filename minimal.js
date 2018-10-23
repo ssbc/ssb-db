@@ -2,46 +2,42 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-//var codec = require('flumecodec/json')
+// var codec = require('flumecodec/json')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
-var Obv       = require('obv')
-var ssbKeys   = require('ssb-keys')
-var box       = ssbKeys.box
-var pull      = require('pull-stream')
-var rebox     = require('./util').rebox
+var Obv = require('obv')
+var ssbKeys = require('ssb-keys')
+var box = ssbKeys.box
+var rebox = require('./util').rebox
 var isFeed = require('ssb-ref').isFeed
 
 var isArray = Array.isArray
-function isFunction (f) { return 'function' === typeof f }
+function isFunction (f) { return typeof f === 'function' }
 
-function unbox(data, unboxers, key) {
-  var plaintext
-  if(data && isString(data.value.content)) {
-    for(var i = 0;i < unboxers.length;i++) {
-        var unbox = unboxers[i], value
-        if(isFunction(unbox)) {
-          plaintext = unbox(data.value.content, data.value)
-        }
-        else if(!key && unbox.key) {
-          key = unbox.key(data.value.content, data.value)
-        }
+function unbox (data, unboxers, key) {
+  let plaintext
+  if (data && isString(data.value.content)) {
+    for (let i = 0; i < unboxers.length; i++) {
+      const unbox = unboxers[i]
+      if (isFunction(unbox)) {
+        plaintext = unbox(data.value.content, data.value)
+      } else if (!key && unbox.key) {
+        key = unbox.key(data.value.content, data.value)
+      }
 
-        if(key)
-          plaintext = unbox.value(data.value.content, key)
+      if (key) { plaintext = unbox.value(data.value.content, key) }
 
-        if(plaintext) {
-            var msg = {}
-            for(var k in data.value)
-              msg[k] = data.value[k]
+      if (plaintext) {
+        var msg = {}
+        for (var k in data.value) { msg[k] = data.value[k] }
 
-            msg.cyphertext = data.value.content
-            msg.content = plaintext
-            msg.unbox = key.toString('base64')
-            msg.private = true
-            return {key: data.key, value: msg, timestamp: data.timestamp}
-        }
+        msg.cyphertext = data.value.content
+        msg.content = plaintext
+        msg.unbox = key.toString('base64')
+        msg.private = true
+        return {key: data.key, value: msg, timestamp: data.timestamp}
+      }
     }
   }
   return data
@@ -58,7 +54,7 @@ possible, cb when the message is queued.
 write a message, callback once it's definitely written.
 */
 
-function toKeyValueTimestamp(msg) {
+function toKeyValueTimestamp (msg) {
   return {
     key: V.id(msg),
     value: msg,
@@ -67,18 +63,18 @@ function toKeyValueTimestamp(msg) {
 }
 
 function isString (s) {
-  return 'string' === typeof s
+  return typeof s === 'string'
 }
 
 module.exports = function (dirname, keys, opts) {
-  var hmac_key = opts && opts.caps && opts.caps.sign
+  var hmacKey = opts && opts.caps && opts.caps.sign
 
-  var main_unboxer = {
+  var mainUnboxer = {
     key: function (content) { return ssbKeys.unboxKey(content, keys) },
     value: function (content, key) { return ssbKeys.unboxBody(content, key) }
   }
 
-  var unboxers = [ main_unboxer ]
+  var unboxers = [ mainUnboxer ]
 
   var codec = {
     encode: function (obj) {
@@ -91,7 +87,7 @@ module.exports = function (dirname, keys, opts) {
     type: 'ssb'
   }
 
-  var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
+  var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize: 1024 * 16, codec: codec})
 
   const maps = []
   const chainMaps = (val, cb) => {
@@ -104,27 +100,26 @@ module.exports = function (dirname, keys, opts) {
       let idx = -1 // haven't entered the chain yet
       const next = (err, val) => {
         idx += 1
-        if (err || idx === maps.length)
-          cb(err, val)
-        else
-          maps[idx](val, next)
+        if (err || idx === maps.length) { cb(err, val) } else { maps[idx](val, next) }
       }
       next(null, val)
     }
   }
 
-  //NOTE: must use db.ready.set(true) at when migration is complete
-  //false says the database is not ready yet!
+  // NOTE: must use db.ready.set(true) at when migration is complete
+  // false says the database is not ready yet!
   var db = Flume(log, false, chainMaps)
-  .use('last', require('./indexes/last')())
+    .use('last', require('./indexes/last')())
 
-  var state = V.initial(), ready = false
-  var waiting = [], flush = []
+  let state = V.initial()
+  let ready = false
+  let waiting = []
+  let flush = []
 
   var append = db.rawAppend = db.append
   db.post = Obv()
   var queue = AsyncWrite(function (_, cb) {
-    var batch = state.queue//.map(toKeyValueTimestamp)
+    var batch = state.queue// .map(toKeyValueTimestamp)
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
@@ -132,9 +127,9 @@ module.exports = function (dirname, keys, opts) {
       })
       cb(err, v)
     })
-  }, function reduce(_, msg) {
-    state = V.append(state, hmac_key, msg)
-    state.queue[state.queue.length-1] = toKeyValueTimestamp(state.queue[state.queue.length-1])
+  }, function reduce (_, msg) {
+    state = V.append(state, hmacKey, msg)
+    state.queue[state.queue.length - 1] = toKeyValueTimestamp(state.queue[state.queue.length - 1])
     return state
   }, function (_state) {
     return state.queue.length > 1000
@@ -143,74 +138,78 @@ module.exports = function (dirname, keys, opts) {
   }, 10)
 
   queue.onDrain = function () {
-    if(state.queue.length == 0) {
-      var l = flush.length;
-      for (var i = 0; i < l; ++i)
-        flush[i]()
+    if (state.queue.length === 0) {
+      var l = flush.length
+      for (var i = 0; i < l; ++i) { flush[i]() }
       flush = flush.slice(l)
     }
   }
 
   db.last.get(function (err, last) {
-    //copy to so we avoid weirdness, because this object
-    //tracks the state coming in to the database.
-    for(var k in last) {
+    if (err) throw new Error(err)
+
+    // copy to so we avoid weirdness, because this object
+    // tracks the state coming in to the database.
+    for (var k in last) {
       state.feeds[k] = {
         id: last[k].id,
-        timestamp: last[k].ts||last[k].timestamp,
+        timestamp: last[k].ts || last[k].timestamp,
         sequence: last[k].sequence,
         queue: []
       }
     }
     ready = true
 
-    var l = waiting.length;
-    for (var i = 0; i < l; ++i)
-      waiting[i]()
+    var l = waiting.length
+    for (var i = 0; i < l; ++i) { waiting[i]() }
     waiting = waiting.slice(l)
   })
 
-  function wait(fn) {
+  function wait (fn) {
     return function (value, cb) {
-      if(ready) fn(value, cb)
-      else waiting.push(function () {
-        fn(value, cb)
-      })
+      if (ready) fn(value, cb)
+      else {
+        waiting.push(function () {
+          fn(value, cb)
+        })
+      }
     }
   }
 
   db.queue = wait(function (msg, cb) {
     queue(msg, function (err) {
-      if(err) cb(err)
+      if (err) cb(err)
       else cb(null, toKeyValueTimestamp(msg))
     })
   })
+
+  const isRecps = recps => isArray(recps) && recps.every(isFeed) && recps.length > 0
+
   db.append = wait(function (opts, cb) {
     try {
-      var content = opts.content, recps = opts.content.recps
-      if(recps) {
-        if(isFeed(recps) || isArray(recps) && recps.every(isFeed) && recps.length > 0) {
-          recps = opts.content.recps = [].concat(recps) //force to array
+      let content = opts.content
+      let recps = opts.content.recps
+      if (recps) {
+        if (isFeed(recps) || isRecps(recps)) {
+          recps = opts.content.recps = [].concat(recps) // force to array
           content = opts.content = box(opts.content, recps)
-        }
-        else throw new Error('private message must have all valid recipients, was:'+JSON.stringify(recps))
+        } else throw new Error('private message must have all valid recipients, was:' + JSON.stringify(recps))
       }
 
       var msg = V.create(
         state.feeds[opts.keys.id],
-        opts.keys, opts.hmacKey || hmac_key,
+        opts.keys, opts.hmac_key || hmacKey,
         content,
         timestamp()
       )
-    }
-    catch (err) {
+    } catch (err) {
       cb(err)
       return
     }
 
     queue(msg, function (err) {
-      if(err) return cb(err)
-      var data = state.queue[state.queue.length-1]
+      if (err) return cb(err)
+      var data = state.queue[state.queue.length - 1]
       flush.push(function () {
         cb(null, data)
       })
@@ -219,22 +218,24 @@ module.exports = function (dirname, keys, opts) {
   db.buffer = function () {
     return queue.buffer
   }
+
+  const isWriting = queue => queue.buffer.queue.length || queue.writing
+
   db.flush = function (cb) {
-    //maybe need to check if there is anything currently writing?
-    if(!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
+    // maybe need to check if there is anything currently writing?
+    if (!queue.buffer || !isWriting(queue)) cb()
     else flush.push(cb)
   }
-  db.addUnboxer = function(unboxer) {
-    unboxers.push(unboxer);
+  db.addUnboxer = function (unboxer) {
+    unboxers.push(unboxer)
   }
 
   db.unbox = function (data, key) {
     return unbox(data, unboxers, key)
   }
-  db.addMap = function(fn) {
-    maps.push(fn);
+  db.addMap = function (fn) {
+    maps.push(fn)
   }
 
   return db
 }
-
