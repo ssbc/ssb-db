@@ -277,6 +277,33 @@ If `opts.meta` is unset (default: true) `source, hash, rel` will be left off.
 > have to scan all the links from source, and then filter by dest.
 > your query will be more efficient if you also provide `rel`.
 
+### SecureScuttlebutt#addMap (fn)
+
+Add a map function to be applied to all messages on *read*. The `fn` function
+is should expect `(val, cb)`, and must eventually call `cb(err, val)` to finish.
+
+These modifications only change the value being read, but the underlying data is
+never modified. If multiple map functions are added, they are called serially and
+the `val` output by one map function is passed as the input `val` to the next.
+
+
+```js
+SecureScuttlebutt.addMap(function (val, cb) {
+  if (val.timestamp % 3 === 0)
+    val.fizz = true
+  if (val.timestamp % 5 === 0)
+    val.buzz = true
+  cb(null, val)
+})
+
+SecureScuttlebutt.addMap(function (val, cb) {
+  // This could instead go in the first map function, but it's added as a second
+  // function for demonstration purposes to show that `val` is passed serially.
+  if (val.fizz && val.buzz)
+    val.fizzBuzz = true
+  cb(null, val)
+})
+```
 
 ## Stability
 

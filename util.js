@@ -60,7 +60,8 @@ var reboxValue = exports.reboxValue = function (value, isPrivate) {
 var rebox = exports.rebox = function (data, isPrivate) {
   return isPrivate === true ? data : {
     key: data.key, value: reboxValue(data.value, isPrivate),
-    timestamp: data.timestamp
+    timestamp: data.timestamp,
+    rts: data.rts
   }
 }
 
