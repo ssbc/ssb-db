@@ -179,6 +179,3 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
-
-
-

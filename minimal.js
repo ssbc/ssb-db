@@ -58,14 +58,6 @@ possible, cb when the message is queued.
 write a message, callback once it's definitely written.
 */
 
-function toKeyValueTimestamp(msg, id) {
-  return {
-    key: id ? id : V.id(msg),
-    value: msg,
-    timestamp: timestamp()
-  }
-}
-
 function isString (s) {
   return 'string' === typeof s
 }
@@ -124,7 +116,7 @@ module.exports = function (dirname, keys, opts) {
   var append = db.rawAppend = db.append
   db.post = Obv()
   var queue = AsyncWrite(function (_, cb) {
-    var batch = state.queue//.map(toKeyValueTimestamp)
+    var batch = state.queue
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
@@ -133,9 +125,7 @@ module.exports = function (dirname, keys, opts) {
       cb(err, v)
     })
   }, function reduce(_, msg) {
-    state = V.append(state, hmac_key, msg)
-    state.queue[state.queue.length-1] = toKeyValueTimestamp(state.queue[state.queue.length-1], state.feeds[msg.author].id)
-    return state
+    return V.append(state, hmac_key, msg)
   }, function (_state) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
@@ -181,8 +171,9 @@ module.exports = function (dirname, keys, opts) {
 
   db.queue = wait(function (msg, cb) {
     queue(msg, function (err) {
+      var data = state.queue[state.queue.length-1]
       if(err) cb(err)
-      else cb(null, toKeyValueTimestamp(msg))
+      else cb(null, data)
     })
   })
 
