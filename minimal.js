@@ -20,7 +20,7 @@ function unbox(data, unboxers, key) {
   var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-      var unbox = unboxers[i], value
+      var unbox = unboxers[i]
       if(isFunction(unbox)) {
         plaintext = unbox(data.value.content, data.value)
       }
