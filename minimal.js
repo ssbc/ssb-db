@@ -2,7 +2,6 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-//var codec = require('flumecodec/json')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
@@ -82,10 +81,10 @@ module.exports = function (dirname, keys, opts) {
 
   var codec = {
     encode: function (obj) {
-      return JSON.stringify(obj, null, 2)
+      return JSON.stringify(obj)
     },
     decode: function (str) {
-      return unbox(JSON.parse(str.toString()), unboxers)
+      return unbox(JSON.parse(str), unboxers)
     },
     buffer: false,
     type: 'ssb'
