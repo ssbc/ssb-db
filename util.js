@@ -44,19 +44,21 @@ exports.wait = function () {
 }
 
 const originalValue = exports.originalValue = function (value) {
-  // setting `oldProps` for backward-compatibility with old metadta
-  const oldProps = ['cyphertext', 'private', 'unbox']
-
-  const metaProps = oldProps.concat('meta')
-  const original = value.meta && value.meta.original || {}
-
-  var o = {}
-  for (var key in value) {
-    if (!metaProps.includes(key))
-      o[key] = original[key] || value[key]
+  if (value.meta) {
+    if (value.meta.original) {
+      Object.entries(value.meta.original).forEach(entry => {
+        value[entry[0]] = entry[1]
+      })
+    }
+    delete value.meta
   }
 
-  return o
+  // Delete unboxer metadata, which exists for backward-compatibility.
+  delete value.cyphertext
+  delete value.private
+  delete value.unbox
+
+  return value
 }
 
 var originalData = exports.originalData = function (data) {
