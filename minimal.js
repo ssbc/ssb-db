@@ -10,7 +10,7 @@ var Obv       = require('obv')
 var ssbKeys   = require('ssb-keys')
 var box       = ssbKeys.box
 var pull      = require('pull-stream')
-var originalData = require('./util').originalData
+var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
 
 var isArray = Array.isArray
@@ -36,18 +36,8 @@ function unbox(data, unboxers, key) {
         for(var k in data.value)
           msg[k] = data.value[k]
 
-        const original = {
-          content: data.value.content
-        }
-
         // set `meta.original.content`
-        if (!msg.meta) {
-          msg.meta = { original }
-        } else if (!msg.meta.original) {
-          msg.meta.original = original
-        } else if (!msg.meta.original.content) {
-          msg.meta.original.content = original.content
-        }
+        msg.meta = u.metaBackup(msg, 'content')
 
         // modify content now that it's saved at `meta.original.content`
         msg.content = plaintext
@@ -138,7 +128,7 @@ module.exports = function (dirname, keys, opts) {
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
-        db.post.set(originalData(data))
+        db.post.set(u.originalData(data))
       })
       cb(err, v)
     })

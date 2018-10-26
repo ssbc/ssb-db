@@ -88,3 +88,37 @@ exports.Format = exports.formatStream = function (keys, values, isOriginal) {
     return extract(data)
   })
 }
+
+/**
+ * Backs up a value from `msg.value` to `msg.value.meta.original` in a simple
+ * and idiomatic way. This works regardless of whether `msg.value.meta` exists
+ * and should be used any time values are modified with `addMap()`.
+ *
+ * @param {object} msgValue - the `value` property of a message (usually `msg.value`)
+ * @param {string} property - name property that should be backed up
+ *
+ * @example
+ * metaBackup({ type: 'post', content: 'hello world', 'content')
+ * // => { meta: { original: { content: 'hello world' } } }
+ *
+ * @example
+ * var msg = { value: { type: 'post', content: 'bar' } }
+ * msg.value.meta = metaBackup(msg.value, 'content')
+ * msg.value.content = 'foo was here'
+ * msg.value.meta.original.content // => 'bar'
+ *
+ * @returns {object} Returns a `meta` object with the property backed up.
+ */
+exports.metaBackup = (msgValue, property) => {
+  const original = { [property]: msgValue[property] }
+
+  if (!msgValue.meta) {
+    msgValue.meta = { original }
+  } else if (!msgValue.meta.original) {
+    msgValue.meta.original = original
+  } else if (!msgValue.meta.original[property]) {
+    msgValue.meta.original[property] = original[property]
+  }
+
+  return msgValue.meta
+}

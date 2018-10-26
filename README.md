@@ -303,19 +303,13 @@ SecureScuttlebutt.addMap(function (msg, cb) {
   cb(null, msg)
 })
 
+const metaBackup = require('secure-scuttlebutt/util').metaBackup
+
 SecureScuttlebutt.addMap(function (msg, cb) {
   // This could instead go in the first map function, but it's added as a second
   // function for demonstration purposes to show that `msg` is passed serially.
   if (msg.value.meta.fizz && msg.value.meta.buzz) {
-    const original = {
-      content: msg.value.content
-    }
-
-    if (!msg.value.meta.original) {
-      msg.value.meta.original = original
-    } else if (!msg.value.meta.original.content) {
-      msg.value.meta.original.content = original.content
-    }
+    msg.meta = metaBackup(msg.value, 'content')
 
     msg.value.content = {
       type: 'post',
