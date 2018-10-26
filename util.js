@@ -43,6 +43,17 @@ exports.wait = function () {
   }
 }
 
+/**
+ * Remove metadata from a message value and replace it with the original
+ * content (if any) found in `value.meta.original`. This also deletes the
+ * deprecated `value.private` and such, which still exists for backward-compat.
+ *
+ * @param {object} data - `value` property from message object
+ *
+ * @todo Delete unboxer metadata, which exists for backward-compatibility.
+ *
+ * @returns {object} the original message value, extracted from `value.meta.original`
+ */
 const originalValue = exports.originalValue = function (value) {
   if (value.meta) {
     if (value.meta.original) {
@@ -53,7 +64,6 @@ const originalValue = exports.originalValue = function (value) {
     delete value.meta
   }
 
-  // Delete unboxer metadata, which exists for backward-compatibility.
   delete value.cyphertext
   delete value.private
   delete value.unbox
@@ -61,15 +71,36 @@ const originalValue = exports.originalValue = function (value) {
   return value
 }
 
+/**
+ * Remove metadata from messages and return *only* the original message, ready
+ * for replication or cryptographic verification.
+ *
+ * @param {object} data - message object with `key` and `value` properties
+ *
+ * @returns {object} the original data, extracted from `data.value.meta.original`
+ */
 var originalData = exports.originalData = function (data) {
-  return {
-    key: data.key,
-    value: originalValue(data.value),
-    timestamp: data.timestamp,
-    rts: data.rts
-  }
+  data.value = originalValue(data.value)
+  return data
 }
 
+/**
+ * Used to make modifications to values during streams, which is dependent on
+ * the `isOriginal` param. If `isOriginal` is truthy, then it passes each `msg`
+ * to `originalData()` and each `msg.value` to `originalValue()`.
+ *
+ * Usually `isOriginal` will be falsy, but if you need to hash or replicate the
+ * value from the stream then you should make sure that `isOriginal` is set to 
+ * true. For example, most of the time you want private messages to be unboxed
+ * (decrypted), but if you're replicating those values to another peer then
+ * it's important to make sure that `isOriginal` is truthy.
+ *
+ * @param {boolean} keys       - whether keys will be passed through the stream
+ * @param {boolean} values     - whether values will be passed through the stream
+ * @param {boolean} isOriginal - whether you want *only* the original data
+ *
+ * @returns {function} a function that can be used to map over a stream
+ */
 exports.Format = exports.formatStream = function (keys, values, isOriginal) {
   let extract
 
@@ -107,7 +138,7 @@ exports.Format = exports.formatStream = function (keys, values, isOriginal) {
  * msg.value.content = 'foo was here'
  * msg.value.meta.original.content // => 'bar'
  *
- * @returns {object} Returns a `meta` object with the property backed up.
+ * @return {object}  a `meta` object with the property backed up.
  */
 exports.metaBackup = (msgValue, property) => {
   const original = { [property]: msgValue[property] }
