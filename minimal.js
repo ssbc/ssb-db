@@ -2,7 +2,7 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-//var codec = require('flumecodec/json')
+var codec = require('./codec')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
@@ -102,18 +102,7 @@ module.exports = function (dirname, keys, opts) {
 
   var unboxers = [ main_unboxer ]
 
-  var codec = {
-    encode: function (obj) {
-      return JSON.stringify(obj, null, 2)
-    },
-    decode: function (str) {
-      return JSON.parse(str.toString())
-    },
-    buffer: false,
-    type: 'ssb'
-  }
-
-  var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
+  var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024*16, codec })
 
   const unboxerMap = (msg, cb) => cb(null, db.unbox(msg))
   const maps = [ unboxerMap ]
