@@ -20,16 +20,16 @@ function unbox(data, unboxers, key) {
   var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-      var unbox = unboxers[i], value
-      if(isFunction(unbox)) {
-        plaintext = unbox(data.value.content, data.value)
+      var unboxer = unboxers[i], value
+      if(isFunction(unboxer)) {
+        plaintext = unboxer(data.value.content, data.value)
       }
-      else if(!key && unbox.key) {
-        key = unbox.key(data.value.content, data.value)
+      else if(!key && unboxer.key) {
+        key = unboxer.key(data.value.content, data.value)
       }
 
       if(key)
-        plaintext = unbox.value(data.value.content, key)
+        plaintext = unboxer.value(data.value.content, key)
 
       if(plaintext) {
         var msg = {}
