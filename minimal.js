@@ -38,8 +38,12 @@ function unbox(data, unboxers, key) {
 
         msg.cyphertext = data.value.content
         msg.content = plaintext
-        msg.unbox = key.toString('base64')
         msg.private = true
+
+        if (key) {
+          msg.unbox = key.toString('base64')
+        }
+
         return {key: data.key, value: msg, timestamp: data.timestamp}
       }
     }
