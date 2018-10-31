@@ -2,7 +2,7 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-//var codec = require('flumecodec/json')
+var codec = require('./codec')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
@@ -10,7 +10,7 @@ var Obv       = require('obv')
 var ssbKeys   = require('ssb-keys')
 var box       = ssbKeys.box
 var pull      = require('pull-stream')
-var rebox     = require('./util').rebox
+var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
 
 var isArray = Array.isArray
@@ -20,28 +20,40 @@ function unbox(data, unboxers, key) {
   var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-        var unbox = unboxers[i], value
-        if(isFunction(unbox)) {
-          plaintext = unbox(data.value.content, data.value)
-        }
-        else if(!key && unbox.key) {
-          key = unbox.key(data.value.content, data.value)
-        }
+      var unbox = unboxers[i], value
+      if(isFunction(unbox)) {
+        plaintext = unbox(data.value.content, data.value)
+      }
+      else if(!key && unbox.key) {
+        key = unbox.key(data.value.content, data.value)
+      }
 
-        if(key)
-          plaintext = unbox.value(data.value.content, key)
+      if(key)
+        plaintext = unbox.value(data.value.content, key)
 
-        if(plaintext) {
-            var msg = {}
-            for(var k in data.value)
-              msg[k] = data.value[k]
+      if(plaintext) {
+        var msg = {}
+        for(var k in data.value)
+          msg[k] = data.value[k]
 
-            msg.cyphertext = data.value.content
-            msg.content = plaintext
-            msg.unbox = key.toString('base64')
-            msg.private = true
-            return {key: data.key, value: msg, timestamp: data.timestamp}
-        }
+        // set `meta.original.content`
+        msg.meta = u.metaBackup(msg, 'content')
+
+        // modify content now that it's saved at `meta.original.content`
+        msg.content = plaintext
+
+        // set meta properties for private messages
+        msg.meta.private = true
+        msg.meta.unbox = key.toString('base64')
+
+        // backward-compatibility with previous property location
+        // this property location may be deprecated in favor of `msg.meta`
+        msg.cyphertext = msg.meta.original.content
+        msg.private = msg.meta.private
+        msg.unbox = msg.meta.unbox
+
+        return {key: data.key, value: msg, timestamp: data.timestamp}
+      }
     }
   }
   return data
@@ -80,25 +92,13 @@ module.exports = function (dirname, keys, opts) {
 
   var unboxers = [ main_unboxer ]
 
-  var codec = {
-    encode: function (obj) {
-      return JSON.stringify(obj, null, 2)
-    },
-    decode: function (str) {
-      return unbox(JSON.parse(str.toString()), unboxers)
-    },
-    buffer: false,
-    type: 'ssb'
-  }
+  var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024*16, codec })
 
-  var log = OffsetLog(path.join(dirname, 'log.offset'), {blockSize:1024*16, codec:codec})
-
-  const maps = []
+  const unboxerMap = (msg, cb) => cb(null, db.unbox(msg))
+  const maps = [ unboxerMap ]
   const chainMaps = (val, cb) => {
-    const mapCount = maps.length
-    if (!mapCount) {
-      return cb(null, val)
-    } else if (mapCount === 1) {
+    // assumes `maps.length >= 1`
+    if (maps.length === 1) {
       maps[0](val, cb)
     } else {
       let idx = -1 // haven't entered the chain yet
@@ -128,7 +128,7 @@ module.exports = function (dirname, keys, opts) {
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
-        db.post.set(rebox(data))
+        db.post.set(u.originalData(data))
       })
       cb(err, v)
     })

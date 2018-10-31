@@ -43,7 +43,7 @@ module.exports = function (db) {
             item.value.rts = item.key[0]
           }
         }),
-        u.Format(keys, values, opts.private === true)
+        u.Format(keys, values, opts.original)
       )
     }
 

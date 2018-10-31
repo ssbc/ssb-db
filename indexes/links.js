@@ -67,7 +67,7 @@ module.exports = function () {
 
       return pull(
         index.read(opts),
-        Format(keys, values, opts['private'] === true)
+        Format(keys, values, opts.original)
       )
     }
 
@@ -84,7 +84,11 @@ module.exports = function () {
         )
       else {
         if(vals)  {
-          op.value = (opts.private === true ? value : u.reboxValue(value))
+          if (opts.original === true) {
+            op.value = u.originalValue(value)
+          } else {
+            op.value = value
+          }
         }
         if(!keys) delete op.key
         delete op._value
@@ -170,6 +174,3 @@ module.exports = function () {
     return index
   }
 }
-
-
-
