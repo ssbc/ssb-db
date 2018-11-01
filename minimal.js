@@ -140,7 +140,7 @@ module.exports = function (dirname, keys, opts) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
     return !state.queue.length
-  }, 10)
+  }, 100)
 
   queue.onDrain = function () {
     if(state.queue.length == 0) {
