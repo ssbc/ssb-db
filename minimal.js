@@ -80,9 +80,7 @@ module.exports = function (dirname, keys, opts) {
   var unboxers = [ main_unboxer ]
 
   var codec = {
-    encode: function (obj) {
-      return JSON.stringify(obj)
-    },
+    encode: JSON.stringify,
     decode: function (str) {
       return unbox(JSON.parse(str), unboxers)
     },

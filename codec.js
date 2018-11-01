@@ -1,10 +1,6 @@
 module.exports = {
-  decode: function (string) {
-    return JSON.parse(string)
-  },
-  encode: function (obj) {
-    return JSON.stringify(obj)
-  },
+  decode: JSON.parse,
+  encode: JSON.stringify,
   buffer: false
 }
 
