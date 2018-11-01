@@ -77,7 +77,7 @@ tape('loads', function (t) {
       t.end()
     })
 
-    a.queue(state.queue[j], function (err) {
+    a.queue(state.queue[j].value, function (err) {
       if(err) throw explain(err, 'queued invalid message')
       if(!(++j%1000)) console.log(j)
       if(Math.random() < 0.01)
