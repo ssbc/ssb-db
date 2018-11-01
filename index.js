@@ -171,7 +171,6 @@ module.exports = function (_db, opts, keys, path) {
         clock[k] = h[k].sequence
       cb(null, clock)
     })
-
   }
 
   if(_db) {
@@ -188,10 +187,9 @@ module.exports = function (_db, opts, keys, path) {
         if(--n) return
         cb()
       }
-
     }
-
   }
+
   return db
 }
 
