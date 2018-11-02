@@ -105,7 +105,7 @@ var originalData = exports.originalData = function (data) {
 exports.Format = exports.formatStream = function (keys, values, isPrivate) {
   let extract
 
-  if (isPrivate) {
+  if (isPrivate === true) {
     extract = data => {
       return keys && values ? data.value : keys ? data.value.key : data.value.value
     }
