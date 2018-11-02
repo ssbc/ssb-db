@@ -1,5 +1,4 @@
 var path = require('path')
-var ViewLevel = require('flumeview-level')
 var ViewHashTable = require('flumeview-hashtable')
 
 module.exports = function (dir, keys, opts) {
