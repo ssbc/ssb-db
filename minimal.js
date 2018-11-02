@@ -21,15 +21,14 @@ function unbox(data, unboxers, key) {
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
       var unboxer = unboxers[i]
-      if(isFunction(unboxer)) {
+
+      if (key) {
+        plaintext = unboxer.value(data.value.content, key)
+      } else if (isFunction(unboxer)) {
         plaintext = unboxer(data.value.content, data.value)
-      }
-      else if(!key && unboxer.key) {
+      } else if (!key && unboxer.key) {
         key = unboxer.key(data.value.content, data.value)
       }
-
-      if(key)
-        plaintext = unboxer.value(data.value.content, key)
 
       if(plaintext) {
         var msg = {}
