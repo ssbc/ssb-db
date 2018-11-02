@@ -55,7 +55,6 @@ exports.wait = function () {
  * @returns {object} the original message value, extracted from `value.meta.original`
  */
 const originalValue = exports.originalValue = function (value) {
-
   var copy = {};
 
   for (var key in value) {
@@ -103,16 +102,16 @@ var originalData = exports.originalData = function (data) {
  *
  * @returns {function} a function that can be used to map over a stream
  */
-exports.Format = exports.formatStream = function (keys, values, isOriginal) {
+exports.Format = exports.formatStream = function (keys, values, isPrivate) {
   let extract
 
-  if (isOriginal) {
+  if (isPrivate) {
     extract = data => {
-      return keys && values ? originalData(data.value) : keys ? data.value.key : originalValue(data.value.value)
+      return keys && values ? data.value : keys ? data.value.key : data.value.value
     }
   } else {
     extract = data => {
-      return keys && values ? data.value : keys ? data.value.key : data.value.value
+      return keys && values ? originalData(data.value) : keys ? data.value.key : originalValue(data.value.value)
     }
   }
 
