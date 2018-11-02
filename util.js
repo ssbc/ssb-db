@@ -55,20 +55,22 @@ exports.wait = function () {
  * @returns {object} the original message value, extracted from `value.meta.original`
  */
 const originalValue = exports.originalValue = function (value) {
-  if (value.meta) {
-    if (value.meta.original) {
-      Object.entries(value.meta.original).forEach(entry => {
-        value[entry[0]] = entry[1]
-      })
+
+  var copy = {};
+
+  for (var key in value) {
+    if (key !== 'meta' && key !== 'cyphertext' && key !== 'private' && key !== 'unbox') {
+      copy[key] = value[key];
     }
-    delete value.meta
   }
 
-  delete value.cyphertext
-  delete value.private
-  delete value.unbox
+  if (value.meta && value.meta.original) {
+    for (var key in value.meta.original) {
+      copy[key] = value.meta.original[key]
+    }
+  }
 
-  return value
+  return copy
 }
 
 /**
