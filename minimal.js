@@ -20,7 +20,7 @@ function unbox(data, unboxers, key) {
   var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-      var unboxer = unboxers[i], value
+      var unboxer = unboxers[i]
       if(isFunction(unboxer)) {
         plaintext = unboxer(data.value.content, data.value)
       }
@@ -61,14 +61,6 @@ possible, cb when the message is queued.
 
 write a message, callback once it's definitely written.
 */
-
-function toKeyValueTimestamp(msg) {
-  return {
-    key: V.id(msg),
-    value: msg,
-    timestamp: timestamp()
-  }
-}
 
 function isString (s) {
   return 'string' === typeof s
@@ -128,7 +120,7 @@ module.exports = function (dirname, keys, opts) {
   var append = db.rawAppend = db.append
   db.post = Obv()
   var queue = AsyncWrite(function (_, cb) {
-    var batch = state.queue//.map(toKeyValueTimestamp)
+    var batch = state.queue
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
@@ -137,14 +129,12 @@ module.exports = function (dirname, keys, opts) {
       cb(err, v)
     })
   }, function reduce(_, msg) {
-    state = V.append(state, hmac_key, msg)
-    state.queue[state.queue.length-1] = toKeyValueTimestamp(state.queue[state.queue.length-1])
-    return state
+    return V.append(state, hmac_key, msg)
   }, function (_state) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
     return !state.queue.length
-  }, 10)
+  }, 100)
 
   queue.onDrain = function () {
     if(state.queue.length == 0) {
@@ -185,10 +175,12 @@ module.exports = function (dirname, keys, opts) {
 
   db.queue = wait(function (msg, cb) {
     queue(msg, function (err) {
+      var data = state.queue[state.queue.length-1]
       if(err) cb(err)
-      else cb(null, toKeyValueTimestamp(msg))
+      else cb(null, data)
     })
   })
+
   db.append = wait(function (opts, cb) {
     try {
       var content = opts.content, recps = opts.content.recps
@@ -220,14 +212,17 @@ module.exports = function (dirname, keys, opts) {
       })
     })
   })
+
   db.buffer = function () {
     return queue.buffer
   }
+
   db.flush = function (cb) {
     //maybe need to check if there is anything currently writing?
     if(!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
     else flush.push(cb)
   }
+
   db.addUnboxer = function(unboxer) {
     unboxers.push(unboxer);
   }
