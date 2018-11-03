@@ -55,20 +55,21 @@ exports.wait = function () {
  * @returns {object} the original message value, extracted from `value.meta.original`
  */
 const originalValue = exports.originalValue = function (value) {
-  if (value.meta) {
-    if (value.meta.original) {
-      Object.entries(value.meta.original).forEach(entry => {
-        value[entry[0]] = entry[1]
-      })
+  var copy = {};
+
+  for (var key in value) {
+    if (key !== 'meta' && key !== 'cyphertext' && key !== 'private' && key !== 'unbox') {
+      copy[key] = value[key];
     }
-    delete value.meta
   }
 
-  delete value.cyphertext
-  delete value.private
-  delete value.unbox
+  if (value.meta && value.meta.original) {
+    for (var key in value.meta.original) {
+      copy[key] = value.meta.original[key]
+    }
+  }
 
-  return value
+  return copy
 }
 
 /**
@@ -101,16 +102,16 @@ var originalData = exports.originalData = function (data) {
  *
  * @returns {function} a function that can be used to map over a stream
  */
-exports.Format = exports.formatStream = function (keys, values, isOriginal) {
+exports.Format = exports.formatStream = function (keys, values, isPrivate) {
   let extract
 
-  if (isOriginal) {
+  if (isPrivate === true) {
     extract = data => {
-      return keys && values ? originalData(data.value) : keys ? data.value.key : originalValue(data.value.value)
+      return keys && values ? data.value : keys ? data.value.key : data.value.value
     }
   } else {
     extract = data => {
-      return keys && values ? data.value : keys ? data.value.key : data.value.value
+      return keys && values ? originalData(data.value) : keys ? data.value.key : originalValue(data.value.value)
     }
   }
 

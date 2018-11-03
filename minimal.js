@@ -20,16 +20,14 @@ function unbox(data, unboxers, key) {
   var plaintext
   if(data && isString(data.value.content)) {
     for(var i = 0;i < unboxers.length;i++) {
-      var unbox = unboxers[i]
-      if(isFunction(unbox)) {
-        plaintext = unbox(data.value.content, data.value)
-      }
-      else if(!key && unbox.key) {
-        key = unbox.key(data.value.content, data.value)
-      }
+      var unboxer = unboxers[i]
 
-      if(key)
-        plaintext = unbox.value(data.value.content, key)
+      if (isFunction(unboxer))
+        plaintext = unboxer(data.value.content, data.value)
+      else {
+        if (!key) key = unboxer.key(data.value.content, data.value)
+        if (key) plaintext = unboxer.value(data.value.content, key)
+      }
 
       if(plaintext) {
         var msg = {}
@@ -44,13 +42,15 @@ function unbox(data, unboxers, key) {
 
         // set meta properties for private messages
         msg.meta.private = true
-        msg.meta.unbox = key.toString('base64')
+        if(key)
+          msg.meta.unbox = key.toString('base64')
 
         // backward-compatibility with previous property location
         // this property location may be deprecated in favor of `msg.meta`
         msg.cyphertext = msg.meta.original.content
         msg.private = msg.meta.private
-        msg.unbox = msg.meta.unbox
+        if(key)
+          msg.unbox = msg.meta.unbox
 
         return {key: data.key, value: msg, timestamp: data.timestamp}
       }

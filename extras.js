@@ -23,7 +23,7 @@ module.exports = function (db, config, keys) {
     if(opts.gt == null)
       opts.gt = 0
 
-    return pull(db.time.read(opts), Format(keys, values, opts.original))
+    return pull(db.time.read(opts), Format(keys, values, opts.private))
   }
 
   //TODO: eventually, this should filter out authors you do not follow.

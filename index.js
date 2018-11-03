@@ -65,10 +65,10 @@ module.exports = function (_db, opts, keys, path) {
   var _get = db.get
 
   db.get = function (key, cb) {
-    let isOriginal = false
+    let isPrivate = false
     let unbox
     if (typeof key === 'object') {
-      isOriginal = key.original === true
+      isPrivate = key.private === true
       unbox = key.unbox
       key = key.id
     }
@@ -77,23 +77,27 @@ module.exports = function (_db, opts, keys, path) {
       return db.keys.get(key, function (err, data) {
         if (err) return cb(err)
 
-        if (unbox) {
+        if (isPrivate && unbox) {
           data = db.unbox(data, unbox)
         }
 
         let result
 
-        if (isOriginal) {
-          result = result && u.originalValue(data.value)
-        } else {
+        if (isPrivate) {
           result = data.value
+        } else {
+          result = u.originalValue(data.value)
         }
 
         cb(null, result)
       })
     } else if(ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
-      return db.get({id: link.link, unbox: link.query.unbox.replace(/\s/g, '+')}, cb)
+      return db.get({
+        id: link.link,
+        private: true,
+        unbox: link.query.unbox.replace(/\s/g, '+')
+      }, cb)
     } else if (Number.isInteger(key)) {
       _get(key, cb) // seq
     } else {
@@ -192,4 +196,3 @@ module.exports = function (_db, opts, keys, path) {
 
   return db
 }
-
