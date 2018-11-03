@@ -65,27 +65,44 @@ module.exports = function (_db, opts, keys, path) {
   var _get = db.get
 
   db.get = function (key, cb) {
-    var isPrivate = false, unbox
-    if('object' === typeof key) {
+    let isPrivate = false
+    let unbox
+    if (typeof key === 'object') {
       isPrivate = key.private === true
       unbox = key.unbox
       key = key.id
     }
 
-    if(ref.isMsg(key))
+    if(ref.isMsg(key)) {
       return db.keys.get(key, function (err, data) {
-        if(isPrivate && unbox) data = db.unbox(data, unbox)
-        if(err) cb(err)
-        else cb(null, data && u.reboxValue(data.value, isPrivate))
+        if (err) return cb(err)
+
+        if (isPrivate && unbox) {
+          data = db.unbox(data, unbox)
+        }
+
+        let result
+
+        if (isPrivate) {
+          result = data.value
+        } else {
+          result = u.originalValue(data.value)
+        }
+
+        cb(null, result)
       })
-    else if(ref.isMsgLink(key)) {
+    } else if(ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
-      return db.get({id: link.link, private: !!link.query.unbox, unbox: link.query.unbox.replace(/\s/g, '+')}, cb)
-    }
-    else if(Number.isInteger(key))
-      _get(key, cb) //seq
-    else
+      return db.get({
+        id: link.link,
+        private: true,
+        unbox: link.query.unbox.replace(/\s/g, '+')
+      }, cb)
+    } else if (Number.isInteger(key)) {
+      _get(key, cb) // seq
+    } else {
       throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
+    }
   }
 
   db.add = function (msg, cb) {
@@ -145,7 +162,7 @@ module.exports = function (_db, opts, keys, path) {
     //will NOT expose private plaintext
     db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
       if(err) cb(err)
-      else cb(null, u.rebox(value))
+      else cb(null, u.originalData(value))
     })
   }
 

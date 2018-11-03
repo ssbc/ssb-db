@@ -5,6 +5,7 @@ module.exports = {
   encode: function (obj) {
     return JSON.stringify(obj, null, 2)
   },
-  buffer: false
+  buffer: false,
+  type: 'ssb'
 }
 
