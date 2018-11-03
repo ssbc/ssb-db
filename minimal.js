@@ -22,12 +22,11 @@ function unbox(data, unboxers, key) {
     for(var i = 0;i < unboxers.length;i++) {
       var unboxer = unboxers[i]
 
-      if (key) {
-        plaintext = unboxer.value(data.value.content, key)
-      } else if (isFunction(unboxer)) {
+      if (isFunction(unboxer))
         plaintext = unboxer(data.value.content, data.value)
-      } else if (!key && unboxer.key) {
-        key = unboxer.key(data.value.content, data.value)
+      else {
+        if (!key) key = unboxer.key(data.value.content, data.value)
+        if (key) plaintext = unboxer.value(data.value.content, key)
       }
 
       if(plaintext) {
@@ -235,4 +234,15 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
+
+
+
+
+
+
+
+
+
+
+
 
