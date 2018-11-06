@@ -1,6 +1,7 @@
 module.exports = {
   decode: JSON.parse,
   encode: JSON.stringify,
-  buffer: false
+  buffer: false,
+  type: 'ssb'
 }
 

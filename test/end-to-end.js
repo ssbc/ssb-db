@@ -56,7 +56,7 @@ module.exports = function (opts) {
           console.log('boxed', ary[0].value)
           ssb2.add(ary[0].value, function (err) {
             if(err) throw err
-            ssb2.get({id:pmsg.key, private: true}, function (err, _msg) {
+            ssb2.get({ id:pmsg.key, private: true }, function (err, _msg) {
               if(err) throw err
               console.log("LOAD", _msg)
               t.deepEqual(_msg, msg) //not decrypted
@@ -138,10 +138,10 @@ module.exports = function (opts) {
 
   })
 
-  tape('retrive already decrypted messages via private: true', function (t) {
+  tape('retreive already decrypted messages', function (t) {
 
     pull(
-      ssb.messagesByType({type:'secret', private: true}),
+      ssb.messagesByType({ type: 'secret', private: true }),
       pull.collect(function (err, ary) {
         if(err) throw err
         var content = ary[0].value.content
