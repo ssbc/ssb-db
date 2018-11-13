@@ -1,11 +1,11 @@
 {
-  "name": "secure-scuttlebutt",
+  "name": "ssb-db",
   "description": "a secure, replicatable database",
   "version": "18.6.0",
-  "homepage": "https://github.com/ssbc/secure-scuttlebutt",
+  "homepage": "https://github.com/ssbc/ssb-db",
   "repository": {
     "type": "git",
-    "url": "git://github.com/ssbc/secure-scuttlebutt.git"
+    "url": "git://github.com/ssbc/ssb-db.git"
   },
   "dependencies": {
     "async-write": "^2.1.0",

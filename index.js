@@ -101,7 +101,7 @@ module.exports = function (_db, opts, keys, path) {
     } else if (Number.isInteger(key)) {
       _get(key, cb) // seq
     } else {
-      throw new Error('secure-scuttlebutt.get: key *must* be a ssb message id or a flume offset')
+      throw new Error('ssb-db.get: key *must* be a ssb message id or a flume offset')
     }
   }
 
