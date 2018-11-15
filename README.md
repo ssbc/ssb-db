@@ -1,17 +1,17 @@
-# secure-scuttlebutt
+# ssb-db
 
 A database of unforgeable append-only feeds, optimized for efficient replication for peer to peer protocols.
 
 ## What does it do?
 
-Secure-scuttlebutt provides tools for dealing with unforgeable append-only message 
+ssb-db provides tools for dealing with unforgeable append-only message 
 feeds. You can create a feed, post messages to that feed, verify a feed created by
 someone else, stream messages to and from feeds, and more (see [API](#api)).
 
 "Unforgeable" means that only the owner of a feed can modify that feed, as
 enforced by digital signing (see [Security properties](#security-properties)).
-This property makes secure-scuttlebutt useful for peer-to-peer applications.
-Secure-scuttlebutt also makes it easy to encrypt messages.
+This property makes ssb-db useful for peer-to-peer applications. ssb-db also
+makes it easy to encrypt messages.
 
 ## Example
 
@@ -20,7 +20,7 @@ that reads from the feed.
 
 ``` js
 /**
- * create a secure scuttlebutt instance and add a message to it.
+ * create an ssb-db instance and add a message to it.
  */
 
 var pull = require('pull-stream')
@@ -41,7 +41,7 @@ var keys = require('ssb-keys').loadOrCreateSync(pathToSecret)
 //  - uses leveldb.
 //  - can only open one instance at a time.
 
-var ssb = require('secure-scuttlebutt/create')(pathToDB)
+var ssb = require('ssb-db/create')(pathToDB)
 
 // create a feed.
 //  - this represents a write access / user.
@@ -81,8 +81,8 @@ pull(
 
 ## Concepts
 
-Building upon secure-scuttlebutt requires understanding a few concepts
-that it uses to ensure the unforgeability of message feeds.
+Building upon ssb-db requires understanding a few concepts that it uses to
+ensure the unforgeability of message feeds.
 
 ### Identities
 
@@ -104,8 +104,8 @@ in the feed that are newer than the latest message you know about.
 Note that append-only really means append-only: you cannot delete an
 existing message. If you want to enable entities to be deleted or 
 modified in your data model, that can be implemented in a layer on top 
-of secure-scuttlebutt using 
-[delta encoding](https://en.wikipedia.org/wiki/Delta_encoding). 
+of ssb-db using
+[delta encoding](https://en.wikipedia.org/wiki/Delta_encoding).
 
 ### Messages
 
@@ -131,7 +131,7 @@ any order after it's been replicated.
 
 ### Object ids
 
-The text inside a message can refer to three types of secure-scuttlebutt
+The text inside a message can refer to three types of ssb-db
 entities: messages, feeds, and blobs (i.e. attachments). Messages and 
 blobs are referred to by their hashes, but a feed is referred to by its
 signing public key. Thus, a message within a feed can refer to another
@@ -140,27 +140,28 @@ feed, or to a particular point _within_ a feed.
 Object ids begin with a sigil `@` `%` and `&` for a `feedId`, `msgId`
 and `blobId` respectively.
 
-Note that secure-scuttlebutt does not include facilities for retrieving
-a blob given the hash.
+Note that ssb-db does not include facilities for retrieving a blob given the
+hash.
 
 ### Replication
 
-It is possible to easily replicate data between two SecureScuttlebutts.
+It is possible to easily replicate data between two instances of ssb-db.
 First, they exchange maps of their newest data. Then, each one downloads
 all data newer than its newest data.
 
 [Scuttlebot](https://github.com/ssbc/scuttlebot) is a tool that
-makes it easy to replicate multiple SecureScuttlebutts using a
+makes it easy to replicate multiple instances of ssb-db using a
 decentralized network.
 
 ### Security properties
-Secure-scuttlebutt maintains useful security properties even when it is
-connected to a malicious secure-scuttlebutt database. This makes it ideal
+
+ssb-db maintains useful security properties even when it is
+connected to a malicious ssb-db database. This makes it ideal
 as a store for peer-to-peer applications.
 
 Imagine that we want to read from a feed for which we know the identity,
-but we're connected to a malicious secure-scuttlebutt instance. As
-long as the malicious database does not have the private key:
+but we're connected to a malicious ssb-db instance. As long as the malicious
+database does not have the private key:
 
 - The malicious database cannot create a new feed with the same identifier
 - The malicious database cannot write new fake messages to the feed
@@ -174,22 +175,21 @@ long as the malicious database does not have the private key:
 
 ## API
 
-### ssb = require('secure-scuttlebutt/create')(path)
+### ssb = require('ssb-db/create')(path)
 
-Create a secure-scuttlebutt database at the given path,
-returns an instance.
+Create an ssb-db database at the given path, returns an instance.
 
-### require('secure-scuttlebutt')(db, opts)
+### require('ssb-db')(db, opts)
 
 Pass in a [levelup](https://github.com/rvagg/node-levelup) instance
 (it must have [sublevel](https://github.com/dominictarr/level-sublevel) installed),
 and an options object. The options object provides the crypto
 and encoding functions, that are not directly tied into how
-secure-scuttlebutt works.
+ssb-db works.
 
-The following methods all apply to a `SecureScuttlebutt` instance
+The following methods all apply to a `ssb-db` instance
 
-### SecureScuttlebutt#createFeed (keys?)
+### SSBdb#createFeed (keys?)
 
 Create a Feed object. A feed is a chain of messages signed
 by a single key (the identity of the feed).
@@ -218,14 +218,14 @@ the id of the feed (which is the feed's public key)
 
 the key pair for this feed.
 
-### SecureScuttlebutt#createFeedStream (opts) -> PullSource
+### ssbDb#createFeedStream (opts) -> PullSource
 
 Create a [pull-stream](https://github.com/dominictarr/pull-stream)
 of all the feeds in the database, ordered by timestamps.
 All [pull-level](https://github.com/dominictarr/pull-level) options
 are allowed (start, end, reverse, tail)
 
-### SecureScuttlebutt#createLogStream({gt: ts, tail: boolean}) -> PullSource
+### ssbDb#createLogStream({gt: ts, tail: boolean}) -> PullSource
 
 create a stream of the messages that have been written to this instance
 in the order they arrived. This is mainly intended for building views.
@@ -239,14 +239,14 @@ The objects in this stream will be of the form:
 `timestamp` is generated by
 [monotonic-timestamp](https://github.com/dominictarr/monotonic-timestamp)
 
-### SecureScuttlebutt#createHistoryStream ({id: feedId, seq: int?, live: bool?, limit: int?, keys: bool?, values: bool?}) -> PullSource
+### ssbDb#createHistoryStream ({id: feedId, seq: int?, live: bool?, limit: int?, keys: bool?, values: bool?}) -> PullSource
 
 Create a stream of the history of `id`. If `seq > 0`, then
 only stream messages with sequence numbers greater than `seq`.
 if `live` is true, the stream will be a
 [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
-### SecureScuttlebutt#messagesByType ({type: string, live: bool?}) -> PullSource
+### ssbDb#messagesByType ({type: string, live: bool?}) -> PullSource
 
 retrieve messages with a given type. All messages must have a type,
 so this is a good way to select messages that an application might use.
@@ -254,7 +254,7 @@ Returns a source pull-stream. This function takes all the options from [pull-lev
 (gt, lt, gte, lte, limit, reverse, live)
 
 
-### SecureScuttlebutt#links ({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
+### ssbDb#links ({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
 
 Get a stream of links from a feed to a blob/msg/feed id.
 
@@ -277,7 +277,7 @@ If `opts.meta` is unset (default: true) `source, hash, rel` will be left off.
 > have to scan all the links from source, and then filter by dest.
 > your query will be more efficient if you also provide `rel`.
 
-### SecureScuttlebutt#addMap (fn)
+### ssbDb#addMap (fn)
 
 Add a map function to be applied to all messages on *read*. The `fn` function
 is should expect `(msg, cb)`, and must eventually call `cb(err, msg)` to finish.
@@ -291,7 +291,7 @@ may only be made *after* the original value is saved in `msg.value.meta.original
 
 
 ```js
-SecureScuttlebutt.addMap(function (msg, cb) {
+ssbDb.addMap(function (msg, cb) {
   if (!msg.value.meta) {
     msg.value.meta = {}
   }
@@ -303,9 +303,9 @@ SecureScuttlebutt.addMap(function (msg, cb) {
   cb(null, msg)
 })
 
-const metaBackup = require('secure-scuttlebutt/util').metaBackup
+const metaBackup = require('ssb-db/util').metaBackup
 
-SecureScuttlebutt.addMap(function (msg, cb) {
+ssbDb.addMap(function (msg, cb) {
   // This could instead go in the first map function, but it's added as a second
   // function for demonstration purposes to show that `msg` is passed serially.
   if (msg.value.meta.fizz && msg.value.meta.buzz) {
@@ -327,7 +327,4 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
-
-
-
 
