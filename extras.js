@@ -16,7 +16,7 @@ module.exports = function (db, config, keys) {
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
     if(opts.raw)
-      return db.stream()
+      return db.stream(opts)
 
     var keys = opts.keys; delete opts.keys
     var values = opts.values; delete opts.values
