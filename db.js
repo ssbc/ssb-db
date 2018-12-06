@@ -5,9 +5,9 @@ module.exports = function (dir, keys, opts) {
   var db = require('./minimal')(dir, keys, opts)
 
     .use('keys', ViewHashTable(2, function (key) {
-        var b = new Buffer(key.substring(1,7), 'base64').readUInt32BE(0)
-        return b
-      })
+      var b = new Buffer(key.substring(1, 7), 'base64').readUInt32BE(0)
+      return b
+    })
     )
     .use('clock', require('./indexes/clock')())
 
@@ -17,29 +17,25 @@ module.exports = function (dir, keys, opts) {
 
   db.since(function () {
     prog.target = db.since.value
-    if(Date.now() > ts + 100)
-      update()
+    if (Date.now() > ts + 100) { update() }
   })
 
   function update () {
     ts = Date.now()
-    //iterate over the current views, so we capture plugins
-    //as well as the built ins.
+    // iterate over the current views, so we capture plugins
+    // as well as the built ins.
     var current = 0, n = 0
-    for(var k in db)
-      if(db[k] && 'function' === typeof db[k].since) {
+    for (var k in db) {
+      if (db[k] && typeof db[k].since === 'function') {
         n++
         var c = db[k].since.value
         current += (Number.isInteger(c) ? c : -1)
       }
+    }
     prog.current = ~~(current / n)
-    //if the progress bar is complete, move the starting point
-    //up to the current position!
-    if(prog.start <= 0)
-      prog.start = prog.current
-    else if(prog.current == prog.target)
-      prog.start = prog.target
-
+    // if the progress bar is complete, move the starting point
+    // up to the current position!
+    if (prog.start <= 0) { prog.start = prog.current } else if (prog.current == prog.target) { prog.start = prog.target }
   }
 
   // unref is only available when running inside node
@@ -48,4 +44,3 @@ module.exports = function (dir, keys, opts) {
 
   return db
 }
-

@@ -1,21 +1,18 @@
 var tape = require('tape')
 var cont = require('cont')
 var pull = require('pull-stream')
-var ssbKeys  = require('ssb-keys')
+var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var createSSB = require('./util')
 
-function all(stream, cb) {
+function all (stream, cb) {
   pull(stream, pull.collect(cb))
 }
 
 module.exports = function (opts) {
-
   tape('retrive messages by type', function (t) {
-
     var dbA = createSSB('msg-by-type1')
     var alice = createFeed(dbA, ssbKeys.generate(), opts)
-
 
     cont.series([
       alice.add({type: 'foo', foo: 1}),
@@ -23,11 +20,11 @@ module.exports = function (opts) {
       alice.add({type: 'foo', foo: 3}),
       alice.add({type: 'bar', bar: 4}),
       alice.add({type: 'baz', baz: 5})
-    ]) (function (err) {
-      if(err) throw err
+    ])(function (err) {
+      if (err) throw err
 
       all(dbA.messagesByType({type: 'foo', keys: true}), function (err, ary) {
-        if(err) throw err
+        if (err) throw err
         t.equal(ary.length, 2)
         t.deepEqual(ary.map(function (e) {
           return e.value.content
@@ -43,7 +40,7 @@ module.exports = function (opts) {
             type: 'foo',
             gt: since
           }), function (err, ary) {
-            if(err) throw err
+            if (err) throw err
             console.log(ary)
             t.equal(ary.length, 1)
             t.equal(typeof ary[0].key, 'string')
@@ -71,12 +68,7 @@ module.exports = function (opts) {
         })
       })
     })
-
-
   })
-
 }
 
-if(!module.parent)
-  module.exports(require('../defaults'))
-
+if (!module.parent) { module.exports(require('../defaults')) }
