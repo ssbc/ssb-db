@@ -48,7 +48,7 @@ module.exports = function (db, config, keys) {
       else {
         db.get(value[key].id, function (err, msg) {
         // will NOT expose private plaintext
-          cb(err, {key: value[key].id, value: msg})
+          cb(err, { key: value[key].id, value: msg })
         })
       }
     })
@@ -57,8 +57,6 @@ module.exports = function (db, config, keys) {
   db.messagesByType = db.links.messagesByType
 
   db.links = db.links.links
-
-  var HI = undefined, LO = null
 
   return db
 }

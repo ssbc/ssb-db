@@ -9,7 +9,6 @@ var timestamp = require('monotonic-timestamp')
 var Obv = require('obv')
 var ssbKeys = require('ssb-keys')
 var box = ssbKeys.box
-var pull = require('pull-stream')
 var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
 
@@ -47,7 +46,7 @@ function unbox (data, unboxers, key) {
         msg.private = msg.meta.private
         if (key) { msg.unbox = msg.meta.unbox }
 
-        return {key: data.key, value: msg, timestamp: data.timestamp}
+        return { key: data.key, value: msg, timestamp: data.timestamp }
       }
     }
   }
@@ -70,14 +69,14 @@ function isString (s) {
 }
 
 module.exports = function (dirname, keys, opts) {
-  var hmac_key = opts && opts.caps && opts.caps.sign
+  var hmacKey = opts && opts.caps && opts.caps.sign
 
-  var main_unboxer = {
+  var mainUnboxer = {
     key: function (content) { return ssbKeys.unboxKey(content, keys) },
     value: function (content, key) { return ssbKeys.unboxBody(content, key) }
   }
 
-  var unboxers = [ main_unboxer ]
+  var unboxers = [ mainUnboxer ]
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
@@ -102,8 +101,10 @@ module.exports = function (dirname, keys, opts) {
   var db = Flume(log, false, chainMaps)
     .use('last', require('./indexes/last')())
 
-  var state = V.initial(), ready = false
-  var waiting = [], flush = []
+  var state = V.initial()
+  var ready = false
+  var waiting = []
+  var flush = []
 
   var append = db.rawAppend = db.append
   db.post = Obv()
@@ -117,7 +118,7 @@ module.exports = function (dirname, keys, opts) {
       cb(err, v)
     })
   }, function reduce (_, msg) {
-    return V.append(state, hmac_key, msg)
+    return V.append(state, hmacKey, msg)
   }, function (_state) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
@@ -125,7 +126,7 @@ module.exports = function (dirname, keys, opts) {
   }, 100)
 
   queue.onDrain = function () {
-    if (state.queue.length == 0) {
+    if (state.queue.length === 0) {
       var l = flush.length
       for (var i = 0; i < l; ++i) { flush[i]() }
       flush = flush.slice(l)
@@ -133,6 +134,8 @@ module.exports = function (dirname, keys, opts) {
   }
 
   db.last.get(function (err, last) {
+    if (err) throw err
+
     // copy to so we avoid weirdness, because this object
     // tracks the state coming in to the database.
     for (var k in last) {
@@ -171,7 +174,8 @@ module.exports = function (dirname, keys, opts) {
 
   db.append = wait(function (opts, cb) {
     try {
-      var content = opts.content, recps = opts.content.recps
+      var content = opts.content
+      var recps = opts.content.recps
       if (recps) {
         if (isFeed(recps) || isArray(recps) && recps.every(isFeed) && recps.length > 0) {
           recps = opts.content.recps = [].concat(recps) // force to array
@@ -181,7 +185,7 @@ module.exports = function (dirname, keys, opts) {
 
       var msg = V.create(
         state.feeds[opts.keys.id],
-        opts.keys, opts.hmacKey || hmac_key,
+        opts.keys, opts.hmacKey || hmacKey,
         content,
         timestamp()
       )

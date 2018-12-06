@@ -2,39 +2,15 @@
 
 var join = require('path').join
 var EventEmitter = require('events')
-// var Obv       = require('obv')
 
 var pull = require('pull-stream')
-var timestamp = require('monotonic-timestamp')
-var explain = require('explain-error')
-// var createFeed = require('ssb-feed')
 var ref = require('ssb-ref')
 var ssbKeys = require('ssb-keys')
-var Notify = require('pull-notify')
-
-var isFeedId = ref.isFeedId
-var isMsgId = ref.isMsgId
-var isBlobId = ref.isBlobId
 
 var u = require('./util')
-var stdopts = u.options
-var Format = u.Format
-// 53 bit integer
-var MAX_INT = 0x1fffffffffffff
 
 function isString (s) {
   return typeof s === 'string'
-}
-
-var isArray = Array.isArray
-
-function isObject (o) {
-  return o && typeof o === 'object' && !Array.isArray(o)
-}
-
-function getVMajor () {
-  var version = require('./package.json').version
-  return (version.split('.')[0]) | 0
 }
 
 function errorCB (err) {
@@ -58,7 +34,7 @@ module.exports = function (_db, opts, keys, path) {
 
   // UGLY HACK, but...
   // fairly sure that something up the stack expects ssb to be an event emitter.
-  db.__proto__ = new EventEmitter()
+  db.__proto__ = new EventEmitter() // eslint-disable-line
 
   db.opts = opts
 
@@ -118,7 +94,7 @@ module.exports = function (_db, opts, keys, path) {
       // LEGACY: hacks to support add as a continuable
       if (!cb) { return function (cb) { add(content, cb) } }
 
-      db.append({content: content, keys: keys}, cb)
+      db.append({ content: content, keys: keys }, cb)
     }
     return {
       add: add,

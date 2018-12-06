@@ -5,14 +5,21 @@ var Live = require('pull-live')
 var paramap = require('pull-paramap')
 var u = require('./util')
 var stdopts = u.options
-var Format = u.formatStream
 var msgFmt = u.format
 var timestamp = require('monotonic-timestamp')
 
 module.exports = function (db, flumedb) {
+  function one (opts, cb) {
+    pull(
+      db.createLogStream(opts),
+      pull.collect(function (err, ary) {
+        cb(err, ary[ary.length - 1])
+      })
+    )
+  }
+
   var logDB = db.sublevel('log')
   db.pre(function (op, add, _batch) {
-    var msg = op.value
     var id = op.key
     // index by sequence number
 
@@ -51,12 +58,12 @@ module.exports = function (db, flumedb) {
       pl.old(logDB, stdopts(opts)),
       // lookup2(keys, values, 'timestamp')
       paramap(function (data, cb) {
-        if (values == false) return cb(null, {key: data.value})
+        if (values === false) return cb(null, { key: data.value })
         var key = data.value
         var seq = data.key
         db.get(key, function (err, value) {
           if (err) cb(err)
-          else cb(null, msgFmt(keys, values, {key: key, value: value, timestamp: seq}))
+          else cb(null, msgFmt(keys, values, { key: key, value: value, timestamp: seq }))
         })
       })
     )
@@ -65,18 +72,11 @@ module.exports = function (db, flumedb) {
   }))
 
   if (flumedb) {
-    var prog = {current: 0, start: 0, target: 0}
+    var prog = { current: 0, start: 0, target: 0 }
 
-    function one (opts, cb) {
-      pull(
-        db.createLogStream(opts),
-        pull.collect(function (err, ary) {
-          cb(err, ary[ary.length - 1])
-        })
-      )
-    }
+    one({ reverse: true, limit: 1 }, function (err, last) {
+      if (err) throw err
 
-    one({reverse: true, limit: 1}, function (err, last) {
       if (!last) ready() // empty legacy database.
       else {
         flumedb.since.once(function (v) {
@@ -98,7 +98,7 @@ module.exports = function (db, flumedb) {
         flumedb.progress.migration = prog
         var c = 0
         pull(
-          pl.old(logDB, {gt: since, values: false}),
+          pl.old(logDB, { gt: since, values: false }),
           pull.drain(function () {
             c++
           }, function () {
@@ -110,7 +110,7 @@ module.exports = function (db, flumedb) {
         function migrate () {
           // actual upgrade
           pull(
-            db.createLogStream({gt: since}),
+            db.createLogStream({ gt: since }),
             paramap(function (data, cb) {
               prog.current += 1
               flumedb.rawAppend(data, cb)

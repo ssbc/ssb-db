@@ -1,13 +1,7 @@
-var ref = require('ssb-ref')
-var path = require('path')
 var pull = require('pull-stream')
 var ltgt = require('ltgt')
-var ssbKeys = require('ssb-keys')
-var paramap = require('pull-paramap')
 var ViewLevel = require('flumeview-level')
 
-// 53 bit integer
-var MAX_INT = 0x1fffffffffffff
 var u = require('../util')
 var Format = u.formatStream
 var mlib = require('ssb-msgs')
@@ -51,7 +45,7 @@ module.exports = function () {
     index.messagesByType = function (opts) {
       if (!opts) { throw new Error('must provide {type: string} to messagesByType') }
 
-      if (isString(opts)) { opts = {type: opts} }
+      if (isString(opts)) { opts = { type: opts } }
 
       opts = u.options(opts)
       var keys = opts.keys !== false
@@ -75,7 +69,7 @@ module.exports = function () {
       if (!meta && !keys && !vals) { throw new Error('a stream without any values does not make sense') }
       if (!meta) {
         return (
-          keys && vals ? {key: op.key, value: value}
+          keys && vals ? { key: op.key, value: value }
             : keys ? op.key
               : value
         )
@@ -93,7 +87,7 @@ module.exports = function () {
       }
     }
 
-    function type (t) { return {feed: '@', msg: '%', blob: '&'}[t] || t }
+    function type (t) { return { feed: '@', msg: '%', blob: '&' }[t] || t }
 
     function linksOpts (opts) {
       if (!opts) throw new Error('opts *must* be provided')
@@ -106,10 +100,13 @@ module.exports = function () {
           'set at least one of {keys, values, meta} to true')
       }
 
-      var src = type(opts.source), dst = type(opts.dest), rel = opts.rel
+      var src = type(opts.source)
+      var dst = type(opts.dest)
+      var rel = opts.rel
 
       var back = dst && !src
-      var from = back ? dst : src, to = back ? src : dst
+      var from = back ? dst : src
+      var to = back ? src : dst
 
       function range (value, end, def) {
         return !value ? def : /^[@%&]$/.test(value) ? value + end : value
@@ -140,7 +137,7 @@ module.exports = function () {
     }
 
     function testLink (a, e) { // actual, expected
-      return e ? e.length === 1 ? a[0] == e[0] : a === e : true
+      return e ? e.length === 1 ? a[0] === e[0] : a === e : true
     }
 
     index.links = function (opts) {

@@ -1,5 +1,3 @@
-var ref = require('ssb-ref')
-var path = require('path')
 var pull = require('pull-stream')
 var ltgt = require('ltgt')
 // 53 bit integer
@@ -19,8 +17,8 @@ module.exports = function (db, opts) {
     index.methods.createHistoryStream = 'source'
     index.methods.createUserStream = 'source'
 
-    index.createHistoryStream = function (opts) {
-      var opts = u.options(opts)
+    index.createHistoryStream = function (streamOpts) {
+      const opts = u.options(streamOpts)
       var id = opts.id
       var seq = opts.sequence || opts.seq || 0
       var limit = opts.limit
@@ -42,8 +40,8 @@ module.exports = function (db, opts) {
       )
     }
 
-    index.createUserStream = function (opts) {
-      opts = u.options(opts)
+    index.createUserStream = function (streamOpts) {
+      const opts = u.options(streamOpts)
       // mutates opts
       ltgt.toLtgt(opts, opts, function (value) {
         return [opts.id, value]

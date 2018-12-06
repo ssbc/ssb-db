@@ -22,7 +22,8 @@ exports.lo = null
 exports.hi = undefined
 
 exports.wait = function () {
-  var waiting = [], value
+  var waiting = []
+  var value
   return {
     get: function () { return value },
     set: function (_value) {
@@ -53,14 +54,14 @@ exports.wait = function () {
 const originalValue = exports.originalValue = function (value) {
   var copy = {}
 
-  for (var key in value) {
+  for (let key in value) {
     if (key !== 'meta' && key !== 'cyphertext' && key !== 'private' && key !== 'unbox') {
       copy[key] = value[key]
     }
   }
 
   if (value.meta && value.meta.original) {
-    for (var key in value.meta.original) {
+    for (let key in value.meta.original) {
       copy[key] = value.meta.original[key]
     }
   }
