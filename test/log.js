@@ -1,7 +1,5 @@
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var timestamp = require('monotonic-timestamp')
 var ssbKeys = require('ssb-keys')

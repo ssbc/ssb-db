@@ -1,17 +1,10 @@
-
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
-var ssbKeys = require('ssb-keys')
 
-var createFeed = require('ssb-feed')
 var createSSB = require('./util')
 
 tape('load', function (t) {
-  var create = require('ssb-feed/util').create
-
   var ssb = createSSB('test-ssb-feed')
 
   ssb.createFeed().add({type: 'whatever'}, function (err, msg) {
@@ -30,6 +23,7 @@ tape('reopen', function (t) {
   pull(
     ssb.createLogStream(),
     pull.collect(function (err, ary) {
+      if (err) throw err
       console.log(ary, ssb.since.value)
       t.end()
     })

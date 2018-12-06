@@ -3,7 +3,9 @@ var ssbKeys = require('ssb-keys')
 var timestamp = require('monotonic-timestamp')
 var level = require('level')
 var sublevel = require('level-sublevel')
-var latest = {}, log = [], db
+var latest = {}
+var log = []
+var db
 
 var tape = require('tape')
 
@@ -14,14 +16,14 @@ tape('generate fake feed', function (t) {
       cb(null, latest[id])
     },
     add: function (msg, cb) {
-      latest[msg.author] = {key: '%' + ssbKeys.hash(JSON.stringify(msg, null, 2)), value: msg}
+      latest[msg.author] = { key: '%' + ssbKeys.hash(JSON.stringify(msg, null, 2)), value: msg }
       log.push(msg)
       cb()
     }
   }, ssbKeys.generate())
 
   var l = 10000
-  while (l--) { feed.add({type: 'test', text: 'hello1', l: l}, function () {}) }
+  while (l--) { feed.add({ type: 'test', text: 'hello1', l: l }, function () {}) }
 
   console.log('generate', Date.now() - start)
   t.end()
@@ -47,6 +49,8 @@ tape('populate legacy database', function (t) {
         type: 'put'
       }
     }), function (err) {
+      if (err) throw err
+
       if (log.length) {
         console.log(log.length)
         setTimeout(next)

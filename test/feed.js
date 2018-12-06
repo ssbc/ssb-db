@@ -1,13 +1,9 @@
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var createSSB = require('./util')
-
-var level_opts = {valueEncoding: require('../codec')}
 
 module.exports = function (opts) {
   tape('simple', function (t) {
@@ -39,7 +35,8 @@ module.exports = function (opts) {
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     console.log('add 1'); console.log('add 2')
-    var nDrains = 0, nAdds = 2
+    var nDrains = 0
+    var nAdds = 2
     feed.add({type: 'msg', value: 'hello there!'}, function (err, msg1) {
       if (err) throw err
       var lasthash = msg1.key
@@ -64,7 +61,7 @@ module.exports = function (opts) {
         pull.drain(function (ary) {
           nDrains++
           console.log('drain', nDrains)
-          if (nDrains == 5) {
+          if (nDrains === 5) {
             t.assert(true)
             t.end()
             clearInterval(int)
@@ -81,7 +78,9 @@ module.exports = function (opts) {
     var feed = createFeed(ssb, ssbKeys.generate(), opts)
 
     console.log('add 1'); console.log('add 2')
-    var nDrains = 0, nAdds = 2, l = 7
+    var nDrains = 0
+    var nAdds = 2
+    var l = 7
     feed.add({type: 'msg', value: 'hello there!'}, function (err, msg1) {
       if (err) throw err
 
@@ -96,8 +95,8 @@ module.exports = function (opts) {
           console.log('add', nAdds)
           if (err) throw err
           if (nAdds > 7) {
-            //           console.log('TIMEOUT')
-            //            throw new Error('Should have had 5 drains by now.')
+            // console.log('TIMEOUT')
+            // throw new Error('Should have had 5 drains by now.')
           }
         })
         if (--l) addAgain()
@@ -108,7 +107,7 @@ module.exports = function (opts) {
         pull.drain(function (ary) {
           nDrains++
           console.log('drain', nDrains)
-          if (nDrains == 5) {
+          if (nDrains === 5) {
             t.assert(true)
             t.end()
           }

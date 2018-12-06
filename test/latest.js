@@ -1,17 +1,9 @@
 'use strict'
 
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
-var ssbKeys = require('ssb-keys')
-var createFeed = require('ssb-feed')
 var cont = require('cont')
-
 var createSSB = require('./util')
-var create = require('ssb-feed/util').create
-
-var opts = require('../defaults')
 
 var db = createSSB('test-ssb-latest')
 
@@ -29,6 +21,7 @@ tape('empty', function (t) {
     pull(
       db.latest(),
       pull.collect(function (err, ary) {
+        if (err) throw err
         t.equal(ary.length, 0)
       }))
     t.end()

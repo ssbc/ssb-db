@@ -1,7 +1,5 @@
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
 var createSSB = require('./util')
@@ -14,12 +12,12 @@ module.exports = function (opts) {
     var keys = ssbKeys.generate()
 
     var prev
-    var init = prev = create(keys, 'init', {public: keys.public}, null)
+    var init = prev = create(keys, 'init', { public: keys.public }, null)
     var q = [init]
 
     var l = 5
     while (l--) {
-      q.push(prev = create(keys, 'msg', {count: l}, prev))
+      q.push(prev = create(keys, 'msg', { count: l }, prev))
     }
 
     console.log(q)
@@ -42,12 +40,12 @@ module.exports = function (opts) {
     var keys = ssbKeys.generate()
 
     var prev
-    var init = prev = create(keys, 'init', {public: keys.public}, null)
+    var init = prev = create(keys, 'init', { public: keys.public }, null)
     var q = [init]
 
     var l = 5
     while (l--) {
-      q.push(prev = create(keys, 'msg', {count: l}, prev))
+      q.push(prev = create(keys, 'msg', { count: l }, prev))
     }
 
     q.push(q[3])

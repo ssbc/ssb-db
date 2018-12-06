@@ -1,7 +1,5 @@
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var explain = require('explain-error')
 var generate = require('ssb-keys').generate
@@ -9,19 +7,16 @@ var hash = require('ssb-keys').hash
 var v = require('ssb-validate')
 var createSSB = require('./util')
 
-var codec = require('../codec')
-
 module.exports = function (opts) {
   var create = require('ssb-feed/util').create
   var ssb = createSSB('test-ssb-validate')
-  var validate = require('ssb-feed/validator')(ssb)
 
   tape('simple', function (t) {
     var keys = generate()
     console.log('keys', keys)
     var prev
     var messages = [
-      prev = create(keys, null, {type: 'init', public: keys.public}),
+      prev = create(keys, null, { type: 'init', public: keys.public }),
       prev = create(keys, 'msg', 'hello', prev),
       prev = create(keys, 'msg', 'hello2', prev)
     ]
@@ -30,26 +25,13 @@ module.exports = function (opts) {
     ssb.queue(messages[2], function () {
       t.end()
     })
-
-    //    var _msg = null
-    //    messages.forEach(function (msg) {
-    //      validate(msg, function (err) {
-    //        console.log('HELLO', hash('HELLLO'))
-    //        if(_msg)
-    //          t.deepEqual('%'+hash(codec.encode(_msg)), msg.previous)
-    //        _msg = msg
-    //        if(err) throw err
-    //        if(msg.sequence === 3)
-    //          t.end()
-    //      })
-    //    })
   })
 
   tape('add & validate', function (t) {
     var keys = generate()
     var prev
     ssb.add(
-      prev = create(keys, null, {type: 'init', public: keys.public}),
+      prev = create(keys, null, { type: 'init', public: keys.public }),
       function (err) {
         if (err) throw explain(err, 'init failed')
 
@@ -80,9 +62,10 @@ module.exports = function (opts) {
 
   tape('race: should queue', function (t) {
     var keys = generate()
-    var prev, calls = 0
+    var prev
+    var calls = 0
     ssb.add(
-      prev = create(keys, null, {type: 'init', public: keys.public}),
+      prev = create(keys, null, { type: 'init', public: keys.public }),
       function (err) {
         if (err) throw err
         calls++
@@ -138,7 +121,7 @@ module.exports = function (opts) {
     var keys = generate()
     var prev
     ssb.add(
-      prev = create(keys, null, {type: 'init', public: keys.public}),
+      prev = create(keys, null, { type: 'init', public: keys.public }),
       function (err) {
         if (err) throw explain(err, 'init failed')
 

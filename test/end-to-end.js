@@ -1,11 +1,8 @@
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
 
-var createFeed = require('ssb-feed')
 var createSSB = require('./util')
 
 module.exports = function (opts) {
@@ -46,8 +43,8 @@ module.exports = function (opts) {
 
           var pmsg = ssb.unbox(ary[0])
           t.notOk(msg.unbox, 'did not mutate original message')
-          var unbox_key = pmsg.value.unbox
-          t.equal(typeof unbox_key, 'string')
+          var unboxKey = pmsg.value.unbox
+          t.equal(typeof unboxKey, 'string')
           t.ok(pmsg)
           t.deepEqual(pmsg.value.content, content2)
 
@@ -60,13 +57,13 @@ module.exports = function (opts) {
               t.deepEqual(_msg, msg) // not decrypted
               t.equal(typeof _msg.content, 'string')
               //              return t.end()
-              var pmsg2 = ssb2.unbox({value: _msg}, unbox_key)
+              var pmsg2 = ssb2.unbox({value: _msg}, unboxKey)
               t.deepEqual(pmsg2.value, pmsg.value)
 
-              ssb2.get({id: pmsg.key, private: true, unbox: unbox_key}, function (err, __msg) {
+              ssb2.get({id: pmsg.key, private: true, unbox: unboxKey}, function (err, __msg) {
                 if (err) throw err
                 t.deepEqual(__msg, pmsg.value)
-                ssb2.get(pmsg.key + '?unbox=' + unbox_key, function (err, __msg) {
+                ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
                   if (err) throw err
                   t.deepEqual(__msg, pmsg.value)
                   t.end()
@@ -151,13 +148,16 @@ module.exports = function (opts) {
       type: 'secret', okay: true
     }, [alice.public, bob.public]
     ), function (err, msg) {
+      if (err) throw err
       feed.add(ssbKeys.box({
         type: 'secret', post: 'wow', reply: msg.key
       }, [alice.public, bob.public]
       ), function (err, msg2) {
+        if (err) throw err
         pull(
           ssb.links({dest: msg.key, type: 'msg', keys: false}),
           pull.collect(function (err, ary) {
+            if (err) throw err
             t.deepEqual(ary, [{
               source: msg2.value.author,
               rel: 'reply',

@@ -1,11 +1,7 @@
 'use strict'
 
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
-var ssbKeys = require('ssb-keys')
-var createFeed = require('ssb-feed')
 var cont = require('cont')
 var createSSB = require('./util')
 
@@ -19,8 +15,6 @@ function compare (a, b) {
 }
 
 module.exports = function (opts) {
-  var create = require('ssb-feed/util').create
-
   var db = createSSB('test-ssb-feed')
 
   var alice = db.createFeed()
@@ -28,11 +22,11 @@ module.exports = function (opts) {
 
   var msgs = []
 
-  var from_alice = []
+  var fromAlice = []
 
   pull(
     db.links({source: alice.id, old: false, live: true}),
-    pull.drain(from_alice.push.bind(from_alice))
+    pull.drain(fromAlice.push.bind(fromAlice))
   )
 
   tape('initialize', function (t) {
@@ -102,14 +96,14 @@ module.exports = function (opts) {
   })
 
   tape('realtime', function (t) {
-    console.log(from_alice, alice.id)
+    console.log(fromAlice, alice.id)
     pull(
       db.links({source: alice.id, old: true}),
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 3)
-        t.equal(from_alice.length, 3)
-        t.deepEqual(from_alice.sort(compare), ary.sort(compare))
+        t.equal(fromAlice.length, 3)
+        t.deepEqual(fromAlice.sort(compare), ary.sort(compare))
         t.end()
       })
     )
@@ -117,16 +111,16 @@ module.exports = function (opts) {
 
   tape('live link values', function (t) {
     var msg
-    var links = []
     pull(
       db.links({old: false, live: true, values: true}),
       pull.drain(function (data) {
-        t.deepEqual(data,
-          {key: msg.key,
-            value: msg.value,
-            source: alice.id,
-            dest: bob.id,
-            rel: 'foo'})
+        t.deepEqual(data, {
+          key: msg.key,
+          value: msg.value,
+          source: alice.id,
+          dest: bob.id,
+          rel: 'foo'
+        })
         t.end()
       })
     )

@@ -24,6 +24,7 @@ tape('setup', function (t) {
     MSG = msg
     t.ok(msg)
     db.last.get(function (err, value) {
+      if (err) throw err
       t.deepEqual(value[keys.id], {
         id: msg.key,
         sequence: msg.value.sequence,
@@ -55,7 +56,7 @@ tape('generate', function (t) {
       content, timestamp()
     )
     state = V.append(state, null, msg)
-    if (state.error) throw explain(err, 'error on generate')
+    if (state.error) throw explain(state.error, 'error on generate')
   }
   console.log('generate', N / ((Date.now() - start) / 1000))
   t.end()
@@ -69,7 +70,8 @@ tape('loads', function (t) {
   })
 
   // set j=1 to skip first message, which has already been appended.
-  var j = 1, k = 0
+  var j = 1
+  var k = 0
   ;(function next () {
     if (j >= state.queue.length) {
       return a.flush(function () {
@@ -88,7 +90,6 @@ tape('loads', function (t) {
 
 tape('read back', function (t) {
   var msgs = state.queue // [MSG.value].concat(state.queue)
-  var i = 0
   var _state = V.initial()
   var ts = 0
   var start = Date.now()

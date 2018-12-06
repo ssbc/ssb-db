@@ -1,13 +1,10 @@
 'use strict'
 
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var tape = require('tape')
 
 var Abortable = require('pull-abortable')
 
-var SSB = require('../')
 var createSSB = require('./util')
 
 var compare = require('ltgt').compare
@@ -31,8 +28,6 @@ function sort (ary) {
 module.exports = function (opts) {
   var create = require('ssb-feed/util').create
 
-  var MESSAGE = new Buffer('msg')
-
   function init (ssb, n, cb) {
     var keys = generate()
     var prev
@@ -52,7 +47,10 @@ module.exports = function (opts) {
   }
 
   var ssb = createSSB('ssb-history')
-  var keys, id, keys2, id2
+  var keys
+  var id
+  var keys2
+
   tape('history', function (t) {
     keys = init(ssb, 7, function (err) {
       if (err) throw err
@@ -74,6 +72,7 @@ module.exports = function (opts) {
     pull(
       ssb.createHistoryStream({id: id, seq: 1}),
       pull.collect(function (err, ary) {
+        if (err) throw err
         t.equal(ary.length, 8)
         t.end()
       })
@@ -82,6 +81,7 @@ module.exports = function (opts) {
 
   tape('two keys', function (t) {
     keys2 = init(ssb, 4, function (err) {
+      if (err) throw err
       pull(ssb.latest(), pull.collect(function (err, ary) {
         if (err) throw err
         t.deepEqual(
@@ -114,6 +114,7 @@ module.exports = function (opts) {
     pull(
       ssb.createUserStream({id: id, gt: 3, lte: 7, reverse: true}),
       pull.collect(function (err, ary) {
+        if (err) throw err
         console.log('UserStream', ary)
         t.equal(ary.length, 4)
         t.equal(ary[3].value.sequence, 4)
@@ -128,6 +129,7 @@ module.exports = function (opts) {
     pull(
       ssb.createHistoryStream({ id: id, values: false }),
       pull.collect(function (err, ary) {
+        if (err) throw err
         console.log(ary)
         t.equal(ary.length, 8)
         ary.forEach(function (v) { t.equal(typeof v, 'string') })
@@ -140,6 +142,7 @@ module.exports = function (opts) {
     pull(
       ssb.createHistoryStream({ id: id, keys: false }),
       pull.collect(function (err, ary) {
+        if (err) throw err
         t.equal(ary.length, 8)
         ary.forEach(function (v) { t.equal(typeof v.content.type, 'string') })
         t.end()
@@ -148,7 +151,10 @@ module.exports = function (opts) {
   })
 
   tape('abort live stream', function (t) {
-    var abortable = Abortable(), err = new Error('intentional'), i = 0
+    var abortable = Abortable()
+    var errMsg = 'intentional'
+    var err = new Error(errMsg)
+    var i = 0
 
     pull(
       ssb.createHistoryStream({
@@ -156,7 +162,7 @@ module.exports = function (opts) {
       }),
       abortable,
       pull.through(function (data) {
-        if (++i == 8) {
+        if (++i === 8) {
           setTimeout(function () {
             abortable.abort(err)
           }, 100)
@@ -167,6 +173,7 @@ module.exports = function (opts) {
         t.end()
       }),
       pull.collect(function (err, ary) {
+        t.equal(err.message, errMsg)
         t.equal(ary.length, 8)
       })
     )

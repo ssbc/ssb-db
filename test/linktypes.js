@@ -1,7 +1,5 @@
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var cont = require('cont')
 var typewise = require('typewiselite')
@@ -95,17 +93,22 @@ module.exports = function (opts) {
                 keys: true,
                 meta: false,
                 values: true
-              }))
-              (function (err, ary) {
+              }))(function (err, ary) {
+                if (err) throw err
+
                 t.deepEqual(sortTS(ary), sortTS([reply1, reply2]))
 
                 cb()
               })
             },
             function (cb) {
-              all(ssb.links({dest: msg.key, rel: 'reply', values: true}))
-              (function (err, ary) {
+              all(ssb.links({
+                dest: msg.key,
+                rel: 'reply',
+                values: true
+              }))(function (err, ary) {
                 if (err) throw err
+
                 t.deepEqual(sort(ary), sort([
                   {
                     source: reply1.value.author,
@@ -148,12 +151,15 @@ module.exports = function (opts) {
       ba: follow(bob, alice),
       bc: follow(bob, carol)
     })(function (err, f) {
+      if (err) throw err
       cont.para({
         alice: all(ssb.links({source: alice.id, dest: '@'})),
         bob: all(ssb.links({source: bob.id, dest: 'feed'})),
         _alice: all(ssb.links({dest: alice.id, source: '@'})),
         _carol: all(ssb.links({dest: carol.id, source: 'feed'}))
       })(function (err, r) {
+        if (err) throw err
+
         console.log({
           alice: alice.id,
           bob: bob.id,
@@ -208,8 +214,7 @@ module.exports = function (opts) {
       bob_carol: follows(bob.id, carol.id),
       carol_alice: follows(carol.id, alice.id),
       carol_bob: follows(carol.id, bob.id)
-    })
-    (function (err, result) {
+    })(function (err, result) {
       if (err) throw err
       t.deepEqual(result, {
         alice_bob: true,
@@ -228,10 +233,10 @@ module.exports = function (opts) {
       type: 'poke',
       poke: bob.id
     }, function (err) {
+      if (err) throw err
       all(ssb.links({
         source: alice.id, dest: bob.id, values: true
-      }))
-      (function (err, ary) {
+      }))(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 2)
         t.deepEqual(ary.map(function (e) {

@@ -1,7 +1,5 @@
 'use strict'
 var tape = require('tape')
-var level = require('level-test')()
-var sublevel = require('level-sublevel/bytewise')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
@@ -40,7 +38,7 @@ module.exports = function (opts) {
 
   for (var k in msg) { signed[k] = msg[k] }
 
-  signed.signature = new Buffer(64).toString('base64')
+  signed.signature = Buffer.alloc(64).toString('base64')
 
   tape('Message', function (t) {
     var enc = codec.encode(msg)
