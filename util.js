@@ -104,11 +104,19 @@ exports.Format = exports.formatStream = function (keys, values, isPrivate) {
 
   if (isPrivate === true) {
     extract = data => {
-      return keys && values ? data.value : keys ? data.value.key : data.value.value
+      return keys && values
+        ? data.value
+        : keys
+          ? data.value.key
+          : data.value.value
     }
   } else {
     extract = data => {
-      return keys && values ? originalData(data.value) : keys ? data.value.key : originalValue(data.value.value)
+      return keys && values
+        ? originalData(data.value)
+        : keys
+          ? data.value.key
+          : originalValue(data.value.value)
     }
   }
 

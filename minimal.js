@@ -21,7 +21,9 @@ function unbox (data, unboxers, key) {
     for (var i = 0; i < unboxers.length; i++) {
       var unboxer = unboxers[i]
 
-      if (isFunction(unboxer)) { plaintext = unboxer(data.value.content, data.value) } else {
+      if (isFunction(unboxer)) {
+        plaintext = unboxer(data.value.content, data.value)
+      } else {
         if (!key) key = unboxer.key(data.value.content, data.value)
         if (key) plaintext = unboxer.value(data.value.content, key)
       }
@@ -90,7 +92,11 @@ module.exports = function (dirname, keys, opts) {
       let idx = -1 // haven't entered the chain yet
       const next = (err, val) => {
         idx += 1
-        if (err || idx === maps.length) { cb(err, val) } else { maps[idx](val, next) }
+        if (err || idx === maps.length) {
+          cb(err, val)
+        } else {
+          maps[idx](val, next)
+        }
       }
       next(null, val)
     }
@@ -181,7 +187,10 @@ module.exports = function (dirname, keys, opts) {
         if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
           recps = opts.content.recps = [].concat(recps) // force to array
           content = opts.content = box(opts.content, recps)
-        } else throw new Error('private message must have all valid recipients, was:' + JSON.stringify(recps))
+        } else {
+          const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
+          throw new Error(errMsg)
+        }
       }
 
       var msg = V.create(

@@ -66,7 +66,9 @@ module.exports = function () {
       var meta = opts.meta !== false // default: true
       var keys = opts.keys !== false // default: true
       var vals = opts.values === true // default: false
-      if (!meta && !keys && !vals) { throw new Error('a stream without any values does not make sense') }
+      if (!meta && !keys && !vals) {
+        throw new Error('a stream without any values does not make sense')
+      }
       if (!meta) {
         return (
           keys && vals ? { key: op.key, value: value }

@@ -83,7 +83,11 @@ tape('loads', function (t) {
     a.queue(state.queue[j].value, function (err) {
       if (err) throw explain(err, 'queued invalid message')
       if (!(++j % 1000)) console.log(j)
-      if (Math.random() < 0.01) { setImmediate(next) } else next()
+      if (Math.random() < 0.01) {
+        setImmediate(next)
+      } else {
+        next()
+      }
     })
   })()
 })
