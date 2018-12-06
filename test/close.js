@@ -7,7 +7,7 @@ var createSSB = require('./util')
 tape('load', function (t) {
   var ssb = createSSB('test-ssb-feed')
 
-  ssb.createFeed().add({type: 'whatever'}, function (err, msg) {
+  ssb.createFeed().add({ type: 'whatever' }, function (err, msg) {
     if (err) throw err
     //  t.end()
     console.log(msg)
@@ -18,7 +18,7 @@ tape('load', function (t) {
 })
 
 tape('reopen', function (t) {
-  var ssb = createSSB('test-ssb-feed', {temp: false})
+  var ssb = createSSB('test-ssb-feed', { temp: false })
 
   pull(
     ssb.createLogStream(),

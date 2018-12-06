@@ -10,13 +10,13 @@ module.exports = function (opts) {
   var bob = ssbKeys.generate()
   var charles = ssbKeys.generate()
 
-  var ssb = createSSB('test-ssb', {keys: alice})
-  var ssb2 = createSSB('test-ssb2', {keys: charles})
+  var ssb = createSSB('test-ssb', { keys: alice })
+  var ssb2 = createSSB('test-ssb2', { keys: charles })
 
   var feed = ssb.createFeed(alice)
 
   tape('add encrypted message', function (t) {
-    var boxed = ssbKeys.box({type: 'secret', okay: true}, [alice.public, bob.public])
+    var boxed = ssbKeys.box({ type: 'secret', okay: true }, [alice.public, bob.public])
 
     ssb.post(function (msg) {
       t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
@@ -35,11 +35,11 @@ module.exports = function (opts) {
           var msg = ary[0].value
           var ctxt = msg.content
           var content = ssbKeys.unbox(ctxt, alice.private)
-          t.deepEqual(content, {type: 'secret', okay: true}, 'alice can decrypt')
+          t.deepEqual(content, { type: 'secret', okay: true }, 'alice can decrypt')
 
           // bob can also decrypt
           var content2 = ssbKeys.unbox(ctxt, bob.private)
-          t.deepEqual(content, {type: 'secret', okay: true}, 'bob can decrypt')
+          t.deepEqual(content, { type: 'secret', okay: true }, 'bob can decrypt')
 
           var pmsg = ssb.unbox(ary[0])
           t.notOk(msg.unbox, 'did not mutate original message')
@@ -57,10 +57,10 @@ module.exports = function (opts) {
               t.deepEqual(_msg, msg) // not decrypted
               t.equal(typeof _msg.content, 'string')
               //              return t.end()
-              var pmsg2 = ssb2.unbox({value: _msg}, unboxKey)
+              var pmsg2 = ssb2.unbox({ value: _msg }, unboxKey)
               t.deepEqual(pmsg2.value, pmsg.value)
 
-              ssb2.get({id: pmsg.key, private: true, unbox: unboxKey}, function (err, __msg) {
+              ssb2.get({ id: pmsg.key, private: true, unbox: unboxKey }, function (err, __msg) {
                 if (err) throw err
                 t.deepEqual(__msg, pmsg.value)
                 ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
@@ -136,7 +136,7 @@ module.exports = function (opts) {
       pull.collect(function (err, ary) {
         if (err) throw err
         var content = ary[0].value.content
-        t.deepEqual(content, {type: 'secret', okay: true}, 'alice can decrypt')
+        t.deepEqual(content, { type: 'secret', okay: true }, 'alice can decrypt')
 
         t.end()
       })
@@ -155,7 +155,7 @@ module.exports = function (opts) {
       ), function (err, msg2) {
         if (err) throw err
         pull(
-          ssb.links({dest: msg.key, type: 'msg', keys: false}),
+          ssb.links({ dest: msg.key, type: 'msg', keys: false }),
           pull.collect(function (err, ary) {
             if (err) throw err
             t.deepEqual(ary, [{

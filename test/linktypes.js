@@ -42,10 +42,10 @@ module.exports = function (opts) {
     })
   }
   function toKV (data) {
-    return {key: data.key, value: data.value}
+    return { key: data.key, value: data.value }
   }
   tape('reply to a message', function (t) {
-    alice.add({type: 'msg', value: 'hello world'}, function (err, msg) {
+    alice.add({ type: 'msg', value: 'hello world' }, function (err, msg) {
       if (err) throw err
       msg = toKV(msg)
       bob.add({
@@ -139,7 +139,7 @@ module.exports = function (opts) {
   tape('follow another user', function (t) {
     function follow (a, b) {
       return function (cb) {
-        a.add('follow', {follow: b.id}, function (err, msg) {
+        a.add('follow', { follow: b.id }, function (err, msg) {
           cb(err, msg.key)
         })
       }
@@ -153,10 +153,10 @@ module.exports = function (opts) {
     })(function (err, f) {
       if (err) throw err
       cont.para({
-        alice: all(ssb.links({source: alice.id, dest: '@'})),
-        bob: all(ssb.links({source: bob.id, dest: 'feed'})),
-        _alice: all(ssb.links({dest: alice.id, source: '@'})),
-        _carol: all(ssb.links({dest: carol.id, source: 'feed'}))
+        alice: all(ssb.links({ source: alice.id, dest: '@' })),
+        bob: all(ssb.links({ source: bob.id, dest: 'feed' })),
+        _alice: all(ssb.links({ dest: alice.id, source: '@' })),
+        _carol: all(ssb.links({ dest: carol.id, source: 'feed' }))
       })(function (err, r) {
         if (err) throw err
 
@@ -168,22 +168,22 @@ module.exports = function (opts) {
         })
 
         t.deepEqual(sort(r.alice), sort([
-          {source: alice.id, rel: 'follow', dest: bob.id, key: f.ab},
-          {source: alice.id, rel: 'follow', dest: carol.id, key: f.ac}
+          { source: alice.id, rel: 'follow', dest: bob.id, key: f.ab },
+          { source: alice.id, rel: 'follow', dest: carol.id, key: f.ac }
         ]))
 
         t.deepEqual(sort(r.bob), sort([
-          {source: bob.id, rel: 'follow', dest: alice.id, key: f.ba},
-          {source: bob.id, rel: 'follow', dest: carol.id, key: f.bc}
+          { source: bob.id, rel: 'follow', dest: alice.id, key: f.ba },
+          { source: bob.id, rel: 'follow', dest: carol.id, key: f.bc }
         ]))
 
         t.deepEqual(sort(r._alice), sort([
-          {source: bob.id, rel: 'follow', dest: alice.id, key: f.ba}
+          { source: bob.id, rel: 'follow', dest: alice.id, key: f.ba }
         ]))
 
         t.deepEqual(sort(r._carol), sort([
-          {source: alice.id, rel: 'follow', dest: carol.id, key: f.ac},
-          {source: bob.id, rel: 'follow', dest: carol.id, key: f.bc}
+          { source: alice.id, rel: 'follow', dest: carol.id, key: f.ac },
+          { source: bob.id, rel: 'follow', dest: carol.id, key: f.bc }
         ]), 'carol is followed by alice and bob')
 
         t.end()
@@ -242,8 +242,8 @@ module.exports = function (opts) {
         t.deepEqual(ary.map(function (e) {
           return e.value.content
         }), [
-          {type: 'follow', follow: bob.id},
-          {type: 'poke', poke: bob.id}
+          { type: 'follow', follow: bob.id },
+          { type: 'poke', poke: bob.id }
         ])
         t.end()
       })

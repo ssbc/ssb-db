@@ -32,7 +32,7 @@ module.exports = function (opts) {
     var keys = generate()
     var prev
 
-    ssb.add(prev = create(keys, null, {type: 'init', public: keys.public}), function () {
+    ssb.add(prev = create(keys, null, { type: 'init', public: keys.public }), function () {
       pull(
         pull.values(rand(n)),
         pull.asyncMap(function (r, cb) {
@@ -59,7 +59,7 @@ module.exports = function (opts) {
         delete ary[0].ts
         console.log(ary)
         t.deepEqual(ary, [
-          {id: keys.id, sequence: 8}
+          { id: keys.id, sequence: 8 }
         ])
         t.end()
       }))
@@ -70,7 +70,7 @@ module.exports = function (opts) {
 
   tape('since', function (t) {
     pull(
-      ssb.createHistoryStream({id: id, seq: 1}),
+      ssb.createHistoryStream({ id: id, seq: 1 }),
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 8)
@@ -87,8 +87,8 @@ module.exports = function (opts) {
         t.deepEqual(
           sort(ary.map(function (e) { delete e.ts; return e })),
           sort([
-            {id: keys.id, sequence: 8},
-            {id: keys2.id, sequence: 5}
+            { id: keys.id, sequence: 8 },
+            { id: keys2.id, sequence: 5 }
           ])
         )
         t.end()
@@ -112,7 +112,7 @@ module.exports = function (opts) {
 
   tape('user stream', function (t) {
     pull(
-      ssb.createUserStream({id: id, gt: 3, lte: 7, reverse: true}),
+      ssb.createUserStream({ id: id, gt: 3, lte: 7, reverse: true }),
       pull.collect(function (err, ary) {
         if (err) throw err
         console.log('UserStream', ary)

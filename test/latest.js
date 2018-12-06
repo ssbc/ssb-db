@@ -30,9 +30,9 @@ tape('empty', function (t) {
 
 tape('latest', function (t) {
   cont.para([
-    cont.to(alice.add)({type: 'post', text: 'hello'}),
-    cont.to(bob.add)({type: 'post', text: 'hello'}),
-    cont.to(carol.add)({type: 'post', text: 'hello'})
+    cont.to(alice.add)({ type: 'post', text: 'hello' }),
+    cont.to(bob.add)({ type: 'post', text: 'hello' }),
+    cont.to(carol.add)({ type: 'post', text: 'hello' })
   ])(function (err) {
     if (err) throw err
     var end = Date.now()

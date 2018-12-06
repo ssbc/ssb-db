@@ -177,7 +177,8 @@ module.exports = function (dirname, keys, opts) {
       var content = opts.content
       var recps = opts.content.recps
       if (recps) {
-        if (isFeed(recps) || isArray(recps) && recps.every(isFeed) && recps.length > 0) {
+        const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
+        if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
           recps = opts.content.recps = [].concat(recps) // force to array
           content = opts.content = box(opts.content, recps)
         } else throw new Error('private message must have all valid recipients, was:' + JSON.stringify(recps))
@@ -209,7 +210,8 @@ module.exports = function (dirname, keys, opts) {
 
   db.flush = function (cb) {
     // maybe need to check if there is anything currently writing?
-    if (!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
+    const isEmptyInactiveQueue = !queue.buffer.queue.length && !queue.writing
+    if (!queue.buffer || isEmptyInactiveQueue) cb()
     else flush.push(cb)
   }
 
