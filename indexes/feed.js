@@ -15,7 +15,6 @@ function resolveTimestamp (msg) {
 }
 
 module.exports = function (db) {
-
   var createIndex = ViewLevel(3, function (data) {
     return [[resolveTimestamp(data), data.value.author]]
   })
@@ -25,7 +24,7 @@ module.exports = function (db) {
     index.methods.createFeedStream = 'source'
     index.createFeedStream = function (opts) {
       opts = u.options(opts)
-      //mutates opts
+      // mutates opts
       ltgt.toLtgt(opts, opts, function (value) {
         return [value, u.lo]
       }, u.lo, u.hi)
