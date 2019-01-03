@@ -139,9 +139,7 @@ module.exports = function (dirname, keys, opts) {
     }
   }
 
-  db.last.get(function (err, last) {
-    if (err) throw err
-
+  db.last.get(function (_, last) {
     // copy to so we avoid weirdness, because this object
     // tracks the state coming in to the database.
     for (var k in last) {
@@ -237,3 +235,4 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
+

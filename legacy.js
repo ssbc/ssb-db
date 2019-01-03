@@ -74,9 +74,7 @@ module.exports = function (db, flumedb) {
   if (flumedb) {
     var prog = { current: 0, start: 0, target: 0 }
 
-    one({ reverse: true, limit: 1 }, function (err, last) {
-      if (err) throw err
-
+    one({ reverse: true, limit: 1 }, function (_, last) {
       if (!last) ready() // empty legacy database.
       else {
         flumedb.since.once(function (v) {
@@ -119,10 +117,12 @@ module.exports = function (db, flumedb) {
           )
         }
       }
-      function ready (err) {
-        if (err) throw err
+      function ready (_) {
         flumedb.ready.set(true)
       }
     })
   }
 }
+
+
+
