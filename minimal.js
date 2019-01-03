@@ -70,7 +70,8 @@ function isString (s) {
 }
 
 module.exports = function (dirname, keys, opts) {
-  var hmacKey = opts && opts.caps && opts.caps.sign
+  var caps = opts && opts.caps || {}
+  var hmacKey = caps.sign
 
   var mainUnboxer = {
     key: function (content) { return ssbKeys.unboxKey(content, keys) },
@@ -179,23 +180,10 @@ module.exports = function (dirname, keys, opts) {
 
   db.append = wait(function (opts, cb) {
     try {
-      var content = opts.content
-      var recps = opts.content.recps
-      if (recps) {
-        const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
-        if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
-          recps = opts.content.recps = [].concat(recps) // force to array
-          content = opts.content = box(opts.content, recps)
-        } else {
-          const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
-          throw new Error(errMsg)
-        }
-      }
-
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys, opts.hmacKey || hmacKey,
-        content,
+        db.box(opts, state.feeds[opts.keys.id]),
         timestamp()
       )
     } catch (err) {
@@ -230,9 +218,27 @@ module.exports = function (dirname, keys, opts) {
   db.unbox = function (data, key) {
     return unbox(data, unboxers, key)
   }
+  db.box = function (opts, state) {
+    var content = opts.content
+    var recps = opts.content.recps
+    if (recps) {
+      const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
+      if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
+        recps = opts.content.recps = [].concat(recps) // force to array
+        return box(opts.content, recps)
+      } else {
+        throw new Error(
+          'private message recipients must be valid feeds, '+
+          'was:' + JSON.stringify(recps)
+        )
+      }
+    }
+    return opts.content
+  }
   db.addMap = function (fn) {
     maps.push(fn)
   }
 
   return db
 }
+
