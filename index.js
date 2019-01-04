@@ -17,20 +17,13 @@ function errorCB (err) {
   if (err) throw err
 }
 
-module.exports = function (_db, opts, keys, path) {
+module.exports = function (_, opts, keys, path) {
+  //_ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
   path = path || _db.location
 
   keys = keys || ssbKeys.generate()
 
   var db = require('./db')(join(opts.path || path, 'flume'), keys, opts)
-
-  // legacy database
-  if (_db) require('./legacy')(_db, db)
-  else db.ready.set(true)
-
-  db.sublevel = function (a, b) {
-    return _db.sublevel(a, b)
-  }
 
   // UGLY HACK, but...
   // fairly sure that something up the stack expects ssb to be an event emitter.
@@ -153,22 +146,6 @@ module.exports = function (_db, opts, keys, path) {
     })
   }
 
-  if (_db) {
-    var close = db.close
-    db.close = function (cb) {
-      var n = 2
-      _db.close(next); close(next)
-
-      function next (err) {
-        if (err && n > 0) {
-          n = -1
-          return cb(err)
-        }
-        if (--n) return
-        cb()
-      }
-    }
-  }
-
   return db
 }
+
