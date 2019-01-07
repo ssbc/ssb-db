@@ -19,7 +19,7 @@ function errorCB (err) {
 
 module.exports = function (_, opts, keys, path) {
   //_ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
-  path = path || _db.location
+  if(!path) throw new Error('path must be provided')
 
   keys = keys || ssbKeys.generate()
 
@@ -148,4 +148,5 @@ module.exports = function (_, opts, keys, path) {
 
   return db
 }
+
 
