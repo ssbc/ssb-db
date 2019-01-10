@@ -217,8 +217,7 @@ module.exports = function (dirname, keys, opts) {
 
   db.flush = function (cb) {
     // maybe need to check if there is anything currently writing?
-    const isEmptyInactiveQueue = !queue.buffer.queue.length && !queue.writing
-    if (!queue.buffer || isEmptyInactiveQueue) cb()
+    if (!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
     else flush.push(cb)
   }
 
