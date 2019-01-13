@@ -1,4 +1,4 @@
-var SecretStack = require('secret-stack')
+//var SecretStack = require('secret-stack')
 var create     = require('./create')
 var ssbKeys    = require('ssb-keys')
 var path       = require('path')
@@ -109,7 +109,7 @@ module.exports = {
         },
 
   //    usage                    : valid.sync(usage, 'string?|boolean?'),
-      close                    : valid.async(close),
+      close                    : close,
 
       publish                  : valid.async(feed.add, 'string|msgContent'),
       add                      : valid.async(ssb.add, 'msg'),
