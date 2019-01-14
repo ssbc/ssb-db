@@ -68,4 +68,4 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports(require('../defaults')) }
+if (!module.parent) { module.exports({}) }
