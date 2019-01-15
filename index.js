@@ -1,174 +1,142 @@
-'use strict'
+//var SecretStack = require('secret-stack')
+var create     = require('./create')
+var ssbKeys    = require('ssb-keys')
+var path       = require('path')
+var osenv      = require('osenv')
+var mkdirp     = require('mkdirp')
+var rimraf     = require('rimraf')
+var mdm        = require('mdmanifest')
+var valid      = require('./lib/validators')
+var pkg        = require('./package.json')
 
-var join = require('path').join
-var EventEmitter = require('events')
+function isString(s) { return 'string' === typeof s }
+function isObject(o) { return 'object' === typeof o }
+function isFunction (f) { return 'function' === typeof f }
+// create SecretStack definition
+var fs = require('fs')
+var manifest = mdm.manifest(fs.readFileSync(path.join(__dirname, 'api.md'), 'utf-8'))
 
-var pull = require('pull-stream')
-var ref = require('ssb-ref')
-var ssbKeys = require('ssb-keys')
+manifest.seq = 'async'
+manifest.usage = 'sync'
+manifest.clock = 'async'
+manifest.version = 'sync'
 
-var u = require('./util')
+module.exports = {
+  manifest: manifest,
+  permissions: {
+    master: {allow: null, deny: null},
+    anonymous: {allow: ['createHistoryStream'], deny: null}
+  },
+  init: function (api, opts) {
 
-function isString (s) {
-  return typeof s === 'string'
-}
-
-function errorCB (err) {
-  if (err) throw err
-}
-
-module.exports = function (_db, opts, keys, path) {
-  path = path || _db.location
-
-  keys = keys || ssbKeys.generate()
-
-  var db = require('./db')(join(opts.path || path, 'flume'), keys, opts)
-
-  // legacy database
-  if (_db) require('./legacy')(_db, db)
-  else db.ready.set(true)
-
-  db.sublevel = function (a, b) {
-    return _db.sublevel(a, b)
-  }
-
-  // UGLY HACK, but...
-  // fairly sure that something up the stack expects ssb to be an event emitter.
-  db.__proto__ = new EventEmitter() // eslint-disable-line
-
-  db.opts = opts
-
-  var _get = db.get
-
-  db.get = function (key, cb) {
-    let isPrivate = false
-    let unbox
-    if (typeof key === 'object') {
-      isPrivate = key.private === true
-      unbox = key.unbox
-      key = key.id
+    // .temp: use a /tmp data directory
+    // (useful for testing)
+    if(opts.temp) {
+      var name = isString(opts.temp) ? opts.temp : ''+Date.now()
+      opts.path = path.join(osenv.tmpdir(), name)
+      rimraf.sync(opts.path)
     }
 
-    if (ref.isMsg(key)) {
-      return db.keys.get(key, function (err, data) {
-        if (err) return cb(err)
+    // load/create secure scuttlebutt data directory
+    mkdirp.sync(opts.path)
 
-        if (isPrivate && unbox) {
-          data = db.unbox(data, unbox)
-        }
+    if(!opts.keys)
+      opts.keys = ssbKeys.generate('ed25519', opts.seed && Buffer.from(opts.seed, 'base64'))
 
-        let result
+    if(!opts.path)
+      throw new Error('opts.path *must* be provided, or use opts.temp=name to create a test instance')
 
-        if (isPrivate) {
-          result = data.value
-        } else {
-          result = u.originalValue(data.value)
-        }
-
-        cb(null, result)
+    // main interface
+    var ssb = create(opts.path, opts, opts.keys)
+    //treat the main feed as remote, because it's likely handled like that by others.
+    var feed = ssb.createFeed(opts.keys, {remote: true})
+    var _close = api.close
+    var close = function (arg, cb) {
+      if('function' === typeof arg) cb = arg
+      // override to close the SSB database
+      ssb.close(function (err) {
+        if (err) throw err
+        console.log("fallback to close")
+        _close(cb) //multiserver doesn't take a callback on close.
       })
-    } else if (ref.isMsgLink(key)) {
-      var link = ref.parseLink(key)
-      return db.get({
-        id: link.link,
-        private: true,
-        unbox: link.query.unbox.replace(/\s/g, '+')
-      }, cb)
-    } else if (Number.isInteger(key)) {
-      _get(key, cb) // seq
-    } else {
-      throw new Error('ssb-db.get: key *must* be a ssb message id or a flume offset')
     }
-  }
 
-  db.add = function (msg, cb) {
-    db.queue(msg, function (err, data) {
-      if (err) cb(err)
-      else db.flush(function () { cb(null, data) })
-    })
-  }
-
-  db.createFeed = function (keys) {
-    if (!keys) keys = ssbKeys.generate()
-    function add (content, cb) {
-      // LEGACY: hacks to support add as a continuable
-      if (!cb) { return function (cb) { add(content, cb) } }
-
-      db.append({ content: content, keys: keys }, cb)
-    }
-    return {
-      add: add,
-      publish: add,
-      id: keys.id,
-      keys: keys
-    }
-  }
-
-  db.createRawLogStream = function (opts) {
-    return db.stream(opts)
-  }
-
-  // pull in the features that are needed to pass the tests
-  // and that sbot, etc uses but are slow.
-  require('./extras')(db, opts, keys)
-
-  // writeStream - used in (legacy) replication.
-  db.createWriteStream = function (cb) {
-    cb = cb || errorCB
-    return pull(
-      pull.asyncMap(function (data, cb) {
-        db.queue(data, function (err, msg) {
-          if (err) {
-            db.emit('invalid', err, msg)
-          }
-          setImmediate(cb)
-        })
-      }),
-      pull.drain(null, function (err) {
-        if (err) return cb(err)
-        db.flush(cb)
-      })
-    )
-  }
-
-  // should be private
-  db.createHistoryStream = db.clock.createHistoryStream
-
-  // called with [id, seq] or "<id>:<seq>"
-  db.getAtSequence = function (seqid, cb) {
-    // will NOT expose private plaintext
-    db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
-      if (err) cb(err)
-      else cb(null, u.originalData(value))
-    })
-  }
-
-  db.getVectorClock = function (_, cb) {
-    if (!cb) cb = _
-    db.last.get(function (err, h) {
-      if (err) return cb(err)
-      var clock = {}
-      for (var k in h) { clock[k] = h[k].sequence }
-      cb(null, clock)
-    })
-  }
-
-  if (_db) {
-    var close = db.close
-    db.close = function (cb) {
-      var n = 2
-      _db.close(next); close(next)
-
-      function next (err) {
-        if (err && n > 0) {
-          n = -1
-          return cb(err)
+    function since () {
+      var plugs = {}
+      var sync = true
+      for(var k in ssb) {
+        if(ssb[k] && isObject(ssb[k]) && isFunction(ssb[k].since)) {
+          plugs[k] = ssb[k].since.value
+          sync = sync && (plugs[k] === ssb.since.value)
         }
-        if (--n) return
-        cb()
+      }
+      return {
+        since: ssb.since.value,
+        plugins: plugs,
+        sync: sync,
       }
     }
-  }
+    var self
+    return self = {
+      id                       : feed.id,
+      keys                     : opts.keys,
 
-  return db
+      ready                    : function () {
+        return ssb.ready.value
+      },
+
+      progress                 : function () {
+        return ssb.progress
+      },
+
+      status                   : function () {
+        return {progress: self.progress(), db: ssb.status, sync: since() }
+      },
+
+      version                  : function () {
+        return pkg.version
+      },
+
+      //temporary!
+      _flumeUse                :
+        function (name, flumeview) {
+          ssb.use(name, flumeview)
+          return ssb[name]
+        },
+
+  //    usage                    : valid.sync(usage, 'string?|boolean?'),
+      close                    : close,
+
+      publish                  : valid.async(feed.add, 'string|msgContent'),
+      add                      : valid.async(ssb.add, 'msg'),
+      queue                      : valid.async(ssb.queue, 'msg'),
+      get                      : valid.async(ssb.get, 'msgLink|number|object'),
+
+      post                     : ssb.post,
+      addMap                   : ssb.addMap,
+
+      since                    : since,
+
+      getPublicKey             : ssb.getPublicKey,
+      latest                   : ssb.latest,
+      getLatest                : valid.async(ssb.getLatest, 'feedId'),
+      latestSequence           : valid.async(ssb.latestSequence, 'feedId'),
+      createFeed               : ssb.createFeed,
+      whoami                   : function () { return { id: feed.id } },
+      query                    : ssb.query,
+      createFeedStream         : valid.source(ssb.createFeedStream, 'readStreamOpts?'),
+      createHistoryStream      : valid.source(ssb.createHistoryStream, ['createHistoryStreamOpts'], ['feedId', 'number?', 'boolean?']),
+      createLogStream          : valid.source(ssb.createLogStream, 'readStreamOpts?'),
+      createUserStream         : valid.source(ssb.createUserStream, 'createUserStreamOpts'),
+      links                    : valid.source(ssb.links, 'linksOpts'),
+      sublevel                 : ssb.sublevel,
+      messagesByType           : valid.source(ssb.messagesByType, 'string|messagesByTypeOpts'),
+      createWriteStream        : ssb.createWriteStream,
+      getVectorClock           : ssb.getVectorClock,
+      getAtSequence            : ssb.getAtSequence,
+      addUnboxer               : ssb.addUnboxer,
+      box                      : ssb.box,
+    }
+  }
 }
+
