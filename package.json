@@ -1,7 +1,7 @@
 {
   "name": "ssb-db",
   "description": "a secure, replicatable database",
-  "version": "19.0.0",
+  "version": "19.0.1",
   "homepage": "https://github.com/ssbc/ssb-db",
   "repository": {
     "type": "git",
