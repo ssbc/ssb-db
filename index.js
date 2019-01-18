@@ -53,11 +53,14 @@ module.exports = {
     var _close = api.close
     var close = function (arg, cb) {
       if('function' === typeof arg) cb = arg
-      // override to close the SSB database
-      ssb.close(function (err) {
-        if (err) throw err
-        console.log("fallback to close")
-        _close(cb) //multiserver doesn't take a callback on close.
+      ssb.flush(function (err) {
+        if(err) return cb(err)
+        // override to close the SSB database
+        ssb.close(function (err) {
+          if (err) return cb(err)
+          console.log("fallback to close")
+          _close(cb) //multiserver doesn't take a callback on close.
+        })
       })
     }
 
