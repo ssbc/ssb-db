@@ -21,6 +21,7 @@
     "monotonic-timestamp": "~0.0.8",
     "muxrpc-validation": "^3.0.0",
     "obv": "0.0.1",
+    "osenv": "^0.1.5",
     "pull-cont": "^0.1.1",
     "pull-stream": "^3.4.0",
     "ssb-keys": "^7.1.3",
