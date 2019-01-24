@@ -1,4 +1,3 @@
-//var SecretStack = require('secret-stack')
 var create     = require('./create')
 var ssbKeys    = require('ssb-keys')
 var path       = require('path')
