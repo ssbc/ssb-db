@@ -127,6 +127,7 @@ module.exports = {
       createFeed               : ssb.createFeed,
       whoami                   : function () { return { id: feed.id } },
       query                    : ssb.query,
+      stream                   : valid.source(ssb.stream, 'readStreamOpts?'),
       createFeedStream         : valid.source(ssb.createFeedStream, 'readStreamOpts?'),
       createHistoryStream      : valid.source(ssb.createHistoryStream, ['createHistoryStreamOpts'], ['feedId', 'number?', 'boolean?']),
       createLogStream          : valid.source(ssb.createLogStream, 'readStreamOpts?'),
