@@ -22,6 +22,7 @@ module.exports = function (path, opts, keys) {
   if(!path) throw new Error('path must be provided')
 
   keys = keys || ssbKeys.generate()
+  opts = opts || {}
 
   var db = require('./db')(join(opts.path || path, 'flume'), keys, opts)
 
