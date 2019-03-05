@@ -32,13 +32,17 @@ module.exports = function (opts) {
         if (err) throw err
 
         t.deepEqual(_msg, msg.value)
-        f.add({ type: 'wtf' }, function (err, msg) {
-          if (err) throw err
-          console.log(msg)
-          ssb.get(msg.key, function (err, _msg) {
+        ssb.get({id:msg.key, meta: true}, function (err, _msg2) {
+          t.deepEqual(_msg2, msg)
+
+          f.add({ type: 'wtf' }, function (err, msg) {
             if (err) throw err
-            t.deepEqual(_msg, msg.value)
-            t.end()
+            console.log(msg)
+            ssb.get(msg.key, function (err, _msg) {
+              if (err) throw err
+              t.deepEqual(_msg, msg.value)
+              t.end()
+            })
           })
         })
       })
@@ -78,3 +82,4 @@ module.exports = function (opts) {
 }
 
 if (!module.parent) { module.exports({}) }
+
