@@ -36,9 +36,11 @@ module.exports = function (path, opts, keys) {
   db.get = function (key, cb) {
     let isPrivate = false
     let unbox
+    let meta = false
     if (typeof key === 'object') {
       isPrivate = key.private === true
       unbox = key.unbox
+      meta = key.meta
       key = key.id
     }
 
@@ -58,14 +60,15 @@ module.exports = function (path, opts, keys) {
           result = u.originalValue(data.value)
         }
 
-        cb(null, result)
+        cb(null, !meta ? result : {key: data.key, value: result, timestamp: data.timestamp})
       })
     } else if (ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
       return db.get({
         id: link.link,
         private: true,
-        unbox: link.query.unbox.replace(/\s/g, '+')
+        unbox: link.query.unbox.replace(/\s/g, '+'),
+        meta: link.query.meta
       }, cb)
     } else if (Number.isInteger(key)) {
       _get(key, cb) // seq
@@ -148,5 +151,7 @@ module.exports = function (path, opts, keys) {
 
   return db
 }
+
+
 
 
