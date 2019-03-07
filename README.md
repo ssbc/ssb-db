@@ -189,6 +189,18 @@ ssb-db works.
 
 The following methods all apply to a `ssb-db` instance
 
+### SSBdb#get (id | seq | opts, cb)
+
+Get an ssb message. If `id` is a message id, the message is returned.
+If seq is provided, the message at that offset in the underlying flumelog
+is returned. If opts is passed, the message id is taken from either
+`opts.id` or `opts.key`. If `opts.private = true` the message will be decrypted
+if possible. If `opts.meta = true` is set, or `seq` is used, the message will
+be in `{key, value: msg, timestamp}` format. Otherwise the raw message (without key and timestamp)
+are returned. This is for backwards compatibility reasons. Given that most other apis
+(such as createLogStream) by default return `{key, value, timestamp}` it's recommended
+to use `get({id: key, meta: true}, cb)`
+
 ### SSBdb#createFeed (keys?)
 
 Create a Feed object. A feed is a chain of messages signed
@@ -327,4 +339,6 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
+
+
 
