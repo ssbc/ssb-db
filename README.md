@@ -1,6 +1,6 @@
 # ssb-db
 
-A database of unforgeable append-only feeds, optimized for efficient replication for peer to peer protocols.
+secret-stack plugin which provides storing of valid ssb messages in an append-only log.
 
 ## What does it do?
 
@@ -23,38 +23,31 @@ that reads from the feed.
  * create an ssb-db instance and add a message to it.
  */
 
-var pull = require('pull-stream')
-var fs = require('fs')
+//create a secret-stack instance and add ssb-db, for persistence.
+var createSbot = require('secret-stack')({})
+  .use(require('ssb-db')
 
-// paths:
-var pathToDB     = './db'
-var pathToSecret = './ssb-identity'
-try { fs.mkdirSync(pathToDB) } catch(e) {}
-
-// ways to create keys:
-//var keys = require('ssb-keys').generate()
-//var keys = require('ssb-keys').loadSync(pathToSecret)
-//var keys = require('ssb-keys').createSync(pathToSecret)
-var keys = require('ssb-keys').loadOrCreateSync(pathToSecret)
 
 // create the db instance.
-//  - uses leveldb.
-//  - can only open one instance at a time.
+// Only one instance may be created at a time due to os locks on port and database files.
 
-var ssb = require('ssb-db/create')(pathToDB)
+var sbot = createSbot(require('ssb-config'))
 
-// create a feed.
-//  - this represents a write access / user.
-//  - you must pass in keys.
-//  (see options section)
+//your public key, the default key of this instance.
 
-var feed = ssb.createFeed(keys)
+sbot.id
 
-// publish a message.
+//or, called remotely
+
+sbot.whoami(function (err, data) {
+  console.log(data.id) //your id
+})
+
+// publish a message to default identity
 //  - feed.add appends a message to your key's chain.
 //  - the `type` attribute is required.
 
-feed.add({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
+feed.publish({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
   // the message as it appears in the database:
   console.log(msg)
 
@@ -64,7 +57,7 @@ feed.add({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
 
 // stream all messages for all keypairs.
 pull(
-  ssb.createFeedStream(),
+  ssb.createLogStream(),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
@@ -72,7 +65,7 @@ pull(
 
 // stream all messages for a particular keypair.
 pull(
-  ssb.createHistoryStream({id: feed.id}),
+  ssb.createHistoryStream({id: sbot.id}),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
@@ -80,6 +73,8 @@ pull(
 ```
 
 ## Concepts
+
+<link to scuttlebutt.nz>
 
 Building upon ssb-db requires understanding a few concepts that it uses to
 ensure the unforgeability of message feeds.
@@ -145,6 +140,8 @@ hash.
 
 ### Replication
 
+<link to ssb-replicate and ssb-ebt>
+
 It is possible to easily replicate data between two instances of ssb-db.
 First, they exchange maps of their newest data. Then, each one downloads
 all data newer than its newest data.
@@ -175,21 +172,17 @@ database does not have the private key:
 
 ## API
 
-### ssb = require('ssb-db/create')(path)
+### SecretStack.use(require('ssb-db')) => sbot
 
-Create an ssb-db database at the given path, returns an instance.
+Adds ssb-db persistence to a secret-stack setup.
+Without other plugins, this instance will not have replication
+or querying. Loading ssb-db directly is useful for testing,
+but it's recommended to instead start from a plugin bundle like [ssb-server](https://github.com/ssbc/ssb-server)
 
-### require('ssb-db')(db, opts)
+Because of legacy reasons, all the ssb-db methods are mounted on the top level object,
+so it's `sbot.get` instead of `sbot.db.get` as it would be with all the other `ssb-*` plugins.
 
-Pass in a [levelup](https://github.com/rvagg/node-levelup) instance
-(it must have [sublevel](https://github.com/dominictarr/level-sublevel) installed),
-and an options object. The options object provides the crypto
-and encoding functions, that are not directly tied into how
-ssb-db works.
-
-The following methods all apply to a `ssb-db` instance
-
-### SSBdb#get (id | seq | opts, cb)
+### sbot.get (id | seq | opts, cb)
 
 Get an ssb message. If `id` is a message id, the message is returned.
 If seq is provided, the message at that offset in the underlying flumelog
@@ -201,43 +194,23 @@ are returned. This is for backwards compatibility reasons. Given that most other
 (such as createLogStream) by default return `{key, value, timestamp}` it's recommended
 to use `get({id: key, meta: true}, cb)`
 
-### SSBdb#createFeed (keys?)
+### sbot.add(msg, cb)
 
-Create a Feed object. A feed is a chain of messages signed
-by a single key (the identity of the feed).
-This handles the state needed to append valid messages to a feed.
-If keys are not provided, then a new key pair will be generated.
+append a raw message to the local log. `msg` must be a valid, signed message.
+[ssb-validate](https://github.com/ssbc/ssb-validate) is used internally to validate
+messages.
 
-The following methods apply to the Feed type.
+### sbot.publish(content, cb)
 
-#### Feed#add (message, cb)
+create a valid message with `content` with the default identity and append it to
+the local log. [ssb-validate](https://github.com/ssbc/ssb-validate) is used to construct a valid
+message.
 
-Adds a message of a given type to a feed.
-This is the recommended way to append messages.
-message is a javascript object. It must be a `{}` object with a `type`
-property that is a string between 3 and 32 chars long.
+### sbot.whoami(cb)
 
-If `message` has `recps` property which is an array of feed ids, then the message
-content will be encrypted using [private-box](https://github.com/auditdrivencrypto/private-box) to
-those recipients. Any invalid recipients will cause an error, instead of accidentially posting
-a message publically or without a recipient.
+call back with the default identity for the sbot.
 
-#### Feed#id
-
-the id of the feed (which is the feed's public key)
-
-#### Feed#keys
-
-the key pair for this feed.
-
-### ssbDb#createFeedStream (opts) -> PullSource
-
-Create a [pull-stream](https://github.com/dominictarr/pull-stream)
-of all the feeds in the database, ordered by timestamps.
-All [pull-level](https://github.com/dominictarr/pull-level) options
-are allowed (start, end, reverse, tail)
-
-### ssbDb#createLogStream({gt: ts, tail: boolean}) -> PullSource
+### ssbDb#createLogStream({lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number}) => PullSource
 
 create a stream of the messages that have been written to this instance
 in the order they arrived. This is mainly intended for building views.
@@ -249,7 +222,30 @@ The objects in this stream will be of the form:
 }
 ```
 `timestamp` is generated by
-[monotonic-timestamp](https://github.com/dominictarr/monotonic-timestamp)
+[monotonic-timestamp](https://github.com/dominictarr/monotonic-timestamp) when saving the message.
+
+`gt, gte, lt, lte` ranges are supported, via [ltgt](https://github.com/dominictarr/ltgt)
+if `reverse` is set to true, results will be from oldest to newest.
+if `limit` is provided, the stream will stop after that many items.
+`old` and `live` return wether to include `old` and `live` (newly written messages) as
+via [pull-live](https://github.com/pull-stream/pull-live)
+
+if `raw` option is provided, then instead createRawLogStream is called.
+
+### sbot.createRawLogStream (lt,lte,gt,gte: offset, reverse,old,live: boolean, limit: number})
+
+provides access to the raw [flumedb](https://github.com/flumedb/flumedb) log.
+ranges refer to offsets in the log file.
+
+messages are returned in the form:
+
+```
+{
+  seq: offset,
+  value: {key: Hash, value: Message, timestamp: timestamp}
+}
+```
+all options supported by [flumelog-offset](https://github.com/flumedb/flumelog-offset) are supported.
 
 ### ssbDb#createHistoryStream ({id: feedId, seq: int?, live: bool?, limit: int?, keys: bool?, values: bool?}) -> PullSource
 
@@ -258,13 +254,33 @@ only stream messages with sequence numbers greater than `seq`.
 if `live` is true, the stream will be a
 [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
-### ssbDb#messagesByType ({type: string, live: bool?}) -> PullSource
+Note: since createHistoryStream is provided over the network to anonymous peers, not all
+options are supported.
+
+### ssbDb#messagesByType ({type: string, live,old,reverse: bool?, gt,gte,lt,lte: timestamp, limit: number }) -> PullSource
 
 retrieve messages with a given type. All messages must have a type,
 so this is a good way to select messages that an application might use.
-Returns a source pull-stream. This function takes all the options from [pull-level#read](https://github.com/dominictarr/pull-level#example---reading)
-(gt, lt, gte, lte, limit, reverse, live)
+Returns a source pull-stream.
 
+as with `createLogStream` messagesByType takes all the options from
+[pull-level#read](https://github.com/dominictarr/pull-level#example---reading)
+(gt, lt, gte, lte, limit, reverse, live, old)
+
+ranges may be a timestamp, of the local received time.
+
+### sbot.createFeedStream (lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number})
+
+like `createLogStream`, but messages are in order of the claimed time, instead of the received time.
+This may sound like a much better idea, but has surprising effects with live messages -
+you may receive a old message in real time - but for old messages, it makes sense.
+
+all standard options are supported.
+
+### sbot.createUserStream ({id: feed_id, lt,lte,gt,gte: sequence, reverse,old,live,raw: boolean, limit: number})
+
+like `createHistoryStream` except all options are supported. local access is allowed, but not
+remote anonymous access.
 
 ### ssbDb#links ({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
 
@@ -332,6 +348,72 @@ ssbDb.addMap(function (msg, cb) {
 })
 ```
 
+### _flumeUse(name, flumeview) => view
+
+Add a [flumeview](https://github.com/flumedb/flumedb#views) to the current instance.
+This method was intended to be a temporary solution, but is now used by many plugins,
+which is why it starts with `_`.
+
+see ***undocumented*** creating a [secret-stack](https://github.com/ssbc/secret-stack) plugin.
+
+## Undocumented API
+
+these methods exist, and are used for something important, but are not currently documented.
+
+* getAtSequence     - get message at a {id,sequence}
+* getVectorClock    - get the latest sequence for every feed held in log
+* latest            - get latest `{id,sequence,ts}` for given feed, id is the message hash.
+* latestSequence    - get latest sequence number for given feed
+* getLatest         - get the latest message for a given feed
+* progress          - get the progress state of index building
+* status            - get status information about index building
+* version           - current ssb-db version
+* queue             - append a message to write queue (without writing immediately)
+* post              - get called back when a message is appended
+* since             - observable of the current offset of underlying flumelog.
+* addUnboxer        - add a handler for unboxing (decrypting) messages
+* box               - encrypt a message content
+
+## depricated apis
+
+### sbot.createWriteStream() => PullSink
+
+create a pull-stream sink that expects a stream of messages and calls `sbot.add`
+on each item, appending every valid message to the log.
+
+### sbot#createFeed (keys?) => Feed (deprecated)
+
+_*depricated*: use [ssb-identities](http://github.com/ssbc/ssb-identities) instead_
+
+may only be called locally, not from a [ssb-client](https://github.com/ssbc/ssb-client) connection.
+
+Create a Feed object. A feed is a chain of messages signed
+by a single key (the identity of the feed).
+This handles the state needed to append valid messages to a feed.
+If keys are not provided, then a new key pair will be generated.
+
+The following methods apply to the Feed type.
+
+#### Feed#add (message, cb) (deprecated)
+
+Adds a message of a given type to a feed.
+This is the recommended way to append messages.
+message is a javascript object. It must be a `{}` object with a `type`
+property that is a string between 3 and 32 chars long.
+
+If `message` has `recps` property which is an array of feed ids, then the message
+content will be encrypted using [private-box](https://github.com/auditdrivencrypto/private-box) to
+those recipients. Any invalid recipients will cause an error, instead of accidentially posting
+a message publically or without a recipient.
+
+#### Feed#id (deprecated)
+
+the id of the feed (which is the feed's public key)
+
+#### Feed#keys
+
+the key pair for this feed.
+
 ## Stability
 
 Stable: Expect patches, possible features additions.
@@ -339,6 +421,11 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
+
+
+
+
+
 
 
 
