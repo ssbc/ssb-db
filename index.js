@@ -119,13 +119,11 @@ module.exports = {
 
       since                    : since,
 
-      getPublicKey             : ssb.getPublicKey,
       latest                   : ssb.latest,
       getLatest                : valid.async(ssb.getLatest, 'feedId'),
       latestSequence           : valid.async(ssb.latestSequence, 'feedId'),
       createFeed               : ssb.createFeed,
       whoami                   : function () { return { id: feed.id } },
-      query                    : ssb.query,
       createFeedStream         : valid.source(ssb.createFeedStream, 'readStreamOpts?'),
       createHistoryStream      : valid.source(ssb.createHistoryStream, ['createHistoryStreamOpts'], ['feedId', 'number?', 'boolean?']),
       createLogStream          : valid.source(ssb.createLogStream, 'readStreamOpts?'),
@@ -141,4 +139,6 @@ module.exports = {
     }
   }
 }
+
+
 
