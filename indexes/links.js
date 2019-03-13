@@ -58,7 +58,7 @@ module.exports = function () {
 
       return pull(
         index.read(opts),
-        Format(keys, values, opts.private)
+        Format(keys, values, opts.original)
       )
     }
 
@@ -77,7 +77,7 @@ module.exports = function () {
         )
       } else {
         if (vals) {
-          if (opts.private === true) {
+          if (opts.original !== true) {
             op.value = value
           } else {
             op.value = u.originalValue(value)

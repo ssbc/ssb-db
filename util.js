@@ -99,10 +99,10 @@ var originalData = exports.originalData = function (data) {
  *
  * @returns {function} a function that can be used to map over a stream
  */
-exports.Format = exports.formatStream = function (keys, values, isPrivate) {
+exports.Format = exports.formatStream = function (keys, values, isOriginal) {
   let extract
 
-  if (isPrivate === true) {
+  if (isOriginal !== true) {
     extract = data => {
       return keys && values
         ? data.value

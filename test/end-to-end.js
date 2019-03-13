@@ -27,7 +27,7 @@ module.exports = function (opts) {
       t.notOk(err)
 
       pull(
-        ssb.messagesByType('secret'),
+        ssb.messagesByType({ type: 'secret', original: true }),
         pull.collect(function (err, ary) {
           if (err) throw err
           console.log('ALICE', alice.id)
@@ -51,7 +51,7 @@ module.exports = function (opts) {
           console.log('boxed', ary[0].value)
           ssb2.add(ary[0].value, function (err) {
             if (err) throw err
-            ssb2.get({ id: pmsg.key, private: true }, function (err, _msg) {
+            ssb2.get({ id: pmsg.key }, function (err, _msg) {
               if (err) throw err
               console.log('LOAD', _msg)
               t.deepEqual(_msg, msg) // not decrypted
@@ -60,7 +60,7 @@ module.exports = function (opts) {
               var pmsg2 = ssb2.unbox({ value: _msg }, unboxKey)
               t.deepEqual(pmsg2.value, pmsg.value)
 
-              ssb2.get({ id: pmsg.key, private: true, unbox: unboxKey }, function (err, __msg) {
+              ssb2.get({ id: pmsg.key, unbox: unboxKey }, function (err, __msg) {
                 if (err) throw err
                 t.deepEqual(__msg, pmsg.value)
                 ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
@@ -91,7 +91,7 @@ module.exports = function (opts) {
       t.notOk(err)
 
       pull(
-        ssb.messagesByType('secret2'),
+        ssb.messagesByType({ type: 'secret2', original: true }),
         pull.collect(function (err, ary) {
           if (err) throw err
           t.equal(ary.length, 1)

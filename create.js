@@ -34,11 +34,11 @@ module.exports = function (path, opts, keys) {
   var _get = db.get
 
   db.get = function (key, cb) {
-    let isPrivate = false
+    let isOriginal = false
     let unbox
     let meta = false
     if (typeof key === 'object') {
-      isPrivate = key.private === true
+      isOriginal = key.original === true
       unbox = key.unbox
       meta = key.meta
       key = key.id
@@ -48,13 +48,13 @@ module.exports = function (path, opts, keys) {
       return db.keys.get(key, function (err, data) {
         if (err) return cb(err)
 
-        if (isPrivate && unbox) {
+        if (isOriginal !== true && unbox) {
           data = db.unbox(data, unbox)
         }
 
         let result
 
-        if (isPrivate) {
+        if (isOriginal !== true) {
           result = data.value
         } else {
           result = u.originalValue(data.value)
@@ -66,7 +66,6 @@ module.exports = function (path, opts, keys) {
       var link = ref.parseLink(key)
       return db.get({
         id: link.link,
-        private: true,
         unbox: link.query.unbox.replace(/\s/g, '+'),
         meta: link.query.meta
       }, cb)

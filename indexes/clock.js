@@ -51,7 +51,7 @@ module.exports = function (db, opts) {
       opts.keys = false
       opts.values = true
 
-      return pull(index.read(opts), u.Format(keys, values, opts.private))
+      return pull(index.read(opts), u.Format(keys, values, opts.original))
     }
 
     return index
