@@ -356,25 +356,126 @@ which is why it starts with `_`.
 
 see ***undocumented*** creating a [secret-stack](https://github.com/ssbc/secret-stack) plugin.
 
-## Undocumented API
+### getAtSequence ([id, seq], cb(err, msg))
 
-these methods exist, and are used for something important, but are not currently documented.
+get a message at a given feed `id` with given `sequence`.
+calls back a message or an error, takes a two element array
+with a feed `id` as the first element, and `sequence` as second element.
 
-* getAtSequence     - get message at a {id,sequence}
-* getVectorClock    - get the latest sequence for every feed held in log
-* latest            - get latest `{id,sequence,ts}` for given feed, id is the message hash.
-* latestSequence    - get latest sequence number for given feed
-* getLatest         - get the latest message for a given feed
-* progress          - get the progress state of index building
-* status            - get status information about index building
-* version           - current ssb-db version
-* queue             - append a message to write queue (without writing immediately)
-* post              - get called back when a message is appended
-* since             - observable of the current offset of underlying flumelog.
-* addUnboxer        - add a handler for unboxing (decrypting) messages
-* box               - encrypt a message content
+needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
+
+### getVectorClock (cb)
+
+load a map id to latest sequence (`{<id>: <seq>,...}`) for every feed in the database.
+
+needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
+
+### progress
+
+return the current status of various parts of the scuttlebut system that indicate progress.
+This api is hooked by a number of plugins, but `ssb-db` adds an `indexes` section.
+(which represents how fully built the indexes are)
+
+the output might look like:
+```
+{
+  "indexes": {
+    "start": 607551054,
+    "current": 607551054,
+    "target": 607551054
+  },
+}
+```
+
+progress is represented linearly from `start` to `target`. Once `current` is equal to `target`
+the progress is complete. `start` shows how far it's come. The numbers could be anything,
+but `start <= current <= target` if all three numbers are equal that should be considered
+100%
+
+### status
+
+returns metadata about the status of various ssb plugins. ssb-db adds an `sync` section,
+that shows where each index is up to. output might took like this:
+
+```
+{
+  "sync": {
+    "since": 607560288,
+    "plugins": {
+      "last": 607560288,
+      "keys": 607560288,
+      "clock": 607560288,
+      "time": 607560288,
+      "feed": 607560288,
+      "contacts2": 607560288,
+      "query": 607560288,
+      ...
+    },
+    "sync": true
+  }
+}
+```
+
+`sync.since` is where the main log is up to, `since.plugins.<name>` is where each
+plugin's indexes are up to.
+
+## version
+
+return the version of `ssb-db`. currently, this returns only the ssb-db version and
+not the ssb-server version, or the version of any other plugins. [We should fix this soon](https://github.com/ssbc/ssb-server/issues/648)
+
+## queue (msg, cb)
+
+add a message to be validated and written, but don't worry about actually writing it.
+the callback is called when the database is ready for more writes to be queued.
+usually that means it's called back immediately.
+
+not exposed over rpc.
+
+### flush (cb)
+
+callback when all queued writes are actually definitely written to the disk.
+
+### Obv: post (fn({key, value: msg, timestamp}))
+
+[observable](https://github.com/dominictarr/obv) that calls `fn`
+whenever a message is appended (with that message)
+
+not exposed over rpc.
+
+### Obv: since (fn(seq))
+
+an [observable](https://github.com/dominictarr/obv) of the current log sequence. This
+is always a positive integer that usually increases, except in the exceptional circumstance
+that the log is deleted or corrupted.
+
+### addUnboxer ({key:unboxKey, value: unboxValue})
+
+add an unboxer object, any encrypted message is passed to the unboxer object to
+test if it can be unboxed (decrypted)
+
+### unbox (data, key)
+
+attempt to decrypt data using key. Key is a symmetric key, that is passed to the unboxer objects.
 
 ## depricated apis
+
+### getLatest (feed, cb(err, {key, value: msg}))
+
+get the latest message for the given feed, with `{key, value: msg}` style.
+
+maybe used by some front ends, and by ssb-feed.
+
+### latestSequence (feed, cb(err, sequence))
+
+callback the sequence number of the latest message for the given feed.
+(I don't think this is used anymore)
+
+### latest () => PullSource
+
+returns a stream of `{author, sequence, ts}` tuples.
+`ts` is the time claimed by the author, not the received time.
+(I don't think this is used anymore)
 
 ### sbot.createWriteStream() => PullSink
 
@@ -421,11 +522,6 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
-
-
-
-
-
 
 
 
