@@ -63,6 +63,7 @@ module.exports = {
       })
     }
 
+    //calculate status
     function since () {
       var plugs = {}
       var sync = true
@@ -92,6 +93,7 @@ module.exports = {
       },
 
       status                   : function () {
+        //this ought to be more consistently organized by the name of the thing.
         return {progress: self.progress(), db: ssb.status, sync: since() }
       },
 
@@ -99,19 +101,18 @@ module.exports = {
         return pkg.version
       },
 
-      //temporary!
+      //temporary!... but became permanent
       _flumeUse                :
         function (name, flumeview) {
           ssb.use(name, flumeview)
           return ssb[name]
         },
 
-  //    usage                    : valid.sync(usage, 'string?|boolean?'),
       close                    : close,
 
       publish                  : valid.async(feed.add, 'string|msgContent'),
       add                      : valid.async(ssb.add, 'msg'),
-      queue                      : valid.async(ssb.queue, 'msg'),
+      queue                    : valid.async(ssb.queue, 'msg'),
       get                      : valid.async(ssb.get, 'msgLink|number|object'),
 
       post                     : ssb.post,
@@ -119,19 +120,8 @@ module.exports = {
 
       since                    : since,
 
-      latest                   : ssb.latest,
-      getLatest                : valid.async(ssb.getLatest, 'feedId'),
-      latestSequence           : valid.async(ssb.latestSequence, 'feedId'),
-      createFeed               : ssb.createFeed,
       whoami                   : function () { return { id: feed.id } },
-      createFeedStream         : valid.source(ssb.createFeedStream, 'readStreamOpts?'),
-      createHistoryStream      : valid.source(ssb.createHistoryStream, ['createHistoryStreamOpts'], ['feedId', 'number?', 'boolean?']),
-      createLogStream          : valid.source(ssb.createLogStream, 'readStreamOpts?'),
-      createUserStream         : valid.source(ssb.createUserStream, 'createUserStreamOpts'),
-      links                    : valid.source(ssb.links, 'linksOpts'),
-      sublevel                 : ssb.sublevel,
-      messagesByType           : valid.source(ssb.messagesByType, 'string|messagesByTypeOpts'),
-      createWriteStream        : ssb.createWriteStream,
+      createRawLogStream       : ssb.createRawLogStream,
       getVectorClock           : ssb.getVectorClock,
       getAtSequence            : ssb.getAtSequence,
       addUnboxer               : ssb.addUnboxer,
@@ -139,6 +129,19 @@ module.exports = {
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

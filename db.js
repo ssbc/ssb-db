@@ -23,6 +23,7 @@ module.exports = function (dir, keys, opts) {
     if (Date.now() > ts + 100) { update() }
   })
 
+  //call to update status and progress.
   function update () {
     ts = Date.now()
     // iterate over the current views, so we capture plugins
@@ -52,3 +53,4 @@ module.exports = function (dir, keys, opts) {
 
   return db
 }
+

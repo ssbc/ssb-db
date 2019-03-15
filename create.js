@@ -104,33 +104,7 @@ module.exports = function (path, opts, keys) {
     return db.stream(opts)
   }
 
-  // pull in the features that are needed to pass the tests
-  // and that sbot, etc uses but are slow.
-  require('./extras')(db, opts, keys)
-
-  // writeStream - used in (legacy) replication.
-  db.createWriteStream = function (cb) {
-    cb = cb || errorCB
-    return pull(
-      pull.asyncMap(function (data, cb) {
-        db.queue(data, function (err, msg) {
-          if (err) {
-            db.emit('invalid', err, msg)
-          }
-          setImmediate(cb)
-        })
-      }),
-      pull.drain(null, function (err) {
-        if (err) return cb(err)
-        db.flush(cb)
-      })
-    )
-  }
-
-  // should be private
-  db.createHistoryStream = db.clock.createHistoryStream
-
-  // called with [id, seq] or "<id>:<seq>"
+  // called with [id, seq] or "<id>:<seq>" (used by ssb-edb replication)
   db.getAtSequence = function (seqid, cb) {
     // will NOT expose private plaintext
     db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
@@ -151,7 +125,4 @@ module.exports = function (path, opts, keys) {
 
   return db
 }
-
-
-
 

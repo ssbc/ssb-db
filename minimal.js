@@ -12,6 +12,13 @@ var box = ssbKeys.box
 var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
 
+/*
+  this file provides the flumelog,
+  message append (and validation)
+  and decrypting - as that is part of loading the messages.
+
+*/
+
 var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
 
@@ -139,6 +146,7 @@ module.exports = function (dirname, keys, opts) {
     }
   }
 
+  //load the map of the latest items, copy into validation state.
   db.last.get(function (_, last) {
     // copy to so we avoid weirdness, because this object
     // tracks the state coming in to the database.
