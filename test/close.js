@@ -7,7 +7,7 @@ var createSSB = require('./util')
 tape('load', function (t) {
   var ssb = createSSB('test-ssb-feed')
 
-  ssb.createFeed().add({ type: 'whatever' }, function (err, msg) {
+  ssb.publish({ type: 'whatever' }, function (err, msg) {
     if (err) throw err
     //  t.end()
     console.log(msg)
