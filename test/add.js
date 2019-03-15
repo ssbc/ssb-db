@@ -23,9 +23,8 @@ module.exports = function (opts) {
     })
   })
   tape('add okay message', function (t) {
-    var f = ssb.createFeed()
 
-    f.add({ type: 'okay' }, function (err, msg, key) {
+    ssb.publish({ type: 'okay' }, function (err, msg, key) {
       if (err) throw err
       console.log(msg, key)
       ssb.get(msg.key, function (err, _msg) {
@@ -35,7 +34,7 @@ module.exports = function (opts) {
         ssb.get({id:msg.key, meta: true}, function (err, _msg2) {
           t.deepEqual(_msg2, msg)
 
-          f.add({ type: 'wtf' }, function (err, msg) {
+          ssb.publish({ type: 'wtf' }, function (err, msg) {
             if (err) throw err
             console.log(msg)
             ssb.get(msg.key, function (err, _msg) {
@@ -50,7 +49,7 @@ module.exports = function (opts) {
   })
 
   tape('log', function (t) {
-    pull(ssb.createLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
+    pull(ssb.createRawLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
       console.log(err, ary)
       if (err) throw err
       console.log(ary)
@@ -59,27 +58,9 @@ module.exports = function (opts) {
     }))
   })
 
-  tape('log', function (t) {
-    pull(
-      ssb.createLogStream({ keys: false, values: true }),
-      ssb2.createWriteStream(function (err, ary) {
-        if (err) throw err
-        t.end()
-      })
-    )
-  })
-
-  tape('sign-cap', function (t) {
-    var opts = { caps: { sign: crypto.randomBytes(32).toString('base64') } }
-    var ssb = createSSB('test-ssb-sign-cap', opts)
-    ssb.createFeed().add({ type: 'test', options: opts }, function (err, msg) {
-      if (err) throw err
-      console.log(msg)
-      t.deepEqual(msg.value.content.options, opts)
-      t.end()
-    })
-  })
 }
 
 if (!module.parent) { module.exports({}) }
+
+
 

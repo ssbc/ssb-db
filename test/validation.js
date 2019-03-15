@@ -45,10 +45,10 @@ module.exports = function (opts) {
               function (err) {
                 if (err) throw explain(err, 'hello2 failed')
                 pull(
-                  ssb.createFeedStream({ keys: false }),
+                  ssb.createRawLogStream({ seqs: false }),
                   pull.collect(function (err, ary) {
                     if (err) throw explain(err, 'createFeedStream failed')
-                    t.deepEqual(ary.pop(), prev)
+                    t.deepEqual(ary.pop().value, prev)
                     t.end()
                   })
                 )
@@ -98,24 +98,6 @@ module.exports = function (opts) {
     })
   })
 
-  // when an add fails, you should still be able to add another
-  // message if you wait until it has returned.
-
-  tape('too big', function (t) {
-    var keys = generate()
-    var feed = ssb.createFeed(keys)
-    var str = ''
-    for (var i = 0; i < 808; i++) str += '1234567890'
-    feed.add({ type: 'msg', value: str }, function (err, msg) {
-      if (!err) throw new Error('too big was allowed')
-      console.log(err)
-      feed.add({ type: 'msg', value: 'this ones cool tho' }, function (err) {
-        if (err) throw err
-        t.end()
-      })
-    })
-  })
-
   // git-ssb is known to change the order of the message
   tape('dict order', function (t) {
     var keys = generate()
@@ -147,8 +129,9 @@ module.exports = function (opts) {
                 }
 
                 pull(
-                  ssb.createFeedStream({ keys: false }),
-                  pull.drain(function (msg) {
+                  ssb.createRawLogStream({ seqs: false }),
+                  pull.drain(function (data) {
+                    var msg = data.value
                     try {
                       state = v.append(state, null, msg)
                     } catch (ex) {
@@ -170,3 +153,4 @@ module.exports = function (opts) {
 }
 
 if (!module.parent) { module.exports(require('../')) }
+

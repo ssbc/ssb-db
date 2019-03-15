@@ -21,7 +21,7 @@ tape('reopen', function (t) {
   var ssb = createSSB('test-ssb-feed', { temp: false })
 
   pull(
-    ssb.createLogStream(),
+    ssb.createRawLogStream({}),
     pull.collect(function (err, ary) {
       if (err) throw err
       console.log(ary, ssb.since.value)
