@@ -2,16 +2,10 @@
 
 secret-stack plugin which provides storing of valid ssb messages in an append-only log.
 
-## What does it do?
+## minimal ssb-db
 
-ssb-db provides tools for dealing with unforgeable append-only message 
-feeds. You can create a feed, post messages to that feed, verify a feed created by
-someone else, stream messages to and from feeds, and more (see [API](#api)).
-
-"Unforgeable" means that only the owner of a feed can modify that feed, as
-enforced by digital signing (see [Security properties](#security-properties)).
-This property makes ssb-db useful for peer-to-peer applications. ssb-db also
-makes it easy to encrypt messages.
+removes everything not strictly needed for ssb-db, the goal being enough features to support
+replication, but compatibility with the current application stack is out of scope.
 
 ## Example
 
@@ -389,6 +383,7 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
+
 
 
 
