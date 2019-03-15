@@ -36,7 +36,7 @@
   "devDependencies": {
     "hexpp": "^2.0.0",
     "pull-abortable": "~4.1.0",
-    "ssb-feed": "^2.2.1",
+    "ssb-feed": "^2.3.0",
     "tape": "^4.8.0",
     "typewiselite": "~1.0.0"
   },
