@@ -31,6 +31,8 @@ module.exports = function (path, opts, keys) {
 
   db.opts = opts
 
+  db.id = keys.id
+
   var _get = db.get
 
   db.get = function (key, cb) {
@@ -84,24 +86,33 @@ module.exports = function (path, opts, keys) {
     })
   }
 
-  db.createFeed = function (keys) {
-    if (!keys) keys = ssbKeys.generate()
-    function add (content, cb) {
-      // LEGACY: hacks to support add as a continuable
-      if (!cb) { return function (cb) { add(content, cb) } }
-
-      db.append({ content: content, keys: keys }, cb)
-    }
-    return {
-      add: add,
-      publish: add,
-      id: keys.id,
-      keys: keys
-    }
-  }
-
   db.createRawLogStream = function (opts) {
-    return db.stream(opts)
+    opts = opts || {}
+    var isPrivate = opts.private === true
+    return pull(
+      db.stream(opts),
+      pull.map(function (data) {
+        if (isPrivate) {
+          return data
+        } else {
+          if(opts.seqs)
+            return {
+              seq: data.seq,
+              value: {
+                key: data.value.key,
+                value: u.originalValue(data.value.value),
+                timestamp: data.value.timestamp
+              }
+            }
+          else
+            return {
+              key: data.key,
+              value: u.originalValue(data.value),
+              timestamp: data.timestamp
+            }
+        }
+      })
+    )
   }
 
   // called with [id, seq] or "<id>:<seq>" (used by ssb-edb replication)
@@ -125,4 +136,9 @@ module.exports = function (path, opts, keys) {
 
   return db
 }
+
+
+
+
+
 

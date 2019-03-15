@@ -219,6 +219,10 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
+  db.publish = function (content, cb) {
+    return db.append({content: content, keys: keys}, cb)
+  }
+
   db.buffer = function () {
     return queue.buffer
   }
