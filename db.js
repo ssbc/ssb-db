@@ -1,14 +1,22 @@
 var ViewHashTable = require('flumeview-hashtable')
+var Box = require('./box')
 
 module.exports = function (dir, keys, opts) {
-  var db = require('./minimal')(dir, keys, opts)
+  var boxes = Box(keys, opts)
 
-    .use('keys', ViewHashTable(2, function (key) {
+  var db = require('./minimal')(dir, keys, opts, boxes.map)
+  db.addUnboxer = boxes.addUnboxer
+  db.unbox = boxes.unbox
+  db.addMap = boxes.addMap
+
+
+  db.use('keys', ViewHashTable(2, function (key) {
       var b = Buffer.from(key.substring(1, 7), 'base64').readUInt32BE(0)
       return b
     })
     )
     .use('clock', require('./indexes/clock')())
+
 
   db.progress = {}
   var prog = db.progress.indexes = {
@@ -53,4 +61,8 @@ module.exports = function (dir, keys, opts) {
 
   return db
 }
+
+
+
+
 

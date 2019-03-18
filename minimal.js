@@ -22,6 +22,7 @@ var isFeed = require('ssb-ref').isFeed
 var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
 
+/*
 function unbox (data, unboxers, key) {
   var plaintext
   if (data && isString(data.value.content)) {
@@ -61,7 +62,7 @@ function unbox (data, unboxers, key) {
   }
   return data
 }
-
+*/
 /*
 ## queue (msg, cb)
 
@@ -77,41 +78,14 @@ function isString (s) {
   return typeof s === 'string'
 }
 
-module.exports = function (dirname, keys, opts) {
+module.exports = function (dirname, keys, opts, map) {
   var hmacKey = opts && opts.caps && opts.caps.sign
-
-  var mainUnboxer = {
-    key: function (content) { return ssbKeys.unboxKey(content, keys) },
-    value: function (content, key) { return ssbKeys.unboxBody(content, key) }
-  }
-
-  var unboxers = [ mainUnboxer ]
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
-  const unboxerMap = (msg, cb) => cb(null, db.unbox(msg))
-  const maps = [ unboxerMap ]
-  const chainMaps = (val, cb) => {
-    // assumes `maps.length >= 1`
-    if (maps.length === 1) {
-      maps[0](val, cb)
-    } else {
-      let idx = -1 // haven't entered the chain yet
-      const next = (err, val) => {
-        idx += 1
-        if (err || idx === maps.length) {
-          cb(err, val)
-        } else {
-          maps[idx](val, next)
-        }
-      }
-      next(null, val)
-    }
-  }
-
   // NOTE: must use db.ready.set(true) at when migration is complete
   // false says the database is not ready yet!
-  var db = Flume(log, true, chainMaps)
+  var db = Flume(log, true, map)
     .use('last', require('./indexes/last')())
 
   var state = V.initial()
@@ -231,17 +205,6 @@ module.exports = function (dirname, keys, opts) {
     // maybe need to check if there is anything currently writing?
     if (!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
     else flush.push(cb)
-  }
-
-  db.addUnboxer = function (unboxer) {
-    unboxers.push(unboxer)
-  }
-
-  db.unbox = function (data, key) {
-    return unbox(data, unboxers, key)
-  }
-  db.addMap = function (fn) {
-    maps.push(fn)
   }
 
   return db
