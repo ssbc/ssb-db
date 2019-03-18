@@ -23,47 +23,6 @@ var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
 
 /*
-function unbox (data, unboxers, key) {
-  var plaintext
-  if (data && isString(data.value.content)) {
-    for (var i = 0; i < unboxers.length; i++) {
-      var unboxer = unboxers[i]
-
-      if (isFunction(unboxer)) {
-        plaintext = unboxer(data.value.content, data.value)
-      } else {
-        if (!key) key = unboxer.key(data.value.content, data.value)
-        if (key) plaintext = unboxer.value(data.value.content, key)
-      }
-
-      if (plaintext) {
-        var msg = {}
-        for (var k in data.value) { msg[k] = data.value[k] }
-
-        // set `meta.original.content`
-        msg.meta = u.metaBackup(msg, 'content')
-
-        // modify content now that it's saved at `meta.original.content`
-        msg.content = plaintext
-
-        // set meta properties for private messages
-        msg.meta.private = true
-        if (key) { msg.meta.unbox = key.toString('base64') }
-
-        // backward-compatibility with previous property location
-        // this property location may be deprecated in favor of `msg.meta`
-        msg.cyphertext = msg.meta.original.content
-        msg.private = msg.meta.private
-        if (key) { msg.unbox = msg.meta.unbox }
-
-        return { key: data.key, value: msg, timestamp: data.timestamp }
-      }
-    }
-  }
-  return data
-}
-*/
-/*
 ## queue (msg, cb)
 
 add a message to the log, buffering the write to make it as fast as
@@ -209,4 +168,5 @@ module.exports = function (dirname, keys, opts, map) {
 
   return db
 }
+
 
