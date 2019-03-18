@@ -2,6 +2,7 @@
 
 var join = require('path').join
 var EventEmitter = require('events')
+var ViewLevel = require('flumeview-level')
 
 var pull = require('pull-stream')
 var ref = require('ssb-ref')
@@ -86,6 +87,24 @@ module.exports = function (path, opts, keys) {
     })
   }
 
+  //would like to remove this, but loads of tests use it.
+  db.createFeed = function (keys) {
+    console.error('deprecated api used: db.createFeed, please use db.publish directly')
+    if (!keys) keys = ssbKeys.generate()
+    function add (content, cb) {
+      // LEGACY: hacks to support add as a continuable
+      if (!cb) { return function (cb) { add(content, cb) } }
+
+      db.append({ content: content, keys: keys }, cb)
+    }
+    return {
+      add: add,
+      publish: add,
+      id: keys.id,
+      keys: keys
+    }
+  }
+
   db.createRawLogStream = function (opts) {
     opts = opts || {}
     var isPrivate = opts.private === true
@@ -134,11 +153,23 @@ module.exports = function (path, opts, keys) {
     })
   }
 
+  db
+    .use('time', ViewLevel(2, function (data) {
+      return [data.timestamp]
+    }))
+
+  db.createLogStream = function (opts) {
+    opts = u.options(opts)
+    if (opts.raw) { return db.stream(opts) }
+
+    var keys = opts.keys; delete opts.keys
+    var values = opts.values; delete opts.values
+    if (opts.gt == null) { opts.gt = 0 }
+
+    return pull(db.time.read(opts), u.Format(keys, values, opts.private))
+  }
+
+
   return db
 }
-
-
-
-
-
 

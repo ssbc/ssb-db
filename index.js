@@ -48,7 +48,7 @@ module.exports = {
     // main interface
     var ssb = create(opts.path, opts, opts.keys)
     //treat the main feed as remote, because it's likely handled like that by others.
-    var feed = ssb.createFeed(opts.keys, {remote: true})
+//    var feed = ssb.createFeed(opts.keys, {remote: true})
     var _close = api.close
     var close = function (arg, cb) {
       if('function' === typeof arg) cb = arg
@@ -81,7 +81,7 @@ module.exports = {
     }
     var self
     return self = {
-      id                       : feed.id,
+      id                       : opts.keys.id,
       keys                     : opts.keys,
 
       ready                    : function () {
@@ -110,7 +110,7 @@ module.exports = {
 
       close                    : close,
 
-      publish                  : valid.async(feed.add, 'string|msgContent'),
+      publish                  : valid.async(ssb.publish, 'string|msgContent'),
       add                      : valid.async(ssb.add, 'msg'),
       queue                    : valid.async(ssb.queue, 'msg'),
       get                      : valid.async(ssb.get, 'msgLink|number|object'),
@@ -120,8 +120,9 @@ module.exports = {
 
       since                    : since,
 
-      whoami                   : function () { return { id: feed.id } },
+      whoami                   : function () { return { id: opts.keys.id } },
       createRawLogStream       : ssb.createRawLogStream,
+      createLogStream       : ssb.createRawLogStream,
       getVectorClock           : ssb.getVectorClock,
       getAtSequence            : ssb.getAtSequence,
       addUnboxer               : ssb.addUnboxer,
@@ -129,6 +130,7 @@ module.exports = {
     }
   }
 }
+
 
 
 
