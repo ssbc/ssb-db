@@ -4,16 +4,21 @@ var ltgt = require('ltgt')
 var MAX_INT = 0x1fffffffffffff
 var u = require('../util')
 
-var ViewLevel = require('flumeview-level')
+//var ViewLevel = require('flumeview-level')
+const ViewReduce = require('flumeview-reduce')
 
 module.exports = function (db, opts) {
-  var createIndex = ViewLevel(2, function (data) {
-    return [[data.value.author, data.value.sequence]]
+  var createIndex = ViewReduce(2, function (state, data, seq) {
+    if(!state) state = {}
+    state[data.value.author] = state[data.value.author] || []
+    state[data.value.author][data.value.sequence] = seq
+    return state
   })
 
   return function (log, name) {
     var index = createIndex(log, name)
 
+    /*
     index.methods.createHistoryStream = 'source'
     index.methods.createUserStream = 'source'
 
@@ -53,7 +58,10 @@ module.exports = function (db, opts) {
 
       return pull(index.read(opts), u.Format(keys, values, opts.private))
     }
+    */
 
     return index
   }
 }
+
+

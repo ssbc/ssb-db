@@ -137,9 +137,14 @@ module.exports = function (path, opts, keys) {
   // called with [id, seq] or "<id>:<seq>" (used by ssb-edb replication)
   db.getAtSequence = function (seqid, cb) {
     // will NOT expose private plaintext
-    db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
-      if (err) cb(err)
-      else cb(null, u.originalData(value))
+    const parts = isString(seqid) ? seqid.split(':') : seqid
+    const id = parts[0], seq = parts[1]
+    db.clock.get(function (err, state) {
+      if(err) cb(err)
+      else if(!state[id] || state[id][seq] == null)
+        cb(new Error('not found: getAtSequence([' + id + ', '+seq+'])'))
+      else
+        db.get(state[id][seq], cb)
     })
   }
 
@@ -172,4 +177,8 @@ module.exports = function (path, opts, keys) {
 
   return db
 }
+
+
+
+
 
