@@ -13,6 +13,7 @@
     "explain-error": "~1.0.1",
     "flumedb": "^1.0.0",
     "flumelog-aligned-offset": "^1.0.2",
+    "flumelog-memory": "^0.2.0",
     "flumelog-offset": "^3.3.1",
     "flumeview-hashtable": "^1.0.3",
     "flumeview-level": "^3.0.5",

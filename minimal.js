@@ -1,8 +1,6 @@
 'use strict'
 var path = require('path')
 var Flume = require('flumedb')
-var Compat = require('flumelog-aligned-offset/compat')
-var FlumeLogAligned = require('flumelog-aligned-offset')
 var codec = require('./codec')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
@@ -13,10 +11,14 @@ var box = ssbKeys.box
 var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
 
+/*
+var Compat = require('flumelog-aligned-offset/compat')
+var FlumeLogAligned = require('flumelog-aligned-offset')
 function OffsetLog(file, opts) {
   return Compat(FlumeLogAligned(file, opts))
 }
-
+*/
+var OffsetLog = require('flumelog-memory')
 /*
   this file provides the flumelog,
   message append (and validation)
@@ -173,5 +175,6 @@ module.exports = function (dirname, keys, opts, map) {
 
   return db
 }
+
 
 
