@@ -2,7 +2,8 @@
 
 var join = require('path').join
 var EventEmitter = require('events')
-var ViewLevel = require('flumeview-level')
+//var ViewLevel = require('flumeview-level')
+var ltgt = require('ltgt')
 
 var pull = require('pull-stream')
 var ref = require('ssb-ref')
@@ -158,11 +159,11 @@ module.exports = function (path, opts, keys) {
     })
   }
 
-  db
-    .use('time', ViewLevel(2, function (data) {
-      return [data.timestamp]
-    }))
-
+//  db
+//    .use('time', ViewLevel(2, function (data) {
+//      return [data.timestamp]
+//    }))
+//
   db.createLogStream = function (opts) {
     opts = u.options(opts)
     if (opts.raw) { return db.stream(opts) }
@@ -171,7 +172,15 @@ module.exports = function (path, opts, keys) {
     var values = opts.values; delete opts.values
     if (opts.gt == null) { opts.gt = 0 }
 
-    return pull(db.time.read(opts), u.Format(keys, values, opts.private))
+    return pull(
+      //XXX not scalable, only usable for a proof of concept!
+      //    a binary search would be better!
+      db.stream({seqs: false, live: opts.live, reverse: opts.reverse}),
+      pull.filter(function (data) {
+        return ltgt.contains(opts, data.timestamp, cmp)
+      }),
+      u.Format(keys, values, opts.private)
+    )
   }
 
 
