@@ -1,7 +1,8 @@
 'use strict'
 var path = require('path')
 var Flume = require('flumedb')
-var OffsetLog = require('flumelog-offset')
+var Compat = require('flumelog-aligned-offset/compat')
+var FlumeLogAligned = require('flumelog-aligned-offset')
 var codec = require('./codec')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
@@ -11,6 +12,10 @@ var ssbKeys = require('ssb-keys')
 var box = ssbKeys.box
 var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
+
+function OffsetLog(file, opts) {
+  return Compat(FlumeLogAligned(file, opts))
+}
 
 /*
   this file provides the flumelog,
