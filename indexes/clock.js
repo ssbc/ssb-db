@@ -7,7 +7,7 @@ var u = require('../util')
 //var ViewLevel = require('flumeview-level')
 const ViewReduce = require('flumeview-reduce')
 
-module.exports = function (db, opts) {
+module.exports = function () {
   var createIndex = ViewReduce(2, function (state, data, seq) {
     if(!state) state = {}
     state[data.value.author] = state[data.value.author] || []
