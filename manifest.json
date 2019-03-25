@@ -1,0 +1,12 @@
+{
+  "get": "async",
+  "createLogStream": "source",
+  "add": "async",
+  "publish": "async",
+  "whoami": "sync",
+  "progress": "sync",
+  "status": "sync",
+  "getVectorClock": "async",
+  "version": "sync"
+
+}

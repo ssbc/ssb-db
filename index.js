@@ -4,16 +4,15 @@ var path       = require('path')
 var osenv      = require('osenv')
 var mkdirp     = require('mkdirp')
 var rimraf     = require('rimraf')
-var mdm        = require('mdmanifest')
 var valid      = require('./lib/validators')
 var pkg        = require('./package.json')
+var manifest   = require('./manifest.json')
 
 function isString(s) { return 'string' === typeof s }
 function isObject(o) { return 'object' === typeof o }
 function isFunction (f) { return 'function' === typeof f }
 // create SecretStack definition
 var fs = require('fs')
-var manifest = mdm.manifest(fs.readFileSync(path.join(__dirname, 'api.md'), 'utf-8'))
 
 manifest.seq = 'async'
 manifest.usage = 'sync'
@@ -130,6 +129,8 @@ module.exports = {
     }
   }
 }
+
+
 
 
 
