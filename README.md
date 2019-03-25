@@ -7,6 +7,23 @@ secret-stack plugin which provides storing of valid ssb messages in an append-on
 removes everything not strictly needed for ssb-db, the goal being enough features to support
 replication, but compatibility with the current application stack is out of scope.
 
+## compromises for the browser
+
+I took some shortcuts to get this working in the browser quickly.
+
+* uses flumelog-memory (this does have persistence, but keeps everything in working memory. This is okay for small scale)
+* removed all level based indexes. Currently no way to request replies or messages by type. Only message by key and messages in receive order.
+* all other indexes changed to use flumeview-reduce (because then there was only one thing to polyfil)
+
+This current version works, but isn't gonna scale well to lots of data. It would be good to use
+it for a new network, but harder to make it compatible with the current ssb network.
+(however, I believe we'll get there)
+
+Also, some problems I noticed:
+
+* the javascript is really big. It's mostly libsodium-wrappers though, which is 1.3 mb. I think
+  we get that down to 200k though.
+
 ## Example
 
 In this example, we create a feed, post a signed message to it, then create a stream 
@@ -375,5 +392,4 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
-
 
