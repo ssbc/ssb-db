@@ -358,7 +358,7 @@ see ***undocumented*** creating a [secret-stack](https://github.com/ssbc/secret-
 
 ### getAtSequence ([id, seq], cb(err, msg))
 
-get a message at a given feed `id` with given `sequence`.
+get a message for a given feed `id` with given `sequence`.
 calls back a message or an error, takes a two element array
 with a feed `id` as the first element, and `sequence` as second element.
 
@@ -366,7 +366,7 @@ needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
 
 ### getVectorClock (cb)
 
-load a map id to latest sequence (`{<id>: <seq>,...}`) for every feed in the database.
+load a map of `id` to latest `sequence` (`{<id>: <seq>,...}`) for every feed in the database.
 
 needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
 
