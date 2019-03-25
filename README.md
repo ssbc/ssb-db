@@ -56,14 +56,6 @@ pull(
     console.log(ary)
   })
 )
-
-// stream all messages for a particular keypair.
-pull(
-  ssb.createHistoryStream({id: sbot.id}),
-  pull.collect(function (err, ary) {
-    console.log(ary)
-  })
-)
 ```
 
 ## Concepts
@@ -383,10 +375,5 @@ Stable: Expect patches, possible features additions.
 ## License
 
 MIT
-
-
-
-
-
 
 
