@@ -339,3 +339,5 @@ an overview of how ssb is working.
 ## version: sync
 
 return the current version number of the running server
+
+## help: sync

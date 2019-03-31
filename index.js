@@ -136,6 +136,7 @@ module.exports = {
       getAtSequence            : ssb.getAtSequence,
       addUnboxer               : ssb.addUnboxer,
       box                      : ssb.box,
+      help                     : function () { return require('./help') }
     }
   }
 }
