@@ -25,7 +25,7 @@ that reads from the feed.
 
 //create a secret-stack instance and add ssb-db, for persistence.
 var createSbot = require('secret-stack')({})
-  .use(require('ssb-db')
+  .use(require('ssb-db'))
 
 
 // create the db instance.
