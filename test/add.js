@@ -49,11 +49,14 @@ module.exports = function (opts) {
   })
 
   tape('log', function (t) {
-    pull(ssb.createRawLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
+    pull(ssb.createLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
       console.log(err, ary)
       if (err) throw err
       console.log(ary)
       t.equal(ary.length, 2)
+      ary.forEach(function (data) {
+        t.ok(data.key)
+      })
       t.end()
     }))
   })
