@@ -175,9 +175,9 @@ module.exports = function (path, opts, keys) {
     return pull(
       //XXX not scalable, only usable for a proof of concept!
       //    a binary search would be better!
-      db.stream({seqs: false, live: opts.live, reverse: opts.reverse}),
+      db.stream({seqs: true, live: opts.live, reverse: opts.reverse}),
       pull.filter(function (data) {
-        return ltgt.contains(opts, data.timestamp, cmp)
+        return ltgt.contains(opts, data.value.timestamp)
       }),
       u.Format(keys, values, opts.private)
     )
@@ -186,8 +186,5 @@ module.exports = function (path, opts, keys) {
 
   return db
 }
-
-
-
 
 
