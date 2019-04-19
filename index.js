@@ -36,7 +36,8 @@ module.exports = {
     }
 
     // load/create secure scuttlebutt data directory
-    mkdirp.sync(opts.path)
+    try { mkdirp.sync(opts.path) }
+    catch (err) { console.error('ignoring mkdirp.sync in browser') }
 
     if(!opts.keys)
       opts.keys = ssbKeys.generate('ed25519', opts.seed && Buffer.from(opts.seed, 'base64'))
@@ -129,6 +130,7 @@ module.exports = {
     }
   }
 }
+
 
 
 
