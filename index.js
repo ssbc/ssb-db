@@ -122,7 +122,7 @@ module.exports = {
 
       whoami                   : function () { return { id: opts.keys.id } },
       createRawLogStream       : ssb.createRawLogStream,
-      createLogStream       : ssb.createRawLogStream,
+      createLogStream          : ssb.createLogStream,
       getVectorClock           : ssb.getVectorClock,
       getAtSequence            : ssb.getAtSequence,
       addUnboxer               : ssb.addUnboxer,
@@ -130,14 +130,4 @@ module.exports = {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
 
