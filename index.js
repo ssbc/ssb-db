@@ -33,7 +33,12 @@ module.exports = {
     if(opts.temp) {
       var name = isString(opts.temp) ? opts.temp : ''+Date.now()
       opts.path = path.join(osenv.tmpdir(), name)
-      rimraf.sync(opts.path)
+
+      if (!opts.startUclean) {
+        // The 'startUnclean' option allows the caller to not remove the old temp directory with the given name
+        // if it exists. 
+        rimraf.sync(opts.path)
+      }
     }
 
     // load/create secure scuttlebutt data directory
