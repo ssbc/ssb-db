@@ -136,6 +136,37 @@ module.exports = function (opts) {
       if (err) throw err
     })
   })
+
+  tape('delete', (t) => {
+    var ssb = createSSB('test-ssb-log8')
+
+    var feed = createFeed(ssb, generate(), opts)
+    t.plan(4)
+
+    feed.add('msg', 'hello there!', function (err, msg) {
+      t.error(err)
+
+      pull(
+        ssb.createFeedStream(),
+        pull.drain(function (msg) {
+          ssb.del(msg.key, err => t.error(err))
+        }, () => {
+          pull(
+            ssb.createFeedStream(),
+            pull.drain(() => {
+              t.fail('no messages should be available')
+            }, () => {
+              ssb.get(msg.key, (err) => {
+                t.ok(err)
+                t.equal(err.code, 'flumelog:deleted')
+                t.end()
+              })
+            })
+          )
+        })
+      )
+    })
+  })
 }
 
 if (!module.parent) { module.exports({}) }

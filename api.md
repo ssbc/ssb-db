@@ -318,7 +318,15 @@ Outputs information in the following form:
 { id: FeedID }
 ```
 
+## del: async
 
+Delete an item from flumedb by its sequence number.
+
+```javascript
+del(msg.key, (err) => {
+  if (err) throw err
+})
+```
 
 ## progress: sync
 

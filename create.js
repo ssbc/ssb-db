@@ -32,6 +32,19 @@ module.exports = function (path, opts, keys) {
   db.opts = opts
 
   var _get = db.get
+  var _del = db.del
+
+  db.del = (key, cb) => {
+    db.keys.get(key, (err, val, seq) => {
+      // I think this is necessary because `seq` is the offset + 1? Not sure.
+      const offset = seq - 1
+
+      if (err) return cb(err)
+      if (seq == null) cb(new Error('seq is null!'))
+
+      _del(offset, cb)
+    })
+  }
 
   db.get = function (key, cb) {
     let isPrivate = false
