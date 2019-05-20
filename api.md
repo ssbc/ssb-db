@@ -320,7 +320,7 @@ Outputs information in the following form:
 
 ## del: async
 
-Delete an item from flumedb by its sequence number.
+Delete a message by its message key.
 
 ```javascript
 del(msg.key, (err) => {
