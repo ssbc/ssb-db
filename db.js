@@ -1,13 +1,8 @@
-var ViewHashTable = require('flumeview-hashtable')
+var FlumeviewLevel = require('flumeview-level')
 
 module.exports = function (dir, keys, opts) {
-  var db = require('./minimal')(dir, keys, opts)
-
-    .use('keys', ViewHashTable(2, function (key) {
-      var b = Buffer.from(key.substring(1, 7), 'base64').readUInt32BE(0)
-      return b
-    })
-    )
+  const db = require('./minimal')(dir, keys, opts)
+    .use('keys', FlumeviewLevel(3, (msg) => [ msg.key ]))
     .use('clock', require('./indexes/clock')())
 
   db.progress = {}
