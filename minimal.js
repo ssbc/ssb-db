@@ -1,7 +1,8 @@
 'use strict'
 var path = require('path')
 var Flume = require('flumedb')
-var OffsetLog = require('flumelog-offset')
+var OffsetLog = require('flumelog-aligned-offset')
+var OffsetLogCompat = require('flumelog-aligned-offset/compat')
 var codec = require('./codec')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
@@ -80,7 +81,7 @@ module.exports = function (dirname, keys, opts) {
 
   var unboxers = [ mainUnboxer ]
 
-  var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
+  var log = OffsetLogCompat(OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec }))
 
   const unboxerMap = (msg, cb) => cb(null, db.unbox(msg))
   const maps = [ unboxerMap ]
@@ -234,4 +235,3 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
-
