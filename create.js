@@ -32,6 +32,16 @@ module.exports = function (path, opts, keys) {
   db.opts = opts
 
   var _get = db.get
+  var _del = db.del
+
+  db.del = (key, cb) => {
+    db.keys.get(key, (err, val, seq) => {
+      if (err) return cb(err)
+      if (seq == null) cb(new Error('seq is null!'))
+
+      _del(seq, cb)
+    })
+  }
 
   db.get = function (key, cb) {
     let isPrivate = false
