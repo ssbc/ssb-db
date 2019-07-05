@@ -458,7 +458,7 @@ test if it can be unboxed (decrypted)
 
 attempt to decrypt data using key. Key is a symmetric key, that is passed to the unboxer objects.
 
-## depricated apis
+## deprecated apis
 
 ### getLatest (feed, cb(err, {key, value: msg}))
 
@@ -484,7 +484,7 @@ on each item, appending every valid message to the log.
 
 ### sbot#createFeed (keys?) => Feed (deprecated)
 
-_*depricated*: use [ssb-identities](http://github.com/ssbc/ssb-identities) instead_
+_*deprecated*: use [ssb-identities](http://github.com/ssbc/ssb-identities) instead_
 
 may only be called locally, not from a [ssb-client](https://github.com/ssbc/ssb-client) connection.
 
