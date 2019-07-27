@@ -119,12 +119,21 @@ module.exports = function (dirname, keys, opts) {
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
-        db.post.set(u.originalData(data))
+        if (isArray(data)) {
+          db.post.set(u.originalData(data))
+        } else {
+          data.forEach(d => u.originalData(d))
+        }
       })
       cb(err, v)
     })
   }, function reduce (_, msg) {
-    return V.append(state, hmacKey, msg)
+    if (isArray(msg)) {
+      // This is an atomic bulk append
+      return V.appendBulk(state, hmacKey, msg)
+    } else {
+      return V.append(state, hmacKey, msg)
+    }
   }, function (_state) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
@@ -179,17 +188,7 @@ module.exports = function (dirname, keys, opts) {
   db.append = wait(function (opts, cb) {
     try {
       var content = opts.content
-      var recps = opts.content.recps
-      if (recps) {
-        const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
-        if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
-          recps = opts.content.recps = [].concat(recps) // force to array
-          content = opts.content = box(opts.content, recps)
-        } else {
-          const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
-          throw new Error(errMsg)
-        }
-      }
+      throwIfInvalidRecipients(content)
 
       var msg = V.create(
         state.feeds[opts.keys.id],
@@ -211,6 +210,36 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
+  db.appendAll = wait(function (opts, cb) {
+    try {
+      var messages = opts.messages
+      messages.forEach(throwIfInvalidRecipients)
+
+      var validatedMessages = messages.map(msg => {
+        var timestamp = timestamp()
+        V.create(
+          state.feeds[opts.keys.id],
+          opts.keys, opts.hmacKey || hmacKey,
+          msg,
+          timestamp
+        )
+      })
+
+      queue(validatedMessages, function (err) {
+        if (err) return cb(err)
+        var data = state.queue[state.queue.length - 1]
+        flush.push(function () {
+          cb(null, data)
+        })
+      })
+
+    } catch (err) {
+      cb(err)
+      return
+    }
+      
+  })
+
   db.buffer = function () {
     return queue.buffer
   }
@@ -230,6 +259,20 @@ module.exports = function (dirname, keys, opts) {
   }
   db.addMap = function (fn) {
     maps.push(fn)
+  }
+
+  function throwIfInvalidRecipients(content) {
+    var recps = content.recps
+    if (recps) {
+      const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
+      if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
+        recps = content.recps = [].concat(recps) // force to array
+        content = content = box(opts.content, recps)
+      } else {
+        const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
+        throw new Error(errMsg)
+      }
+    }
   }
 
   return db
