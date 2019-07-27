@@ -215,15 +215,12 @@ module.exports = function (dirname, keys, opts) {
       var messages = opts.messages
       messages.forEach(throwIfInvalidRecipients)
 
-      var validatedMessages = messages.map(msg => {
-        var timestamp = timestamp()
-        V.create(
-          state.feeds[opts.keys.id],
-          opts.keys, opts.hmacKey || hmacKey,
-          msg,
-          timestamp
-        )
-      })
+      var validatedMessages = V.createAll(
+        state.feeds[opts.keys.id],
+        opts.keys, opts.hmacKey || hmacKey,
+        messages,
+        timestamp
+      )
 
       queue(validatedMessages, function (err) {
         if (err) return cb(err)
