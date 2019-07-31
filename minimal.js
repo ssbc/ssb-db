@@ -119,7 +119,7 @@ module.exports = function (dirname, keys, opts) {
     state.queue = []
     append(batch, function (err, v) {
       batch.forEach(function (data) {
-        if (isArray(data)) {
+        if (!isArray(data)) {
           db.post.set(u.originalData(data))
         } else {
           data.forEach(d => u.originalData(d))
