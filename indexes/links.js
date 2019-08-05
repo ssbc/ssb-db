@@ -6,6 +6,8 @@ var u = require('../util')
 var Format = u.formatStream
 var mlib = require('ssb-msgs')
 
+var isArray = Array.isArray
+
 function isString (s) {
   return typeof s === 'string'
 }
@@ -31,6 +33,12 @@ module.exports = function () {
   }
 
   var createIndex = ViewLevel(2, function (data) {
+    if (isArray(data)) {
+      // The last element is the last element written in the
+      // last bulk append
+      data = data[data.length - 1]
+    }
+
     return indexMsg(data.timestamp, data.key, data.value)
   })
 

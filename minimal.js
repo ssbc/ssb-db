@@ -16,7 +16,20 @@ var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
 
 function unbox (data, unboxers, key) {
+
+  if (isArray(data)) {
+    return data.map(function(msg) {
+      return unboxOne(msg, unboxers, key)
+    })
+  } else {
+    return unboxOne(data, unboxers, key)
+  }
+ 
+}
+
+function unboxOne(data, unboxers, key) {
   var plaintext
+
   if (data && isString(data.value.content)) {
     for (var i = 0; i < unboxers.length; i++) {
       var unboxer = unboxers[i]
@@ -217,9 +230,10 @@ module.exports = function (dirname, keys, opts) {
 
       var validatedMessages = V.createAll(
         state.feeds[opts.keys.id],
-        opts.keys, opts.hmacKey || hmacKey,
+        opts.keys,
+        opts.hmacKey || hmacKey,
         messages,
-        timestamp
+        timestamp()
       )
 
       queue(validatedMessages, function (err) {

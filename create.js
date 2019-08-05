@@ -105,7 +105,7 @@ module.exports = function (path, opts, keys) {
 
     function addBulk(messages, cb) {
       if (!cb) throw new Error("Expected callback to feed addBulk function")
-      else db.appendAll({messages: messages, keys: keys}, keys)
+      else db.appendAll({messages: messages, keys: keys}, cb)
     }
 
     return {

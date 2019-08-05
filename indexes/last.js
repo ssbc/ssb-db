@@ -1,9 +1,17 @@
 var pull = require('pull-stream')
 var pCont = require('pull-cont')
 var Reduce = require('flumeview-reduce')
+var isArray = Array.isArray
 
 module.exports = function () {
   var createIndex = Reduce(1, function (acc, data) {
+    
+    if (isArray(data)) {
+      // The last element is the last element written in the
+      // last bulk append
+      data = data[data.length - 1]
+    }
+
     if (!acc) acc = {}
     acc[data.value.author] = {
       id: data.key,

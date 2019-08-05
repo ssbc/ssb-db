@@ -3,11 +3,17 @@ var ltgt = require('ltgt')
 // 53 bit integer
 var MAX_INT = 0x1fffffffffffff
 var u = require('../util')
-
 var ViewLevel = require('flumeview-level')
+var isArray = Array.isArray
 
 module.exports = function (db, opts) {
   var createIndex = ViewLevel(2, function (data) {
+    if (isArray(data)) {
+      // The last element is the last element written in the
+      // last bulk append
+      data = data[data.length - 1]
+    }
+
     return [[data.value.author, data.value.sequence]]
   })
 
