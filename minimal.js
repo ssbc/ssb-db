@@ -188,7 +188,7 @@ module.exports = function (dirname, keys, opts) {
   db.append = wait(function (opts, cb) {
     try {
       var content = opts.content
-      throwIfInvalidRecipients(content)
+      content = boxOrThrow(content)
 
       var msg = V.create(
         state.feeds[opts.keys.id],
@@ -213,7 +213,7 @@ module.exports = function (dirname, keys, opts) {
   db.appendAll = wait(function (opts, cb) {
     try {
       var messages = opts.messages
-      messages.forEach(throwIfInvalidRecipients)
+      messages = messages.map(boxOrThrow)
 
       var validatedMessages = V.createAll(
         state.feeds[opts.keys.id],
@@ -258,18 +258,20 @@ module.exports = function (dirname, keys, opts) {
     maps.push(fn)
   }
 
-  function throwIfInvalidRecipients(content) {
+  function boxOrThrow(content) {
     var recps = content.recps
     if (recps) {
       const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
       if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
         recps = content.recps = [].concat(recps) // force to array
-        content = content = box(opts.content, recps)
+        return box(content, recps)
       } else {
         const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
         throw new Error(errMsg)
       }
     }
+
+    return content
   }
 
   return db
