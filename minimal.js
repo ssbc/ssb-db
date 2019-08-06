@@ -152,8 +152,8 @@ module.exports = function (dirname, keys, opts) {
           var endIndex = item[1]
           var slice = batch.slice(startIndex, endIndex)
 
-          append(slice, function(err, v) {
-            handlePost(slice)
+          append(slice[0], function(err, v) {
+            handlePost(slice[0])
             mapCb(err, v)
           })
         }
@@ -169,7 +169,7 @@ module.exports = function (dirname, keys, opts) {
         if (!isArray(data)) {
           db.post.set(u.originalData(data))
         } else {
-          data.forEach(d => u.originalData(d))
+          data.forEach(d => db.post.set(u.originalData(d)))
         }
       })
     }
@@ -206,13 +206,17 @@ module.exports = function (dirname, keys, opts) {
       }
 
     }).filter(function(elem) {
-      return elem === null
+      return elem !== null
     })
 
     var start = 0
     var result = []
     batchIndexes.forEach(function (batchIndex) {
-      result.push([start, batchIndex])
+      
+      if (start < batchIndex) {
+        result.push([start, batchIndex])
+      }
+
       result.push([batchIndex, batchIndex + 1])
       start = batchIndex + 1
     })

@@ -8,7 +8,7 @@ var createSSB = require('./util')
 module.exports = function (opts) {
 
     tape('add bulk', function (t) {
-        var ssb = createSSB('test-ssb-feed', {})
+        var ssb = createSSB('test-ssb-feed2', {})
 
         var f = ssb.createFeed()
 
@@ -26,7 +26,15 @@ module.exports = function (opts) {
         f.addBulk(messages, function (err, ary) {
             if (err) throw err
             t.equal(ary.length, 2)
-            t.end()
+
+            pull(
+                ssb.createFeedStream(),
+                pull.collect(function(err,result) {
+                    t.equal(result.length, 2)
+                    t.end()
+                })
+            )
+
         })
 
 
