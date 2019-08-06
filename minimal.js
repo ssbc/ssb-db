@@ -11,6 +11,8 @@ var ssbKeys = require('ssb-keys')
 var box = ssbKeys.box
 var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
+var pull = require('pull-stream')
+var asyncMap = require('pull-stream/throughs/async-map')
 
 var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
@@ -130,16 +132,49 @@ module.exports = function (dirname, keys, opts) {
   var queue = AsyncWrite(function (_, cb) {
     var batch = state.queue
     state.queue = []
-    append(batch, function (err, v) {
-      batch.forEach(function (data) {
+
+    var batchAppend = batch.findIndex(function (elem) {
+      return isArray(elem)
+    });
+
+    if (batchAppend === -1) {
+      append(batch, function (err, v) {
+        handlePost(batch)
+        cb(err, v)
+      })
+    } else {
+      var batchIndexes = findBatchIndexRanges(batch)
+
+      pull(
+        pull.values(batchIndexes),
+        asyncMap(function(item, mapCb) {
+          var startIndex = item[0]
+          var endIndex = item[1]
+          var slice = batch.slice(startIndex, endIndex)
+
+          append(slice, function(err, v) {
+            handlePost(slice)
+            mapCb(err, v)
+          })
+        }
+      ),
+      pull.drain(null, function(err, v) {
+        cb(err, v)
+      }))
+
+    }
+
+    function handlePost(d) {
+      d.forEach(function (data) {
         if (!isArray(data)) {
           db.post.set(u.originalData(data))
         } else {
           data.forEach(d => u.originalData(d))
         }
       })
-      cb(err, v)
-    })
+    }
+
+
   }, function reduce (_, msg) {
     if (isArray(msg)) {
       // This is an atomic bulk append
@@ -159,6 +194,36 @@ module.exports = function (dirname, keys, opts) {
       for (var i = 0; i < l; ++i) { flush[i]() }
       flush = flush.slice(l)
     }
+  }
+
+  function findBatchIndexRanges(batch) {
+    
+    var batchIndexes = batch.map(function(elem, index) {
+      if (isArray(elem)) {
+        return index
+      } else {
+        return null
+      }
+
+    }).filter(function(elem) {
+      return elem === null
+    })
+
+    var start = 0
+    var result = []
+    batchIndexes.forEach(function (batchIndex) {
+      result.push([start, batchIndex])
+      result.push([batchIndex, batchIndex + 1])
+      start = batchIndex + 1
+    })
+
+    var lastBatchIndex = batchIndexes[batchIndexes - 1];
+
+    if (lastBatchIndex < (batch.length - 1)) {
+      result.push([lastBatchIndex + 1, batch.length])
+    }
+
+    return result
   }
 
   db.last.get(function (_, last) {
