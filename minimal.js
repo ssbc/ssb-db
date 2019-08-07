@@ -294,14 +294,19 @@ module.exports = function (dirname, keys, opts) {
   db.appendAll = wait(function (opts, cb) {
     try {
       var messages = opts.messages
-      messages = messages.map(boxOrThrow)
+      messages = messages.map(boxOrThrow).map(function(message) {
+        return {
+          content: message,
+          timestamp: timestamp()
+        }
+
+      })
 
       var validatedMessages = V.createAll(
         state.feeds[opts.keys.id],
         opts.keys,
         opts.hmacKey || hmacKey,
-        messages,
-        timestamp()
+        messages
       )
 
       queue(validatedMessages, function (err) {
