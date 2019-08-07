@@ -55,7 +55,7 @@ function unbox (data, unboxers, key) {
       }
     }
   }
-  
+
   return data
 }
 
@@ -141,8 +141,12 @@ module.exports = function (dirname, keys, opts) {
           var endIndex = item[1]
           var slice = batch.slice(startIndex, endIndex)
 
-          append(slice[0], function(err, v) {
-            handlePost(slice[0])
+          if (slice.length === 1 && isArray(slice[0])) {
+            slice = slice[0]
+          }
+
+          append(slice, function(err, v) {
+            handlePost(slice)
             mapCb(err, v)
           })
         }
@@ -212,7 +216,7 @@ module.exports = function (dirname, keys, opts) {
 
     var lastBatchIndex = batchIndexes[batchIndexes - 1];
 
-    if (lastBatchIndex < (batch.length - 1)) {
+    if (lastBatchIndex <= (batch.length - 1)) {
       result.push([lastBatchIndex + 1, batch.length])
     }
 

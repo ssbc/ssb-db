@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "hexpp": "^2.0.0",
+    "multicb": "^1.2.2",
     "pull-abortable": "~4.1.0",
     "ssb-feed": "^2.2.1",
     "tape": "^4.8.0",
