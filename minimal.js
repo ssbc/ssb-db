@@ -271,7 +271,6 @@ module.exports = function (dirname, keys, opts) {
     try {
       var content = opts.content
       content = boxOrThrow(content)
-
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys, opts.hmacKey || hmacKey,

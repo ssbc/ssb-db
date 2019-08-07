@@ -3,7 +3,6 @@ var pull = require('pull-stream')
 var ltgt = require('ltgt')
 var u = require('../util')
 var ViewLevel = require('flumeview-level')
-var isArray = Array.isArray
 
 function resolveTimestamp (msg) {
 
@@ -17,12 +16,6 @@ function resolveTimestamp (msg) {
 
 module.exports = function (db) {
   var createIndex = ViewLevel(3, function (data) {
-    if (isArray(data)) {
-      // The last element is the last element written in the
-      // last bulk append
-      data = data[data.length - 1]
-    }
-
     return [[resolveTimestamp(data), data.value.author]]
   })
 
