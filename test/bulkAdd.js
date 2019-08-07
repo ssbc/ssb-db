@@ -102,6 +102,11 @@ module.exports = function (opts) {
         })
 
         done(function(err, results) {
+            
+            if (err) {
+                t.fail(err)
+            }
+
             pull(
                 ssb.createFeedStream(),
                 pull.collect(function(err, result) {

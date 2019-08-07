@@ -127,12 +127,15 @@ module.exports = function (dirname, keys, opts) {
     });
 
     if (batchAppend === -1) {
+
       append(batch, function (err, v) {
         handlePost(batch)
         cb(err, v)
       })
     } else {
       var batchIndexes = findBatchIndexRanges(batch)
+
+      var finalResult = null;
 
       pull(
         pull.values(batchIndexes),
@@ -151,8 +154,10 @@ module.exports = function (dirname, keys, opts) {
           })
         }
       ),
-      pull.drain(null, function(err, v) {
-        cb(err, v)
+      pull.drain(function(result) {
+        finalResult = result
+      }, function(err, v) {
+        cb(err, finalResult)
       }))
 
     }
@@ -216,7 +221,7 @@ module.exports = function (dirname, keys, opts) {
 
     var lastBatchIndex = batchIndexes[batchIndexes - 1];
 
-    if (lastBatchIndex <= (batch.length - 1)) {
+    if (lastBatchIndex < (batch.length - 1)) {
       result.push([lastBatchIndex + 1, batch.length])
     }
 
