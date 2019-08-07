@@ -18,18 +18,6 @@ var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
 
 function unbox (data, unboxers, key) {
-
-  if (isArray(data)) {
-    return data.map(function(msg) {
-      return unboxOne(msg, unboxers, key)
-    })
-  } else {
-    return unboxOne(data, unboxers, key)
-  }
- 
-}
-
-function unboxOne(data, unboxers, key) {
   var plaintext
 
   if (data && isString(data.value.content)) {
@@ -67,6 +55,7 @@ function unboxOne(data, unboxers, key) {
       }
     }
   }
+  
   return data
 }
 
