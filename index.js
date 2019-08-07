@@ -110,7 +110,9 @@ module.exports = {
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),
-      publishAll               : valid.async(feed.addAll, 'object'),
+
+      // An atomic append of many messages at once
+      publishAll               : valid.async(feed.addBulk, 'object'),
       add                      : valid.async(ssb.add, 'msg'),
       queue                      : valid.async(ssb.queue, 'msg'),
       get                      : valid.async(ssb.get, 'msgLink|number|object'),

@@ -122,17 +122,21 @@ module.exports = function (dirname, keys, opts) {
     var batch = state.queue
     state.queue = []
 
-    var batchAppend = batch.findIndex(function (elem) {
+    var hasBatchAppends = batch.findIndex(function (elem) {
       return isArray(elem)
-    });
+    }) !== -1;
 
-    if (batchAppend === -1) {
+    if (!hasBatchAppends) {
 
       append(batch, function (err, v) {
         handlePost(batch)
         cb(err, v)
       })
     } else {
+      // If there are batch appends, we need to make sure we append those as one 'append'
+      // operation so that that the append is done atomically, and the appropriate callback
+      // is called via the flush queue to signal the write has completed
+
       var batchIndexes = findBatchIndexRanges(batch)
 
       var finalResult = null;
@@ -175,7 +179,6 @@ module.exports = function (dirname, keys, opts) {
 
   }, function reduce (_, msg) {
     if (isArray(msg)) {
-      // This is an atomic bulk append
       return V.appendBulk(state, hmacKey, msg)
     } else {
       return V.append(state, hmacKey, msg)
@@ -194,6 +197,17 @@ module.exports = function (dirname, keys, opts) {
     }
   }
 
+  /**
+   * Takes an array of single messages and arrays (bulk messages)
+   * and returns a list of the slice indexes for the array that such that the
+   * bulk appends would be performed in one operation and the rest would
+   * performed in chunks.
+   * 
+   * e.g. [single_message1, single_message2, [bulk_messages], single_message3, [bulk_messages]]
+   * would return [[0, 3], [3,4], [4,5], [5,6]]
+   * 
+   * @param {*} batch the array of writes to be performed.
+   */
   function findBatchIndexRanges(batch) {
     
     var batchIndexes = batch.map(function(elem, index) {
