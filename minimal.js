@@ -78,12 +78,12 @@ module.exports = function (dirname, keys, opts) {
     value: function (content, key) { return ssbKeys.unboxBody(content, key) }
   }
 
-  var unboxers = [ mainUnboxer ]
+  var unboxers = [mainUnboxer]
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
   const unboxerMap = (msg, cb) => cb(null, db.unbox(msg))
-  const maps = [ unboxerMap ]
+  const maps = [unboxerMap]
   const chainMaps = (val, cb) => {
     // assumes `maps.length >= 1`
     if (maps.length === 1) {
@@ -217,8 +217,12 @@ module.exports = function (dirname, keys, opts) {
 
   db.flush = function (cb) {
     // maybe need to check if there is anything currently writing?
-    if (!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
-    else flush.push(cb)
+    const emptyBuffer = !queue.buffer || !queue.buffer.queue.length
+    if (emptyBuffer && !queue.writing) {
+      cb()
+    } else {
+      flush.push(cb)
+    }
   }
 
   db.addUnboxer = function (unboxer) {
@@ -234,4 +238,3 @@ module.exports = function (dirname, keys, opts) {
 
   return db
 }
-

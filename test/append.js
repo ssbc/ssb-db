@@ -72,7 +72,7 @@ tape('loads', function (t) {
   // set j=1 to skip first message, which has already been appended.
   var j = 1
   var k = 0
-  ;(function next () {
+  function next () {
     if (j >= state.queue.length) {
       return a.flush(function () {
         console.log('append', N / ((Date.now() - start) / 1000))
@@ -89,7 +89,9 @@ tape('loads', function (t) {
         next()
       }
     })
-  })()
+  }
+
+  next()
 })
 
 tape('read back', function (t) {

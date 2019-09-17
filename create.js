@@ -18,8 +18,8 @@ function errorCB (err) {
 }
 
 module.exports = function (path, opts, keys) {
-  //_ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
-  if(!path) throw new Error('path must be provided')
+  // _ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
+  if (!path) throw new Error('path must be provided')
 
   keys = keys || ssbKeys.generate()
 
@@ -70,7 +70,7 @@ module.exports = function (path, opts, keys) {
           result = u.originalValue(data.value)
         }
 
-        cb(null, !meta ? result : {key: data.key, value: result, timestamp: data.timestamp})
+        cb(null, !meta ? result : { key: data.key, value: result, timestamp: data.timestamp })
       })
     } else if (ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
@@ -161,7 +161,3 @@ module.exports = function (path, opts, keys) {
 
   return db
 }
-
-
-
-

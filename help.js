@@ -12,32 +12,28 @@ function rangeArgs (type) {
     lte: rangeArg('less than or equal to', type),
     gt: rangeArg('greater than ', type),
     lt: rangeArg('less than', type),
-    reverse: {type: 'boolean', test: 'boolean', description: 'output is reversed', optional: true},
-    live: {type: 'boolean', test: 'boolean', description: 'include live results', optional: true},
-    old: {type: 'boolean', test: 'boolean', description: 'include old results', optional: true}
+    reverse: { type: 'boolean', test: 'boolean', description: 'output is reversed', optional: true },
+    live: { type: 'boolean', test: 'boolean', description: 'include live results', optional: true },
+    old: { type: 'boolean', test: 'boolean', description: 'include old results', optional: true }
   }
 }
 
-function isTimestamp (arg) {
-  return !isNaN(+arg) && +arg >= 0
-}
-
 var keysAndValues = {
-   keys: {
-      type: 'boolean',
-      description: 'include keys',
-      optional: true
-    },
-    values: {
-      type: 'boolean',
-      description: 'include values',
-      optional: true
-    }
+  keys: {
+    type: 'boolean',
+    description: 'include keys',
+    optional: true
+  },
+  values: {
+    type: 'boolean',
+    description: 'include values',
+    optional: true
+  }
 }
 
 var MessageId = {
   type: 'string',
-  test: /^%[a-zA-Z0-9\+\/]+={0,2}\.\w+$/
+  test: /^%[a-zA-Z0-9+/]+={0,2}\.\w+$/
 }
 
 var Private = {
@@ -49,13 +45,13 @@ module.exports = {
   description: 'append only-log database for secure-scuttlebutt',
   commands: {
     createLogStream: {
-      type: "source",
+      type: 'source',
       description: 'stream of all locally stored messages, in order received',
       args:
         Object.assign(rangeArgs('timestamp'), keysAndValues)
     },
     get: {
-      type: "async",
+      type: 'async',
       description: 'retrive a locally stored message',
       args: {
         id: MessageId,
@@ -74,7 +70,7 @@ module.exports = {
     add: {
       type: 'async',
       description: 'append a valid message',
-      args: {},
+      args: {}
     },
     status: {
       type: 'sync',
@@ -103,12 +99,12 @@ module.exports = {
         id: {
           type: 'FeedId',
           optional: false,
-          description: 'a ssb feed identity',
+          description: 'a ssb feed identity'
         },
         seq: {
           type: 'SequenceNumber',
           optional: false,
-          description: 'sequence number to stream from',
+          description: 'sequence number to stream from'
         },
         limit: {
           type: 'number',
@@ -120,11 +116,11 @@ module.exports = {
   }
 }
 
-//ways to call usage:
+// ways to call usage:
 
-//quick: lists commands, or help
-//deep: print all options or all subcommands
-//help: print all subcommands
+// quick: lists commands, or help
+// deep: print all options or all subcommands
+// help: print all subcommands
 
 /*
 
@@ -139,6 +135,3 @@ help:
   command1.bar --{blah,...}
 
 */
-
-
-
