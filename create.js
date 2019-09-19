@@ -34,13 +34,38 @@ module.exports = function (path, opts, keys) {
   var _get = db.get
   var _del = db.del
 
-  db.del = (key, cb) => {
+  const deleteFeed = (feed, cb) => {
+    pull(
+      db.createUserStream({ id: feed }),
+      pull.asyncMap((msg, cb) => {
+        const key = msg.key
+
+        deleteMessage(key, (err) => {
+          cb(err, key)
+        })
+      }),
+      pull.filter(),
+      pull.collect(cb)
+    )
+  }
+
+  const deleteMessage = (key, cb) => {
     db.keys.get(key, (err, val, seq) => {
       if (err) return cb(err)
       if (seq == null) cb(new Error('seq is null!'))
 
       _del(seq, cb)
     })
+  }
+
+  db.del = (target, cb) => {
+    if (ref.isMsg(target)) {
+      deleteMessage(target, cb)
+    } else if (ref.isFeed(target)) {
+      deleteFeed(target, cb)
+    } else {
+      cb(new Error('deletion target must be a message or feed'))
+    }
   }
 
   db.get = function (key, cb) {

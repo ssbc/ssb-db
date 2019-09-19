@@ -137,7 +137,7 @@ module.exports = function (opts) {
     })
   })
 
-  tape('delete', (t) => {
+  tape('delete message', (t) => {
     var ssb = createSSB('test-ssb-log8')
 
     var feed = createFeed(ssb, generate(), opts)
@@ -165,6 +165,35 @@ module.exports = function (opts) {
           )
         })
       )
+    })
+  })
+
+  tape('delete feed', (t) => {
+    var ssb = createSSB('test-ssb-log9')
+    var feed = createFeed(ssb, generate(), opts)
+
+    t.plan(5)
+
+    feed.add('msg', 'hello there!', function (err) {
+      t.error(err)
+      feed.add('msg', 'hello again!', function (err, msg) {
+        t.error(err)
+        ssb.del(msg.value.author, err => {
+          t.error(err)
+          pull(
+            ssb.createFeedStream(),
+            pull.drain(() => {
+              t.fail('no messages should be available')
+            }, () => {
+              ssb.get(msg.key, (err) => {
+                t.ok(err)
+                t.equal(err.code, 'flumelog:deleted')
+                t.end()
+              })
+            })
+          )
+        })
+      })
     })
   })
 }
