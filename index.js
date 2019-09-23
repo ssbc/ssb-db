@@ -4,21 +4,39 @@ var path       = require('path')
 var osenv      = require('osenv')
 var mkdirp     = require('mkdirp')
 var rimraf     = require('rimraf')
-var mdm        = require('mdmanifest')
 var valid      = require('./lib/validators')
 var pkg        = require('./package.json')
 
 function isString(s) { return 'string' === typeof s }
 function isObject(o) { return 'object' === typeof o }
 function isFunction (f) { return 'function' === typeof f }
-// create SecretStack definition
-var fs = require('fs')
-var manifest = mdm.manifest(fs.readFileSync(path.join(__dirname, 'api.md'), 'utf-8'))
 
-manifest.seq = 'async'
-manifest.usage = 'sync'
-manifest.clock = 'async'
-manifest.version = 'sync'
+var manifest = {
+  get: 'async',
+  createFeedStream: 'source',
+  createLogStream: 'source',
+  messagesByType: 'source',
+  createHistoryStream: 'source',
+  createUserStream: 'source',
+  createWriteStream: 'sink',
+  links: 'source',
+  add: 'async',
+  publish: 'async',
+  getAddress: 'sync',
+  getLatest: 'async',
+  latest: 'source',
+  latestSequence: 'async',
+  whoami: 'sync',
+  del: 'async',
+  progress: 'sync',
+  status: 'sync',
+  getVectorClock: 'async',
+  version: 'sync',
+  help: 'sync',
+  seq: 'async',
+  usage: 'sync',
+  clock: 'async'
+}
 
 module.exports = {
   manifest: manifest,
