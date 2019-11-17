@@ -25,7 +25,7 @@ test('basic localFlumeUse() support', (t) => {
   const use = localFlumeUse(ssb.log)
 
   // Use a simple view that lets us look up messages by their key.
-  const findByKey = use('caps-lock', view(1, ({ key}) => [key]))
+  const findByKey = use('example', view(1, ({ key}) => [key]))
 
   const content = {type: 'test', text: 'hello world'}
 
