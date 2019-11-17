@@ -231,6 +231,12 @@ module.exports = function (dirname, keys, opts) {
   db.addMap = function (fn) {
     maps.push(fn)
   }
+  db.log = {
+    get: log.get,
+    stream: log.stream,
+    since: log.since,
+    filename: log.filename
+  }
 
   return db
 }

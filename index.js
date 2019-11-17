@@ -117,12 +117,7 @@ module.exports = {
         return pkg.version
       },
 
-      //temporary!
-      _flumeUse                :
-        function (name, flumeview) {
-          ssb.use(name, flumeview)
-          return ssb[name]
-        },
+      log: ssb.log,
 
   //    usage                    : valid.sync(usage, 'string?|boolean?'),
       close                    : close,
