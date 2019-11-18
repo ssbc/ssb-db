@@ -234,8 +234,7 @@ module.exports = function (dirname, keys, opts) {
   db.log = {
     get: log.get,
     stream: log.stream,
-    since: log.since,
-    filename: log.filename
+    since: log.since
   }
 
   return db

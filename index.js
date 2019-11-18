@@ -6,6 +6,8 @@ var mkdirp     = require('mkdirp')
 var rimraf     = require('rimraf')
 var valid      = require('./lib/validators')
 var pkg        = require('./package.json')
+const pullPushable = require('pull-pushable')
+const p = pullPushable()
 
 function isString(s) { return 'string' === typeof s }
 function isObject(o) { return 'object' === typeof o }
@@ -35,7 +37,12 @@ var manifest = {
   help: 'sync',
   seq: 'async',
   usage: 'sync',
-  clock: 'async'
+  clock: 'async',
+  log: {
+    stream: 'source',
+    since: 'source',
+    get: 'async'
+  }
 }
 
 module.exports = {
@@ -97,6 +104,12 @@ module.exports = {
       }
     }
     var self
+
+
+    ssb.since((value) => {
+      p.push(value)
+    })
+
     return self = {
       id                       : feed.id,
       keys                     : opts.keys,
@@ -117,7 +130,11 @@ module.exports = {
         return pkg.version
       },
 
-      log: ssb.log,
+      log: {
+        stream: ssb.log.stream,
+        get: ssb.log.get,
+        since: () => p
+      },
 
   //    usage                    : valid.sync(usage, 'string?|boolean?'),
       close                    : close,
