@@ -39,6 +39,7 @@ var manifest = {
 }
 
 module.exports = {
+  name: 'db',
   manifest: manifest,
   permissions: {
     master: {allow: null, deny: null},
