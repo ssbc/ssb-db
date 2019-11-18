@@ -1,9 +1,26 @@
 const flume = require('flumedb')
-const fs = require('fs')
 const obv = require('obv')
-const os = require('os')
 const path = require('path')
 const pull = require('pull-stream')
+
+let createFakeFilename
+
+try {
+  const os = require('os')
+  const fs = require('fs')
+
+  createFakeFilename = () => path.join(
+    fs.mkdtempSync(path.join(
+      os.tmpdir(),
+      'ssb-db-')
+    ),
+    'log.flumeproxy'
+  )
+} catch (e) {
+  // We're probably running in a browser.
+  createFakeFilename = () => null
+}
+
 
 module.exports = (remoteLog) => {
   // Create local instance of flumedb that depends on the remote log.
@@ -21,13 +38,7 @@ module.exports = (remoteLog) => {
     stream: remoteLog.stream,
     since,
     get: remoteLog.get,
-    filename: path.join(
-      fs.mkdtempSync(path.join(
-        os.tmpdir(),
-        'ssb-db-')
-      ),
-      'log.flumeproxy'
-    )
+    filename: createFakeFilename()
   })
 
   const _use = proxy.use
