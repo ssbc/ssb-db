@@ -21,7 +21,6 @@ try {
   createFakeFilename = () => null
 }
 
-
 module.exports = (remoteLog) => {
   // Create local instance of flumedb that depends on the remote log.
   // Views will be created locally but the log will remain remote.

@@ -29,6 +29,7 @@ test('basic muxrpc test', (t) =>
     manifest: server.manifest(),
     caps
   }, (err, ssb) => {
+    t.plan(5)
     t.error(err)
     const view = require('flumeview-level')
 
