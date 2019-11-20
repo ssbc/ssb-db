@@ -24,22 +24,22 @@ that reads from the feed.
  */
 
 //create a secret-stack instance and add ssb-db, for persistence.
-var createSsbServerWithDb = require('secret-stack')({})
+var createApp = require('secret-stack')({})
   .use(require('ssb-db'))
 
 
 // create the db instance.
 // Only one instance may be created at a time due to os locks on port and database files.
 
-var ssbServerWithDb = createSsbServerWithDb(require('ssb-config'))
+var app = createApp(require('ssb-config'))
 
 //your public key, the default key of this instance.
 
-ssbServerWithDb.id
+app.id
 
 //or, called remotely
 
-ssbServerWithDb.whoami(function (err, data) {
+app.whoami(function (err, data) {
   console.log(data.id) //your id
 })
 
@@ -47,7 +47,7 @@ ssbServerWithDb.whoami(function (err, data) {
 //  - feed.add appends a message to your key's chain.
 //  - the `type` attribute is required.
 
-ssbServerWithDb.publish({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
+app.publish({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
   // the message as it appears in the database:
   console.log(msg)
 
@@ -57,7 +57,7 @@ ssbServerWithDb.publish({ type: 'post', text: 'My First Post!' }, function (err,
 
 // stream all messages for all keypairs.
 pull(
-  ssbServerWithDb.createLogStream(),
+  app.createLogStream(),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
@@ -65,7 +65,7 @@ pull(
 
 // stream all messages for a particular keypair.
 pull(
-  ssbServerWithDb.createHistoryStream({id: ssbServerWithDb.id}),
+  app.createHistoryStream({id: ssbServerWithDb.id}),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
@@ -172,7 +172,7 @@ database does not have the private key:
 
 ## API
 
-### SecretStack.use(require('ssb-db')) => sbot
+### SecretStack.use(require('ssb-db')) => SecretStackApp
 
 Adds `ssb-db` persistence to a [secret-stack](https://github.com/ssbc/secret-stack) setup.
 Without other plugins, this instance will not have replication
@@ -180,7 +180,7 @@ or querying. Loading `ssb-db` directly is useful for testing,
 but it's recommended to instead start from a plugin bundle like [ssb-server](https://github.com/ssbc/ssb-server)
 
 > Because of legacy reasons, all the `ssb-db` methods are mounted on the top level object,
-so it's `ssbServerWithDb.get` instead of `ssbServerWithDb.db.get` as it would be with all the other `ssb-*` plugins.
+so it's `app.get` instead of `app.db.get` as it would be with all the other `ssb-*` plugins.
 > In the API docs below, we'll just call it `db`
 
 ### db.get (id | seq | opts, cb)
