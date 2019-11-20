@@ -47,7 +47,7 @@ sbot.whoami(function (err, data) {
 //  - feed.add appends a message to your key's chain.
 //  - the `type` attribute is required.
 
-feed.publish({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
+sbot.publish({ type: 'post', text: 'My First Post!' }, function (err, msg, hash) {
   // the message as it appears in the database:
   console.log(msg)
 
@@ -57,7 +57,7 @@ feed.publish({ type: 'post', text: 'My First Post!' }, function (err, msg, hash)
 
 // stream all messages for all keypairs.
 pull(
-  ssb.createLogStream(),
+  sbot.createLogStream(),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
@@ -65,7 +65,7 @@ pull(
 
 // stream all messages for a particular keypair.
 pull(
-  ssb.createHistoryStream({id: sbot.id}),
+  sbot.createHistoryStream({id: sbot.id}),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
