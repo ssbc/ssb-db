@@ -254,8 +254,8 @@ only stream messages with sequence numbers greater than `seq`.
 if `live` is true, the stream will be a
 [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
-Note: since createHistoryStream is provided over the network to anonymous peers, not all
-options are supported.
+Note: since `createHistoryStream` is provided over the network to anonymous peers, not all
+options are supported. `createHistoryStream` does not decrypt private messages.
 
 ### ssbDb#messagesByType ({type: string, live,old,reverse: bool?, gt,gte,lt,lte: timestamp, limit: number }) -> PullSource
 
@@ -279,8 +279,8 @@ all standard options are supported.
 
 ### sbot.createUserStream ({id: feed_id, lt,lte,gt,gte: sequence, reverse,old,live,raw: boolean, limit: number})
 
-like `createHistoryStream` except all options are supported. local access is allowed, but not
-remote anonymous access.
+`createUserStream` is like `createHistoryStream`, except all options are supported. Local access is allowed, but not
+remote anonymous access. `createUserStream` does decrypt private messages.
 
 ### ssbDb#links ({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
 
