@@ -65,7 +65,7 @@ pull(
 
 // stream all messages for a particular keypair.
 pull(
-  app.createHistoryStream({id: ssbServerWithDb.id}),
+  app.createHistoryStream({id: app.id}),
   pull.collect(function (err, ary) {
     console.log(ary)
   })
