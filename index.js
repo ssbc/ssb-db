@@ -22,7 +22,6 @@ var manifest = {
   links: 'source',
   add: 'async',
   publish: 'async',
-  getAddress: 'sync',
   getLatest: 'async',
   latest: 'source',
   latestSequence: 'async',
@@ -33,9 +32,6 @@ var manifest = {
   getVectorClock: 'async',
   version: 'sync',
   help: 'sync',
-  seq: 'async',
-  usage: 'sync',
-  clock: 'async'
 }
 
 module.exports = {
@@ -125,7 +121,6 @@ module.exports = {
           return ssb[name]
         },
 
-  //    usage                    : valid.sync(usage, 'string?|boolean?'),
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),
