@@ -18,10 +18,6 @@ function rangeArgs (type) {
   }
 }
 
-function isTimestamp (arg) {
-  return !isNaN(+arg) && +arg >= 0
-}
-
 var keysAndValues = {
    keys: {
       type: 'boolean',
@@ -37,12 +33,13 @@ var keysAndValues = {
 
 var MessageId = {
   type: 'string',
-  test: /^%[a-zA-Z0-9\+\/]+={0,2}\.\w+$/
+  test: /^%[a-zA-Z0-9+/]+={0,2}\.\w+$/
 }
 
 var Private = {
   type: 'boolean',
-  description: 'decrypt private messages, defaults to false'
+  description: 'decrypt private messages',
+  default: false
 }
 
 module.exports = {
@@ -62,7 +59,8 @@ module.exports = {
         private: Private,
         meta: {
           type: 'boolean',
-          description: 'include key,value,timestamp defaults to false'
+          description: 'include key, value, and timestamp',
+          default: false
         }
       }
     },
@@ -107,7 +105,7 @@ module.exports = {
         },
         seq: {
           type: 'SequenceNumber',
-          optional: false,
+          optional: true,
           description: 'sequence number to stream from',
         },
         limit: {
