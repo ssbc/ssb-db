@@ -34,7 +34,7 @@ var manifest = {
   getVectorClock: 'async',
   version: 'sync',
   help: 'sync',
-  createRawLogStream: 'source',
+  sinceStream: 'source',
 }
 
 module.exports = {
@@ -97,6 +97,13 @@ module.exports = {
     }
     var self
 
+    // When `since` changes we want to send the new value to our instance of
+    // pull-notify so that the value can be streamed to any listeners (if they
+    // exist). Listeners are created by calling `sinceStream()` and are
+    // automatically removed when the stream closes.
+    const sinceNotifier = pullNotify()
+    ssb.since(sinceNotifier)
+
     return self = {
       id                       : feed.id,
       keys                     : opts.keys,
@@ -104,6 +111,12 @@ module.exports = {
       ready                    : function () {
         return ssb.ready.value
       },
+      _flumeUse                :
+      function (name, flumeview) {
+        ssb.use(name, flumeview)
+        return ssb[name]
+      },
+
 
       progress                 : function () {
         return ssb.progress
@@ -117,7 +130,13 @@ module.exports = {
         return pkg.version
       },
 
-      createRawLogStream: ssb.createRawLogStream,
+      sinceStream: () => {
+        // HACK: When listeners start they want to receive the latest value as soon
+        // as possible, so we send the latest value whenever we get a new listener.
+        const listener = sinceNotifier.listen()
+        sinceNotifier(ssb.since.value)
+        return listener
+      },
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),

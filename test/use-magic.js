@@ -1,5 +1,4 @@
 const test = require('tape')
-const ssbKeys = require('ssb-keys')
 const ssbClient = require('ssb-client')
 const caps = require('ssb-caps')
 
@@ -8,94 +7,79 @@ const client = (...args) => setTimeout(() => ssbClient(...args))
 
 const flumeProxy = require('./lib/flume-proxy')
 
-const keys = ssbKeys.generate()
-
-const createServer = (port) => {
-  const stack = require('secret-stack')({ caps })
-    .use(require('../'))
-    .use(require('ssb-master'))
-
-  return stack({
-    port,
-    timeout: 2001,
-    temp: `connect-${port}`,
-    host: 'localhost',
-    master: keys.id,
-    keys,
-    caps
-  })
-}
-
 const magic = (ssb) => {
   console.log('magic started')
   // Use the remote log to create a `use()` function that makes local views.
   // This means you can create views from ssb-client, not just the server config!
   const localFlume = flumeProxy(ssb)
+  const _close = ssb.close
 
-  const localStack = require('secret-stack')({ caps })
-  localStack.use({
-    name: 'flume-proxy',
-    init: (api) => {
-      api._flumeUse = localFlume.use
-      const _close = api.close
+  ssb._flumeUse = localFlume._flumeUse
+  ssb.close = () => {
+    console.log('api.close() called')
+    localFlume.close(() => {}) // MAGIC NO-OP
+    _close()
+  }
 
-      // NOTE: Does not take optional `(err, cb)` because I don't understand
-      //       what those are meant to do and it seems to work fine as-is.
-      api.close = () => {
-        console.log('api.close() called')
-        localFlume.close(() => {}) // MAGIC NO-OP
-        _close()
-      }
-    }
-  })
+  const self =  {
+    use: (plugin) => {
+      ssb[plugin.name] = plugin.init(ssb)
+      return self
+    },
+    onReady: localFlume.onReady
+  }
 
-  localStack.open = (...args) => localStack(...args)
-
-  console.log('magic done')
-  return localStack
+  return self
 }
 
 test('magic muxrpc test', (t) => {
-  const server = createServer(45452)
-
-  client(keys, {
-    host: 'localhost',
-    port: 45452,
-    manifest: server.manifest(),
+  client({
+    remote: 'unix:/home/christianbundy/.ssb/socket~noauth:+oaWWDs8g73EZFUMfW37R/ULtFEjwKN/DczvdYihjbU=',
+    manifest: {
+      whoami: 'sync',
+      get: 'async',
+      about: {
+        socialValue: 'async'
+      },
+      sinceStream: 'source',
+      createLogStream: 'source',
+      progress: 'sync'
+    },
     caps
   }, (err, ssb) => {
     console.log('connected')
-    t.error(err)
+    if (err) throw err
+    console.log(ssb)
 
     console.log('about to magic')
 
-    const local = magic(ssb)
+    magic(ssb)
       .use(require('ssb-backlinks'))
       .use(require('ssb-about'))
-      .open()
+      .onReady(() => {
+        console.log('ready!')
 
-    const content = { type: 'about', about: keys.id, name: 'Xander' }
+        t.comment('Publishing message...')
+        ssb.whoami((meErr, { id }) => {
+          t.error(meErr)
+          ssb.get({ id: 0 }, (getErr, val) => {
+            t.error(getErr)
+            t.comment('Got message!', val)
+            t.comment('Querying view...')
 
-    t.comment('Publishing message...')
-    ssb.publish(content, (publishErr, publishedMessage) => {
-      t.error(publishErr)
-      t.comment('Published message!')
-      t.comment('Getting message...')
-      ssb.get({ id: 0 }, (getErr, val) => {
-        t.error(getErr)
-        t.comment('Got message!', val)
-        t.comment('Querying view...')
-        local.about.socialValue({ key: 'name', dest: keys.id }, (findErr, foundMessage) => {
-          t.error(findErr)
-          t.comment('Queried!')
-          t.equal(foundMessage, content.name)
+            setInterval(() => {
+              ssb.about.socialValue({ key: 'name', dest: id }, (findErr, foundMessage) => {
+                if (err) {
+                  console.log(err)
+                }
 
-          local.close(() => {})
-          ssb.close(true) // MAGIC `true`
-          server.close()
-          t.end()
+                ssb.close()
+
+                console.log(foundMessage)
+              })
+            }, 1000)
+          })
         })
       })
-    })
   })
 })

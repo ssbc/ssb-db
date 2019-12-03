@@ -26,9 +26,12 @@ module.exports = (remote) => {
   // Views will be created locally but the log will remain remote.
   const since = obv()
 
+  console.log('starting since stream')
+  console.log(remote.sinceStream)
   pull(
-    remote.createRawLogStream({ live: true, values: false }),
+    remote.sinceStream(),
     pull.drain((value) => {
+      console.log({since: value})
       since.set(value)
     })
   )
@@ -45,10 +48,30 @@ module.exports = (remote) => {
 
   const _use = proxy.use
 
-  // Rewrite use() to match _flumeUse() API
-  proxy.use = (name, createView) => {
+  let pending = 0
+  let onReadyCb = null
+
+  // Match _flumeUse() API from ssb-db
+  proxy._flumeUse = (name, createView) => {
+    pending += 1
     _use(name, createView)
+
+    proxy.views[name].ready(() => {
+      console.log(`${name} ready`)
+      pending -= 1
+      if (pending === 0 && onReadyCb != null) {
+        onReadyCb()
+        onReadyCb = null
+      }
+    })
+
     return proxy.views[name]
+  }
+
+  setInterval(() => console.log({pending}), 1000)
+
+  proxy.onReady = (cb) => {
+    onReadyCb = cb
   }
 
   return proxy
