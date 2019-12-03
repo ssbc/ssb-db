@@ -34,7 +34,7 @@ var manifest = {
   getVectorClock: 'async',
   version: 'sync',
   help: 'sync',
-  sinceStream: 'source',
+  createRawLogStream: 'source',
 }
 
 module.exports = {
@@ -97,13 +97,6 @@ module.exports = {
     }
     var self
 
-    // When `since` changes we want to send the new value to our instance of
-    // pull-notify so that the value can be streamed to any listeners (if they
-    // exist). Listeners are created by calling `sinceStream()` and are
-    // automatically removed when the stream closes.
-    const sinceNotifier = pullNotify()
-    ssb.since(sinceNotifier)
-
     return self = {
       id                       : feed.id,
       keys                     : opts.keys,
@@ -124,7 +117,7 @@ module.exports = {
         return pkg.version
       },
 
-      sinceStream: sinceNotifier.listen,
+      createRawLogStream: ssb.createRawLogStream,
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),

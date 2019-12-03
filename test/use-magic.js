@@ -49,6 +49,8 @@ const magic = (ssb) => {
     }
   })
 
+  localStack.open = (...args) => localStack(...args)
+
   console.log('magic done')
   return localStack
 }
@@ -67,11 +69,10 @@ test('magic muxrpc test', (t) => {
 
     console.log('about to magic')
 
-    const localStack = magic(ssb)
+    const local = magic(ssb)
       .use(require('ssb-backlinks'))
       .use(require('ssb-about'))
-
-    const localApp = localStack()
+      .open()
 
     const content = { type: 'about', about: keys.id, name: 'Xander' }
 
@@ -84,12 +85,12 @@ test('magic muxrpc test', (t) => {
         t.error(getErr)
         t.comment('Got message!', val)
         t.comment('Querying view...')
-        localApp.about.socialValue({ key: 'name', dest: keys.id }, (findErr, foundMessage) => {
+        local.about.socialValue({ key: 'name', dest: keys.id }, (findErr, foundMessage) => {
           t.error(findErr)
           t.comment('Queried!')
           t.equal(foundMessage, content.name)
 
-          localApp.close(() => {})
+          local.close(() => {})
           ssb.close(true) // MAGIC `true`
           server.close()
           t.end()

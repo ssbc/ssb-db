@@ -27,7 +27,7 @@ module.exports = (remote) => {
   const since = obv()
 
   pull(
-    remote.sinceStream(),
+    remote.createRawLogStream({ live: true, values: false }),
     pull.drain((value) => {
       since.set(value)
     })
