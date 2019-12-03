@@ -6,8 +6,8 @@ var mkdirp     = require('mkdirp')
 var rimraf     = require('rimraf')
 var valid      = require('./lib/validators')
 var pkg        = require('./package.json')
-const pullPushable = require('pull-pushable')
-const p = pullPushable()
+const pullNotify = require('pull-notify')
+
 
 function isString(s) { return 'string' === typeof s }
 function isObject(o) { return 'object' === typeof o }
@@ -97,10 +97,12 @@ module.exports = {
     }
     var self
 
-
-    ssb.since((value) => {
-      p.push(value)
-    })
+    // When `since` changes we want to send the new value to our instance of
+    // pull-notify so that the value can be streamed to any listeners (if they
+    // exist). Listeners are created by calling `sinceStream()` and are
+    // automatically removed when the stream closes.
+    const sinceNotify = pullNotify()
+    ssb.since(sinceNotify)
 
     return self = {
       id                       : feed.id,
@@ -122,8 +124,7 @@ module.exports = {
         return pkg.version
       },
 
-      sinceStream: () => p,
-
+      sinceStream: () => sinceNotify.listen(),
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),
