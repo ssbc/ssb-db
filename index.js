@@ -101,8 +101,8 @@ module.exports = {
     // pull-notify so that the value can be streamed to any listeners (if they
     // exist). Listeners are created by calling `sinceStream()` and are
     // automatically removed when the stream closes.
-    const sinceNotify = pullNotify()
-    ssb.since(sinceNotify)
+    const sinceNotifier = pullNotify()
+    ssb.since(sinceNotifier)
 
     return self = {
       id                       : feed.id,
@@ -124,7 +124,7 @@ module.exports = {
         return pkg.version
       },
 
-      sinceStream: () => sinceNotify.listen(),
+      sinceStream: sinceNotifier.listen,
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),
