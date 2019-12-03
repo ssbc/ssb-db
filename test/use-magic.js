@@ -30,7 +30,7 @@ const magic = (ssb) => {
   console.log('magic started')
   // Use the remote log to create a `use()` function that makes local views.
   // This means you can create views from ssb-client, not just the server config!
-  const localFlume = flumeProxy(ssb.log)
+  const localFlume = flumeProxy(ssb)
 
   const localStack = require('secret-stack')({ caps })
   localStack.use({
@@ -80,7 +80,7 @@ test('magic muxrpc test', (t) => {
       t.error(publishErr)
       t.comment('Published message!')
       t.comment('Getting message...')
-      ssb.log.get(0, (getErr, val) => {
+      ssb.get({ id: 0 }, (getErr, val) => {
         t.error(getErr)
         t.comment('Got message!', val)
         t.comment('Querying view...')

@@ -35,7 +35,7 @@ test('basic muxrpc test', (t) =>
 
     // Use the remote log to create a `use()` function that makes local views.
     // This means you can create views from ssb-client, not just the server config!
-    const proxy = flumeProxy(ssb.log)
+    const proxy = flumeProxy(ssb)
 
     // Use a simple view that lets us look up messages by their key.
     const findByKey = proxy.use('example', view(1, ({ key }) => [key]))
@@ -48,11 +48,12 @@ test('basic muxrpc test', (t) =>
       t.comment('Published message!')
       t.comment('Getting message...')
       const key = publishedMessage.key
-      ssb.log.get(0, (getErr, val) => {
+      ssb.get({ id: 0 }, (getErr, val) => {
         t.error(getErr)
         t.comment('Got message!', val)
         t.comment('Querying view...')
         findByKey.get(key, (findErr, foundMessage) => {
+          if (findErr) throw findErr
           t.error(findErr)
           t.comment('Queried!')
           t.deepEqual(foundMessage.value.content, content)

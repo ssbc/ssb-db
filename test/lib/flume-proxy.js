@@ -21,22 +21,25 @@ try {
   createFakeFilename = () => null
 }
 
-module.exports = (remoteLog) => {
+module.exports = (remote) => {
   // Create local instance of flumedb that depends on the remote log.
   // Views will be created locally but the log will remain remote.
   const since = obv()
 
   pull(
-    remoteLog.since(),
+    remote.sinceStream(),
     pull.drain((value) => {
       since.set(value)
     })
   )
 
   const proxy = flume({
-    stream: remoteLog.stream,
+    stream: (opts, cb) => remote.createLogStream(
+      { raw: true, ...opts },
+      cb
+    ),
     since,
-    get: remoteLog.get,
+    get: (seq, cb) => remote.get({ id: seq }, cb),
     filename: createFakeFilename()
   })
 
