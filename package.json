@@ -9,8 +9,6 @@
   },
   "dependencies": {
     "async-write": "^2.1.0",
-    "cont": "~1.0.0",
-    "explain-error": "~1.0.1",
     "flumedb": "^1.1.0",
     "flumelog-offset": "^3.4.2",
     "flumeview-level": "^3.0.13",
@@ -28,14 +26,11 @@
     "ssb-msgs": "^5.0.0",
     "ssb-ref": "^2.12.0",
     "ssb-validate": "^4.0.0",
-    "typewiselite": "^1.0.0",
     "zerr": "^1.0.0"
   },
   "devDependencies": {
-    "debug": "^4.1.1",
     "hexpp": "^2.0.0",
-    "pull-abortable": "~4.1.0",
-    "pull-core": "^1.1.0",
+    "pull-abortable": "^4.1.1",
     "pull-pushable": "^2.2.0",
     "secret-stack": "^6.3.1",
     "ssb-about": "^2.0.1",
@@ -45,8 +40,7 @@
     "ssb-config": "^3.4.3",
     "ssb-feed": "^2.2.1",
     "ssb-master": "^1.0.3",
-    "tape": "^4.8.0",
-    "typewiselite": "~1.0.0"
+    "tape": "^4.8.0"
   },
   "scripts": {
     "prepublishOnly": "npm ls && npm test",
