@@ -22,7 +22,7 @@
     "pull-cont": "^0.1.1",
     "pull-notify": "^0.1.1",
     "pull-stream": "^3.4.0",
-    "rimraf": "^2.6.2",
+    "rimraf": "^3.0.0",
     "ssb-keys": "^7.1.3",
     "ssb-msgs": "^5.0.0",
     "ssb-ref": "^2.12.0",
@@ -30,6 +30,8 @@
     "zerr": "^1.0.0"
   },
   "devDependencies": {
+    "cont": "^1.0.3",
+    "explain-error": "^1.0.4",
     "hexpp": "^2.0.0",
     "pull-abortable": "^4.1.1",
     "ssb-feed": "^2.2.1",
