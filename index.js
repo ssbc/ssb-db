@@ -8,7 +8,6 @@ var valid      = require('./lib/validators')
 var pkg        = require('./package.json')
 const pullNotify = require('pull-notify')
 
-
 function isString(s) { return 'string' === typeof s }
 function isObject(o) { return 'object' === typeof o }
 function isFunction (f) { return 'function' === typeof f }
@@ -21,6 +20,7 @@ var manifest = {
   createHistoryStream: 'source',
   createUserStream: 'source',
   createWriteStream: 'sink',
+  createSequenceStream: 'source',
   links: 'source',
   add: 'async',
   publish: 'async',
@@ -34,7 +34,6 @@ var manifest = {
   getVectorClock: 'async',
   version: 'sync',
   help: 'sync',
-  sinceStream: 'source',
 }
 
 module.exports = {
@@ -99,10 +98,10 @@ module.exports = {
 
     // When `since` changes we want to send the new value to our instance of
     // pull-notify so that the value can be streamed to any listeners (if they
-    // exist). Listeners are created by calling `sinceStream()` and are
+    // exist). Listeners are created by calling `createSequenceStream()` and are
     // automatically removed when the stream closes.
-    const sinceNotifier = pullNotify()
-    ssb.since(sinceNotifier)
+    const sequenceNotifier = pullNotify()
+    ssb.since(sequenceNotifier)
 
     return self = {
       id                       : feed.id,
@@ -124,7 +123,23 @@ module.exports = {
         return pkg.version
       },
 
-      sinceStream: sinceNotifier.listen,
+      createSequenceStream: () => {
+        const streamSource = sequenceNotifier.listen()
+
+        if (ssb.since.value > -1) {
+          sequenceNotifier(ssb.since.value)
+        }
+
+        return streamSource
+      },
+
+      //temporary!
+      _flumeUse                :
+        function (name, flumeview) {
+          ssb.use(name, flumeview)
+          return ssb[name]
+        },
+
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),
