@@ -19,6 +19,7 @@
     "muxrpc-validation": "^3.0.0",
     "obv": "0.0.1",
     "osenv": "^0.1.5",
+    "pull-cat": "^1.1.11",
     "pull-cont": "^0.1.1",
     "pull-notify": "^0.1.1",
     "pull-stream": "^3.4.0",

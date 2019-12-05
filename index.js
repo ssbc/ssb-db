@@ -6,7 +6,9 @@ var mkdirp     = require('mkdirp')
 var rimraf     = require('rimraf')
 var valid      = require('./lib/validators')
 var pkg        = require('./package.json')
+const pull = require('pull-stream')
 const pullNotify = require('pull-notify')
+const pullCat = require('pull-cat')
 
 function isString(s) { return 'string' === typeof s }
 function isObject(o) { return 'object' === typeof o }
@@ -124,13 +126,16 @@ module.exports = {
       },
 
       createSequenceStream: () => {
-        const streamSource = sequenceNotifier.listen()
-
-        if (ssb.since.value > -1) {
-          sequenceNotifier(ssb.since.value)
-        }
-
-        return streamSource
+        // If the initial value is `undefined` we want it to be `-1`.
+        // This is because `-1` is a magic sequence number for an empty log.
+        const initialValue = ssb.since.value !== undefined
+          ? ssb.since.value
+          : -1
+        
+        return pullCat([
+          pull.values([initialValue]),
+          sequenceNotifier.listen()
+        ])
       },
 
       //temporary!
