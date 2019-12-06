@@ -11,12 +11,15 @@ var ssbKeys = require('ssb-keys')
 var box = ssbKeys.box
 var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
+var pull = require('pull-stream')
+var asyncMap = require('pull-stream/throughs/async-map')
 
 var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
 
 function unbox (data, unboxers, key) {
   var plaintext
+
   if (data && isString(data.value.content)) {
     for (var i = 0; i < unboxers.length; i++) {
       var unboxer = unboxers[i]
@@ -52,6 +55,7 @@ function unbox (data, unboxers, key) {
       }
     }
   }
+
   return data
 }
 
@@ -117,14 +121,68 @@ module.exports = function (dirname, keys, opts) {
   var queue = AsyncWrite(function (_, cb) {
     var batch = state.queue
     state.queue = []
-    append(batch, function (err, v) {
-      batch.forEach(function (data) {
-        db.post.set(u.originalData(data))
+
+    var hasBatchAppends = batch.findIndex(function (elem) {
+      return isArray(elem)
+    }) !== -1;
+
+    if (!hasBatchAppends) {
+
+      append(batch, function (err, v) {
+        handlePost(batch)
+        cb(err, v)
       })
-      cb(err, v)
-    })
+    } else {
+      // If there are batch appends, we need to make sure we append those as one 'append'
+      // operation so that that the append is done atomically, and the appropriate callback
+      // is called via the flush queue to signal the write has completed
+
+      var batchIndexes = findBatchIndexRanges(batch)
+
+      var finalResult = null;
+
+      pull(
+        pull.values(batchIndexes),
+        asyncMap(function(item, mapCb) {
+          var startIndex = item[0]
+          var endIndex = item[1]
+          var slice = batch.slice(startIndex, endIndex)
+
+          if (slice.length === 1 && isArray(slice[0])) {
+            slice = slice[0]
+          }
+
+          append(slice, function(err, v) {
+            handlePost(slice)
+            mapCb(err, v)
+          })
+        }
+      ),
+      pull.drain(function(result) {
+        finalResult = result
+      }, function(err, v) {
+        cb(err, finalResult)
+      }))
+
+    }
+
+    function handlePost(d) {
+      d.forEach(function (data) {
+        if (!isArray(data)) {
+          db.post.set(u.originalData(data))
+        } else {
+          data.forEach(d => db.post.set(u.originalData(d)))
+        }
+      })
+    }
+
+
   }, function reduce (_, msg) {
-    return V.append(state, hmacKey, msg)
+    if (isArray(msg)) {
+      return V.appendBulk(state, hmacKey, msg)
+    } else {
+      return V.append(state, hmacKey, msg)
+    }
   }, function (_state) {
     return state.queue.length > 1000
   }, function isEmpty (_state) {
@@ -137,6 +195,51 @@ module.exports = function (dirname, keys, opts) {
       for (var i = 0; i < l; ++i) { flush[i]() }
       flush = flush.slice(l)
     }
+  }
+
+  /**
+   * Takes an array of single messages and arrays (bulk messages)
+   * and returns a list of the slice indexes for the array that such that the
+   * bulk appends would be performed in one operation and the rest would
+   * performed in chunks.
+   * 
+   * e.g. [single_message1, single_message2, [bulk_messages], single_message3, [bulk_messages]]
+   * would return [[0, 3], [3,4], [4,5], [5,6]]
+   * 
+   * @param {*} batch the array of writes to be performed.
+   */
+  function findBatchIndexRanges(batch) {
+    
+    var batchIndexes = batch.map(function(elem, index) {
+      if (isArray(elem)) {
+        return index
+      } else {
+        return null
+      }
+
+    }).filter(function(elem) {
+      return elem !== null
+    })
+
+    var start = 0
+    var result = []
+    batchIndexes.forEach(function (batchIndex) {
+      
+      if (start < batchIndex) {
+        result.push([start, batchIndex])
+      }
+
+      result.push([batchIndex, batchIndex + 1])
+      start = batchIndex + 1
+    })
+
+    var lastBatchIndex = batchIndexes[batchIndexes - 1];
+
+    if (lastBatchIndex < (batch.length - 1)) {
+      result.push([lastBatchIndex + 1, batch.length])
+    }
+
+    return result
   }
 
   db.last.get(function (_, last) {
@@ -179,18 +282,7 @@ module.exports = function (dirname, keys, opts) {
   db.append = wait(function (opts, cb) {
     try {
       var content = opts.content
-      var recps = opts.content.recps
-      if (recps) {
-        const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
-        if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
-          recps = opts.content.recps = [].concat(recps) // force to array
-          content = opts.content = box(opts.content, recps)
-        } else {
-          const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
-          throw new Error(errMsg)
-        }
-      }
-
+      content = boxOrThrow(content)
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys, opts.hmacKey || hmacKey,
@@ -209,6 +301,39 @@ module.exports = function (dirname, keys, opts) {
         cb(null, data)
       })
     })
+  })
+
+  db.appendAll = wait(function (opts, cb) {
+    try {
+      var messages = opts.messages
+      messages = messages.map(boxOrThrow).map(function(message) {
+        return {
+          content: message,
+          timestamp: timestamp()
+        }
+
+      })
+
+      var validatedMessages = V.createAll(
+        state.feeds[opts.keys.id],
+        opts.keys,
+        opts.hmacKey || hmacKey,
+        messages
+      )
+
+      queue(validatedMessages, function (err) {
+        if (err) return cb(err)
+        var data = state.queue[state.queue.length - 1]
+        flush.push(function () {
+          cb(null, data)
+        })
+      })
+
+    } catch (err) {
+      cb(err)
+      return
+    }
+      
   })
 
   db.buffer = function () {
@@ -230,6 +355,22 @@ module.exports = function (dirname, keys, opts) {
   }
   db.addMap = function (fn) {
     maps.push(fn)
+  }
+
+  function boxOrThrow(content) {
+    var recps = content.recps
+    if (recps) {
+      const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
+      if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
+        recps = content.recps = [].concat(recps) // force to array
+        return box(content, recps)
+      } else {
+        const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
+        throw new Error(errMsg)
+      }
+    }
+
+    return content
   }
 
   return db

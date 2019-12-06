@@ -3,7 +3,6 @@ var ltgt = require('ltgt')
 // 53 bit integer
 var MAX_INT = 0x1fffffffffffff
 var u = require('../util')
-
 var ViewLevel = require('flumeview-level')
 
 module.exports = function (db, opts) {

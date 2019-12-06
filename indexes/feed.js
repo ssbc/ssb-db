@@ -2,10 +2,10 @@
 var pull = require('pull-stream')
 var ltgt = require('ltgt')
 var u = require('../util')
-
 var ViewLevel = require('flumeview-level')
 
 function resolveTimestamp (msg) {
+
   // fallback to sync time if no user timestamp or timestamp is after sync time
   if (!msg.value.timestamp || msg.timestamp < msg.value.timestamp) {
     return msg.timestamp

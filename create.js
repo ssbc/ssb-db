@@ -102,8 +102,15 @@ module.exports = function (path, opts, keys) {
 
       db.append({ content: content, keys: keys }, cb)
     }
+
+    function addBulk(messages, cb) {
+      if (!cb) throw new Error("Expected callback to feed addBulk function")
+      else db.appendAll({messages: messages, keys: keys}, cb)
+    }
+
     return {
       add: add,
+      addBulk: addBulk,
       publish: add,
       id: keys.id,
       keys: keys
