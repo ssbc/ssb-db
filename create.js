@@ -44,7 +44,6 @@ module.exports = function (path, opts, keys) {
           cb(err, key)
         })
       }),
-      pull.filter(),
       pull.collect(cb)
     )
   }
