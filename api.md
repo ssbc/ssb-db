@@ -322,9 +322,10 @@ Outputs information in the following form:
 
 ⚠ This could break your feed. Please don't run this unless you understand it.
 
-Delete a message by its message or feed key. This only deletes the message from
-your local database, not the network, and could have unintended consequences if
-you try to delete a single message in the middle of a feed.
+Delete a message by its message key or a whole feed by its key. This only
+deletes the message from your local database, not the network, and could have
+unintended consequences if you try to delete a single message in the middle of
+a feed.
 
 The intended use-case is to delete all messages from a given feed *or* deleting
 a single message from the tip of your feed if you're completely confident that
