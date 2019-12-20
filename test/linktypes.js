@@ -12,9 +12,9 @@ function sort (a) {
   return a.sort(function (a, b) {
     return (
       typewise(a.source, b.source) ||
-    typewise(a.rel, b.rel) ||
-    typewise(a.dest, b.dest) ||
-    typewise(a.message, b.message)
+      typewise(a.rel, b.rel) ||
+      typewise(a.dest, b.dest) ||
+      typewise(a.message, b.message)
     )
   })
 }
@@ -48,91 +48,110 @@ module.exports = function (opts) {
     alice.add({ type: 'msg', value: 'hello world' }, function (err, msg) {
       if (err) throw err
       msg = toKV(msg)
-      bob.add({
-        type: 'msg',
-        reply: msg.key,
-        text: 'okay then'
-      }, function (err, reply1) {
-        if (err) throw err
-        reply1 = toKV(reply1)
-
-        carol.add({
+      bob.add(
+        {
           type: 'msg',
           reply: msg.key,
-          text: 'whatever'
-        }, function (err, reply2) {
+          text: 'okay then'
+        },
+        function (err, reply1) {
           if (err) throw err
-          reply2 = toKV(reply2)
+          reply1 = toKV(reply1)
 
-          console.log('LINKS', {
-            dest: msg.key,
-            rel: 'reply',
-            meta: false,
-            keys: false,
-            values: true
-          })
+          carol.add(
+            {
+              type: 'msg',
+              reply: msg.key,
+              text: 'whatever'
+            },
+            function (err, reply2) {
+              if (err) throw err
+              reply2 = toKV(reply2)
 
-          cont.series([
-            function (cb) {
-              all(ssb.links({
+              console.log('LINKS', {
                 dest: msg.key,
                 rel: 'reply',
                 meta: false,
                 keys: false,
                 values: true
-              }))(function (err, ary) {
-                if (err) throw err
-                t.deepEqual(sortTS(ary), sortTS([reply1.value, reply2.value]))
-                cb()
               })
-            },
-            function (cb) {
-              all(ssb.links({
-                dest: msg.key,
-                rel: 'reply',
-                keys: true,
-                meta: false,
-                values: true
-              }))(function (err, ary) {
+
+              cont.series([
+                function (cb) {
+                  all(
+                    ssb.links({
+                      dest: msg.key,
+                      rel: 'reply',
+                      meta: false,
+                      keys: false,
+                      values: true
+                    })
+                  )(function (err, ary) {
+                    if (err) throw err
+                    t.deepEqual(
+                      sortTS(ary),
+                      sortTS([reply1.value, reply2.value])
+                    )
+                    cb()
+                  })
+                },
+                function (cb) {
+                  all(
+                    ssb.links({
+                      dest: msg.key,
+                      rel: 'reply',
+                      keys: true,
+                      meta: false,
+                      values: true
+                    })
+                  )(function (err, ary) {
+                    if (err) throw err
+
+                    t.deepEqual(sortTS(ary), sortTS([reply1, reply2]))
+
+                    cb()
+                  })
+                },
+                function (cb) {
+                  all(
+                    ssb.links({
+                      dest: msg.key,
+                      rel: 'reply',
+                      values: true
+                    })
+                  )(function (err, ary) {
+                    if (err) throw err
+
+                    t.deepEqual(
+                      sort(ary),
+                      sort([
+                        {
+                          source: reply1.value.author,
+                          rel: 'reply',
+                          dest: msg.key,
+                          key: reply1.key,
+                          value: reply1.value
+                        },
+                        {
+                          source: reply2.value.author,
+                          rel: 'reply',
+                          dest: msg.key,
+                          key: reply2.key,
+                          value: reply2.value
+                        }
+                      ])
+                    )
+                    cb()
+                  })
+                }
+              ])(function (err) {
                 if (err) throw err
-
-                t.deepEqual(sortTS(ary), sortTS([reply1, reply2]))
-
-                cb()
-              })
-            },
-            function (cb) {
-              all(ssb.links({
-                dest: msg.key,
-                rel: 'reply',
-                values: true
-              }))(function (err, ary) {
-                if (err) throw err
-
-                t.deepEqual(sort(ary), sort([
-                  {
-                    source: reply1.value.author,
-                    rel: 'reply',
-                    dest: msg.key,
-                    key: reply1.key,
-                    value: reply1.value
-                  },
-                  {
-                    source: reply2.value.author,
-                    rel: 'reply',
-                    dest: msg.key,
-                    key: reply2.key,
-                    value: reply2.value
-                  }
-                ]))
-                cb()
+                t.end()
               })
             }
-          ])(function (err) {
-            if (err) throw err; t.end()
-          })
-        })
-      })
+          )
+        }
+      )
     })
   })
 
@@ -164,27 +183,37 @@ module.exports = function (opts) {
           alice: alice.id,
           bob: bob.id,
           carol: carol.id
-
         })
 
-        t.deepEqual(sort(r.alice), sort([
-          { source: alice.id, rel: 'follow', dest: bob.id, key: f.ab },
-          { source: alice.id, rel: 'follow', dest: carol.id, key: f.ac }
-        ]))
+        t.deepEqual(
+          sort(r.alice),
+          sort([
+            { source: alice.id, rel: 'follow', dest: bob.id, key: f.ab },
+            { source: alice.id, rel: 'follow', dest: carol.id, key: f.ac }
+          ])
+        )
 
-        t.deepEqual(sort(r.bob), sort([
-          { source: bob.id, rel: 'follow', dest: alice.id, key: f.ba },
-          { source: bob.id, rel: 'follow', dest: carol.id, key: f.bc }
-        ]))
+        t.deepEqual(
+          sort(r.bob),
+          sort([
+            { source: bob.id, rel: 'follow', dest: alice.id, key: f.ba },
+            { source: bob.id, rel: 'follow', dest: carol.id, key: f.bc }
+          ])
+        )
 
-        t.deepEqual(sort(r._alice), sort([
-          { source: bob.id, rel: 'follow', dest: alice.id, key: f.ba }
-        ]))
+        t.deepEqual(
+          sort(r._alice),
+          sort([{ source: bob.id, rel: 'follow', dest: alice.id, key: f.ba }])
+        )
 
-        t.deepEqual(sort(r._carol), sort([
-          { source: alice.id, rel: 'follow', dest: carol.id, key: f.ac },
-          { source: bob.id, rel: 'follow', dest: carol.id, key: f.bc }
-        ]), 'carol is followed by alice and bob')
+        t.deepEqual(
+          sort(r._carol),
+          sort([
+            { source: alice.id, rel: 'follow', dest: carol.id, key: f.ac },
+            { source: bob.id, rel: 'follow', dest: carol.id, key: f.bc }
+          ]),
+          'carol is followed by alice and bob'
+        )
 
         t.end()
       })
@@ -229,26 +258,38 @@ module.exports = function (opts) {
   })
 
   tape('scan links with unknown rel', function (t) {
-    alice.add({
-      type: 'poke',
-      poke: bob.id
-    }, function (err) {
-      if (err) throw err
-      all(ssb.links({
-        source: alice.id, dest: bob.id, values: true
-      }))(function (err, ary) {
+    alice.add(
+      {
+        type: 'poke',
+        poke: bob.id
+      },
+      function (err) {
         if (err) throw err
-        t.equal(ary.length, 2)
-        t.deepEqual(ary.map(function (e) {
-          return e.value.content
-        }), [
-          { type: 'follow', follow: bob.id },
-          { type: 'poke', poke: bob.id }
-        ])
-        t.end()
-      })
-    })
+        all(
+          ssb.links({
+            source: alice.id,
+            dest: bob.id,
+            values: true
+          })
+        )(function (err, ary) {
+          if (err) throw err
+          t.equal(ary.length, 2)
+          t.deepEqual(
+            ary.map(function (e) {
+              return e.value.content
+            }),
+            [
+              { type: 'follow', follow: bob.id },
+              { type: 'poke', poke: bob.id }
+            ]
+          )
+          t.end()
+        })
+      }
+    )
   })
 }
 
-if (!module.parent) { module.exports({}) }
+if (!module.parent) {
+  module.exports({})
+}

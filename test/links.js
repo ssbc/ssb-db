@@ -11,7 +11,7 @@ function cmpstr (a, b) {
 
 function compare (a, b) {
   return cmpstr(a.key, b.key) || cmpstr(a.dest, b.dest) || cmpstr(a.rel, b.rel)
-//  return a.key < b.key ? -1 : a.key === b.key ? 0 : -1
+  //  return a.key < b.key ? -1 : a.key === b.key ? 0 : -1
 }
 
 module.exports = function (opts) {
@@ -38,12 +38,18 @@ module.exports = function (opts) {
     ])(function (err, _msgs) {
       msgs = _msgs
       t.notOk(err)
-      bob.add({
-        type: 'post', mentions: [msgs[2].key], text: 'okay then'
-      }, function (err, msg) {
-        msgs.push(msg)
-        t.notOk(err); t.end()
-      })
+      bob.add(
+        {
+          type: 'post',
+          mentions: [msgs[2].key],
+          text: 'okay then'
+        },
+        function (err, msg) {
+          msgs.push(msg)
+          t.notOk(err)
+          t.end()
+        }
+      )
     })
   })
 
@@ -87,12 +93,13 @@ module.exports = function (opts) {
       dest: msgs[2].key,
       key: msgs[4].key
     }
-    test('equal, query dest: %',
-      { dest: '%' }, [mention])
-    test('equal, query exact dest: %...',
-      { dest: msgs[2].key }, [mention])
-    test('equal, query dest: %..., rel: mentions',
-      { dest: msgs[2].key, rel: 'mentions' }, [mention])
+    test('equal, query dest: %', { dest: '%' }, [mention])
+    test('equal, query exact dest: %...', { dest: msgs[2].key }, [mention])
+    test(
+      'equal, query dest: %..., rel: mentions',
+      { dest: msgs[2].key, rel: 'mentions' },
+      [mention]
+    )
   })
 
   tape('realtime', function (t) {
@@ -132,4 +139,6 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+if (!module.parent) {
+  module.exports({})
+}

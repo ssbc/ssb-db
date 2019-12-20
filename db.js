@@ -2,20 +2,25 @@ var FlumeviewLevel = require('flumeview-level')
 
 module.exports = function (dir, keys, opts) {
   const db = require('./minimal')(dir, keys, opts)
-    .use('keys', FlumeviewLevel(3, (msg) => [ msg.key ]))
+    .use(
+      'keys',
+      FlumeviewLevel(3, msg => [msg.key])
+    )
     .use('clock', require('./indexes/clock')())
 
   db.progress = {}
-  var prog = db.progress.indexes = {
+  var prog = (db.progress.indexes = {
     start: 0,
     current: 0,
     target: 0
-  }
+  })
   var ts = Date.now()
 
   db.since(function () {
     prog.target = db.since.value
-    if (Date.now() > ts + 100) { update() }
+    if (Date.now() > ts + 100) {
+      update()
+    }
   })
 
   function update () {
@@ -28,7 +33,7 @@ module.exports = function (dir, keys, opts) {
       if (db[k] && typeof db[k].since === 'function') {
         n++
         var c = db[k].since.value
-        current += (Number.isInteger(c) ? c : -1)
+        current += Number.isInteger(c) ? c : -1
       }
     }
     prog.current = ~~(current / n)

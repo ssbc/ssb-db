@@ -5,20 +5,28 @@ var stdopts = u.options
 var Format = u.Format
 
 module.exports = function (db, config, keys) {
-  db
-    .use('time', ViewLevel(2, function (data) {
+  db.use(
+    'time',
+    ViewLevel(2, function (data) {
       return [data.timestamp]
-    }))
+    })
+  )
     .use('feed', require('./indexes/feed')())
     .use('links', require('./indexes/links')())
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
-    if (opts.raw) { return db.stream(opts) }
+    if (opts.raw) {
+      return db.stream(opts)
+    }
 
-    var keys = opts.keys; delete opts.keys
-    var values = opts.values; delete opts.values
-    if (opts.gt == null) { opts.gt = 0 }
+    var keys = opts.keys
+    delete opts.keys
+    var values = opts.values
+    delete opts.values
+    if (opts.gt == null) {
+      opts.gt = 0
+    }
 
     return pull(db.time.read(opts), Format(keys, values, opts.private))
   }
@@ -47,7 +55,7 @@ module.exports = function (db, config, keys) {
       // data the reduce view, so that no disk read is necessary.
       else {
         db.get(value[key].id, function (err, msg) {
-        // will NOT expose private plaintext
+          // will NOT expose private plaintext
           cb(err, { key: value[key].id, value: msg })
         })
       }

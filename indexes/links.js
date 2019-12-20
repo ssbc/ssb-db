@@ -43,23 +43,30 @@ module.exports = function () {
     }
 
     index.messagesByType = function (opts) {
-      if (!opts) { throw new Error('must provide {type: string} to messagesByType') }
+      if (!opts) {
+        throw new Error('must provide {type: string} to messagesByType')
+      }
 
-      if (isString(opts)) { opts = { type: opts } }
+      if (isString(opts)) {
+        opts = { type: opts }
+      }
 
       opts = u.options(opts)
       var keys = opts.keys !== false
       var values = opts.values !== false
       opts.values = true
 
-      ltgt.toLtgt(opts, opts, function (value) {
-        return ['type', opts.type, value]
-      }, u.lo, u.hi)
-
-      return pull(
-        index.read(opts),
-        Format(keys, values, opts.private)
+      ltgt.toLtgt(
+        opts,
+        opts,
+        function (value) {
+          return ['type', opts.type, value]
+        },
+        u.lo,
+        u.hi
       )
+
+      return pull(index.read(opts), Format(keys, values, opts.private))
     }
 
     function format (opts, op, key, value) {
@@ -70,11 +77,11 @@ module.exports = function () {
         throw new Error('a stream without any values does not make sense')
       }
       if (!meta) {
-        return (
-          keys && vals ? { key: op.key, value: value }
-            : keys ? op.key
-              : value
-        )
+        return keys && vals
+          ? { key: op.key, value: value }
+          : keys
+            ? op.key
+            : value
       } else {
         if (vals) {
           if (opts.private === true) {
@@ -89,17 +96,22 @@ module.exports = function () {
       }
     }
 
-    function type (t) { return { feed: '@', msg: '%', blob: '&' }[t] || t }
+    function type (t) {
+      return { feed: '@', msg: '%', blob: '&' }[t] || t
+    }
 
     function linksOpts (opts) {
       if (!opts) throw new Error('opts *must* be provided')
 
-      if (!(opts.values === true) &&
+      if (
+        !(opts.values === true) &&
         !(opts.meta !== false) &&
         !(opts.keys !== false)
       ) {
-        throw new Error('makes no sense to return stream without results' +
-          'set at least one of {keys, values, meta} to true')
+        throw new Error(
+          'makes no sense to return stream without results' +
+            'set at least one of {keys, values, meta} to true'
+        )
       }
 
       var src = type(opts.source)
@@ -113,8 +125,12 @@ module.exports = function () {
       function range (value, end, def) {
         return !value ? def : /^[@%&]$/.test(value) ? value + end : value
       }
-      function lo (value) { return range(value, '', u.lo) }
-      function hi (value) { return range(value, '~', u.hi) }
+      function lo (value) {
+        return range(value, '', u.lo)
+      }
+      function hi (value) {
+        return range(value, '~', u.hi)
+      }
 
       var index = back ? '_link' : 'link'
       var gte = [index, lo(from), rel || u.lo, lo(to), u.lo, u.lo]
@@ -138,8 +154,9 @@ module.exports = function () {
       }
     }
 
-    function testLink (a, e) { // actual, expected
-      return e ? e.length === 1 ? a[0] === e[0] : a === e : true
+    function testLink (a, e) {
+      // actual, expected
+      return e ? (e.length === 1 ? a[0] === e[0] : a === e) : true
     }
 
     index.links = function (opts) {

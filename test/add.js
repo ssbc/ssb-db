@@ -32,7 +32,7 @@ module.exports = function (opts) {
         if (err) throw err
 
         t.deepEqual(_msg, msg.value)
-        ssb.get({id:msg.key, meta: true}, function (err, _msg2) {
+        ssb.get({ id: msg.key, meta: true }, function (err, _msg2) {
           t.deepEqual(_msg2, msg)
 
           f.add({ type: 'wtf' }, function (err, msg) {
@@ -50,13 +50,16 @@ module.exports = function (opts) {
   })
 
   tape('log', function (t) {
-    pull(ssb.createLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
-      console.log(err, ary)
-      if (err) throw err
-      console.log(ary)
-      t.equal(ary.length, 2)
-      t.end()
-    }))
+    pull(
+      ssb.createLogStream({ keys: true, values: true }),
+      pull.collect(function (err, ary) {
+        console.log(err, ary)
+        if (err) throw err
+        console.log(ary)
+        t.equal(ary.length, 2)
+        t.end()
+      })
+    )
   })
 
   tape('log', function (t) {
@@ -81,5 +84,6 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
-
+if (!module.parent) {
+  module.exports({})
+}

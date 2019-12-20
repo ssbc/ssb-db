@@ -43,9 +43,15 @@ module.exports = function (db, opts) {
     index.createUserStream = function (streamOpts) {
       const opts = u.options(streamOpts)
       // mutates opts
-      ltgt.toLtgt(opts, opts, function (value) {
-        return [opts.id, value]
-      }, u.lo, u.hi)
+      ltgt.toLtgt(
+        opts,
+        opts,
+        function (value) {
+          return [opts.id, value]
+        },
+        u.lo,
+        u.hi
+      )
       var keys = opts.keys !== false
       var values = opts.values !== false
       opts.keys = false

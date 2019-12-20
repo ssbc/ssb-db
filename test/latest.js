@@ -15,15 +15,15 @@ var start = Date.now()
 
 // LEGACY: uses feed.add as a continuable
 tape('empty', function (t) {
-  cont.para([
-  ])(function (err) {
+  cont.para([])(function (err) {
     if (err) throw err
     pull(
       db.latest(),
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 0)
-      }))
+      })
+    )
     t.end()
   })
 })

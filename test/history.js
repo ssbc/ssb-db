@@ -15,7 +15,9 @@ var generate = require('ssb-keys').generate
 
 function rand (n) {
   var a = []
-  while (n--) { a.push(Math.random()) }
+  while (n--) {
+    a.push(Math.random())
+  }
   return a
 }
 
@@ -32,16 +34,18 @@ module.exports = function (opts) {
     var keys = generate()
     var prev
 
-    ssb.add(prev = create(keys, null, { type: 'init', public: keys.public }), function () {
-      pull(
-        pull.values(rand(n)),
-        pull.asyncMap(function (r, cb) {
-          ssb.add(prev =
-            create(keys, 'msg', '' + r, prev), cb)
-        }),
-        pull.drain(null, cb)
-      )
-    })
+    ssb.add(
+      (prev = create(keys, null, { type: 'init', public: keys.public })),
+      function () {
+        pull(
+          pull.values(rand(n)),
+          pull.asyncMap(function (r, cb) {
+            ssb.add((prev = create(keys, 'msg', '' + r, prev)), cb)
+          }),
+          pull.drain(null, cb)
+        )
+      }
+    )
 
     return keys
   }
@@ -54,15 +58,16 @@ module.exports = function (opts) {
   tape('history', function (t) {
     keys = init(ssb, 7, function (err) {
       if (err) throw err
-      pull(ssb.latest(), pull.collect(function (err, ary) {
-        if (err) throw err
-        delete ary[0].ts
-        console.log(ary)
-        t.deepEqual(ary, [
-          { id: keys.id, sequence: 8 }
-        ])
-        t.end()
-      }))
+      pull(
+        ssb.latest(),
+        pull.collect(function (err, ary) {
+          if (err) throw err
+          delete ary[0].ts
+          console.log(ary)
+          t.deepEqual(ary, [{ id: keys.id, sequence: 8 }])
+          t.end()
+        })
+      )
     })
 
     id = keys.id // opts.hash(keys.public)
@@ -82,17 +87,25 @@ module.exports = function (opts) {
   tape('two keys', function (t) {
     keys2 = init(ssb, 4, function (err) {
       if (err) throw err
-      pull(ssb.latest(), pull.collect(function (err, ary) {
-        if (err) throw err
-        t.deepEqual(
-          sort(ary.map(function (e) { delete e.ts; return e })),
-          sort([
-            { id: keys.id, sequence: 8 },
-            { id: keys2.id, sequence: 5 }
-          ])
-        )
-        t.end()
-      }))
+      pull(
+        ssb.latest(),
+        pull.collect(function (err, ary) {
+          if (err) throw err
+          t.deepEqual(
+            sort(
+              ary.map(function (e) {
+                delete e.ts
+                return e
+              })
+            ),
+            sort([
+              { id: keys.id, sequence: 8 },
+              { id: keys2.id, sequence: 5 }
+            ])
+          )
+          t.end()
+        })
+      )
     })
   })
 
@@ -132,7 +145,9 @@ module.exports = function (opts) {
         if (err) throw err
         console.log(ary)
         t.equal(ary.length, 8)
-        ary.forEach(function (v) { t.equal(typeof v, 'string') })
+        ary.forEach(function (v) {
+          t.equal(typeof v, 'string')
+        })
         t.end()
       })
     )
@@ -144,7 +159,9 @@ module.exports = function (opts) {
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 8)
-        ary.forEach(function (v) { t.equal(typeof v.content.type, 'string') })
+        ary.forEach(function (v) {
+          t.equal(typeof v.content.type, 'string')
+        })
         t.end()
       })
     )
@@ -158,20 +175,25 @@ module.exports = function (opts) {
 
     pull(
       ssb.createHistoryStream({
-        id: id, keys: false, live: true
+        id: id,
+        keys: false,
+        live: true
       }),
       abortable,
-      pull.through(function (data) {
-        if (++i === 8) {
-          setTimeout(function () {
-            abortable.abort(err)
-          }, 100)
+      pull.through(
+        function (data) {
+          if (++i === 8) {
+            setTimeout(function () {
+              abortable.abort(err)
+            }, 100)
+          }
+          console.log(data)
+        },
+        function (_err) {
+          t.equal(_err, err)
+          t.end()
         }
-        console.log(data)
-      }, function (_err) {
-        t.equal(_err, err)
-        t.end()
-      }),
+      ),
       pull.collect(function (err, ary) {
         t.equal(err.message, errMsg)
         t.equal(ary.length, 8)
@@ -182,7 +204,9 @@ module.exports = function (opts) {
   tape('createHistoryStream with limit', function (t) {
     pull(
       ssb.createHistoryStream({
-        id: id, keys: false, limit: 5
+        id: id,
+        keys: false,
+        limit: 5
       }),
       pull.collect(function (err, ary) {
         if (err) throw err
@@ -193,4 +217,6 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+if (!module.parent) {
+  module.exports({})
+}
