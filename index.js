@@ -112,14 +112,7 @@ module.exports = {
       version                  : function () {
         return pkg.version
       },
-
-      //temporary!
-      _flumeUse                :
-        function (name, flumeview) {
-          ssb.use(name, flumeview)
-          return ssb[name]
-        },
-
+      _flumeUse: ssb._flumeUse,
       close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
       publish                  : valid.async(feed.add, 'string|msgContent'),

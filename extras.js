@@ -3,6 +3,7 @@ var ViewLevel = require('flumeview-level')
 var u = require('./util')
 var stdopts = u.options
 var Format = u.Format
+const ssbLinks = require('ssb-links')
 
 module.exports = function (db, config, keys) {
   db
@@ -10,7 +11,19 @@ module.exports = function (db, config, keys) {
       return [data.timestamp]
     }))
     .use('feed', require('./indexes/feed')())
-    .use('links', require('./indexes/links')())
+    .use('links', require('./indexes/types')())
+
+  //temporary!
+  db._flumeUse = function (name, flumeview) {
+    db.use(name, flumeview)
+    return db[name]
+  }
+
+  db.messagesByType = db.links.messagesByType
+
+  ssbLinks.init(db)
+
+  db.links = db.links2.read
 
   db.createLogStream = function (opts) {
     opts = stdopts(opts)
@@ -53,10 +66,6 @@ module.exports = function (db, config, keys) {
       }
     })
   }
-
-  db.messagesByType = db.links.messagesByType
-
-  db.links = db.links.links
 
   return db
 }
