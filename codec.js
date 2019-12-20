@@ -4,3 +4,4 @@ module.exports = {
   buffer: false,
   type: 'ssb'
 }
+

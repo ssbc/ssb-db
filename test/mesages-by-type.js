@@ -26,69 +26,55 @@ module.exports = function (opts) {
       all(dbA.messagesByType({ type: 'foo', keys: true }), function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 2)
-        t.deepEqual(
-          ary.map(function (e) {
-            return e.value.content
-          }),
-          [
-            { type: 'foo', foo: 1 },
-            { type: 'foo', foo: 3 }
-          ]
-        )
+        t.deepEqual(ary.map(function (e) {
+          return e.value.content
+        }), [
+          { type: 'foo', foo: 1 },
+          { type: 'foo', foo: 3 }
+        ])
 
         var since = ary[1].timestamp
 
         alice.add({ type: 'foo', foo: 6 }, function (err) {
           if (err) throw err
 
-          all(
-            dbA.messagesByType({
+          all(dbA.messagesByType({
+            type: 'foo',
+            gt: since
+          }), function (err, ary) {
+            if (err) throw err
+            console.log(ary)
+            t.equal(ary.length, 1)
+            t.equal(typeof ary[0].key, 'string')
+            t.deepEqual(ary[0].value.content, { type: 'foo', foo: 6 })
+
+            all(dbA.messagesByType({
               type: 'foo',
-              gt: since
-            }),
-            function (err, ary) {
+              gt: since,
+              keys: false
+            }), function (err, ary) {
               if (err) throw err
-              console.log(ary)
+
               t.equal(ary.length, 1)
-              t.equal(typeof ary[0].key, 'string')
-              t.deepEqual(ary[0].value.content, { type: 'foo', foo: 6 })
+              t.deepEqual(ary[0].content, { type: 'foo', foo: 6 })
 
-              all(
-                dbA.messagesByType({
-                  type: 'foo',
-                  gt: since,
-                  keys: false
-                }),
-                function (err, ary) {
-                  if (err) throw err
+              all(dbA.messagesByType({
+                type: 'foo',
+                gt: since,
+                values: false
+              }), function (err, ary) {
+                if (err) throw err
 
-                  t.equal(ary.length, 1)
-                  t.deepEqual(ary[0].content, { type: 'foo', foo: 6 })
-
-                  all(
-                    dbA.messagesByType({
-                      type: 'foo',
-                      gt: since,
-                      values: false
-                    }),
-                    function (err, ary) {
-                      if (err) throw err
-
-                      t.equal(ary.length, 1)
-                      t.equal(typeof ary[0], 'string')
-                      t.end()
-                    }
-                  )
-                }
-              )
-            }
-          )
+                t.equal(ary.length, 1)
+                t.equal(typeof ary[0], 'string')
+                t.end()
+              })
+            })
+          })
         })
       })
     })
   })
 }
 
-if (!module.parent) {
-  module.exports({})
-}
+if (!module.parent) { module.exports({}) }

@@ -137,7 +137,7 @@ module.exports = function (opts) {
     })
   })
 
-  tape('delete', t => {
+  tape('delete', (t) => {
     var ssb = createSSB('test-ssb-log8')
 
     var feed = createFeed(ssb, generate(), opts)
@@ -148,33 +148,25 @@ module.exports = function (opts) {
 
       pull(
         ssb.createFeedStream(),
-        pull.drain(
-          function (msg) {
-            ssb.del(msg.key, err => t.error(err))
-          },
-          () => {
-            pull(
-              ssb.createFeedStream(),
-              pull.drain(
-                () => {
-                  t.fail('no messages should be available')
-                },
-                () => {
-                  ssb.get(msg.key, err => {
-                    t.ok(err)
-                    t.equal(err.code, 'flumelog:deleted')
-                    t.end()
-                  })
-                }
-              )
-            )
-          }
-        )
+        pull.drain(function (msg) {
+          ssb.del(msg.key, err => t.error(err))
+        }, () => {
+          pull(
+            ssb.createFeedStream(),
+            pull.drain(() => {
+              t.fail('no messages should be available')
+            }, () => {
+              ssb.get(msg.key, (err) => {
+                t.ok(err)
+                t.equal(err.code, 'flumelog:deleted')
+                t.end()
+              })
+            })
+          )
+        })
       )
     })
   })
 }
 
-if (!module.parent) {
-  module.exports({})
-}
+if (!module.parent) { module.exports({}) }

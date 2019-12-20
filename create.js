@@ -18,8 +18,8 @@ function errorCB (err) {
 }
 
 module.exports = function (path, opts, keys) {
-  // _ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
-  if (!path) throw new Error('path must be provided')
+  //_ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
+  if(!path) throw new Error('path must be provided')
 
   keys = keys || ssbKeys.generate()
 
@@ -70,41 +70,27 @@ module.exports = function (path, opts, keys) {
           result = u.originalValue(data.value)
         }
 
-        cb(
-          null,
-          !meta
-            ? result
-            : { key: data.key, value: result, timestamp: data.timestamp }
-        )
+        cb(null, !meta ? result : {key: data.key, value: result, timestamp: data.timestamp})
       })
     } else if (ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
-      return db.get(
-        {
-          id: link.link,
-          private: true,
-          unbox: link.query.unbox.replace(/\s/g, '+'),
-          meta: link.query.meta
-        },
-        cb
-      )
+      return db.get({
+        id: link.link,
+        private: true,
+        unbox: link.query.unbox.replace(/\s/g, '+'),
+        meta: link.query.meta
+      }, cb)
     } else if (Number.isInteger(key)) {
       _get(key, cb) // seq
     } else {
-      throw new Error(
-        'ssb-db.get: key *must* be a ssb message id or a flume offset'
-      )
+      throw new Error('ssb-db.get: key *must* be a ssb message id or a flume offset')
     }
   }
 
   db.add = function (msg, cb) {
     db.queue(msg, function (err, data) {
       if (err) cb(err)
-      else {
-        db.flush(function () {
-          cb(null, data)
-        })
-      }
+      else db.flush(function () { cb(null, data) })
     })
   }
 
@@ -112,11 +98,7 @@ module.exports = function (path, opts, keys) {
     if (!keys) keys = ssbKeys.generate()
     function add (content, cb) {
       // LEGACY: hacks to support add as a continuable
-      if (!cb) {
-        return function (cb) {
-          add(content, cb)
-        }
-      }
+      if (!cb) { return function (cb) { add(content, cb) } }
 
       db.append({ content: content, keys: keys }, cb)
     }
@@ -161,10 +143,7 @@ module.exports = function (path, opts, keys) {
   // called with [id, seq] or "<id>:<seq>"
   db.getAtSequence = function (seqid, cb) {
     // will NOT expose private plaintext
-    db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (
-      err,
-      value
-    ) {
+    db.clock.get(isString(seqid) ? seqid.split(':') : seqid, function (err, value) {
       if (err) cb(err)
       else cb(null, u.originalData(value))
     })
@@ -175,12 +154,14 @@ module.exports = function (path, opts, keys) {
     db.last.get(function (err, h) {
       if (err) return cb(err)
       var clock = {}
-      for (var k in h) {
-        clock[k] = h[k].sequence
-      }
+      for (var k in h) { clock[k] = h[k].sequence }
       cb(null, clock)
     })
   }
 
   return db
 }
+
+
+
+

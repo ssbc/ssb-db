@@ -14,7 +14,7 @@ var K = [keys]
 for (var i = 0; i < 100; i++) K.push(ssbKeys.generate())
 
 var a
-var db = (a = require('../minimal')(dirname))
+var db = a = require('../minimal')(dirname)
 db.ready.set(true)
 var MSG
 tape('setup', function (t) {
@@ -48,11 +48,13 @@ tape('generate', function (t) {
     if (!(l % 1000)) console.log(l)
     var keys = K[~~(Math.random() * K.length)]
     var content = {
-      date: Date.now(),
-      random: Math.random(),
-      type: 'test'
+      date: Date.now(), random: Math.random(), type: 'test'
     }
-    var msg = V.create(state.feeds[keys.id], keys, null, content, timestamp())
+    var msg = V.create(
+      state.feeds[keys.id],
+      keys, null,
+      content, timestamp()
+    )
     state = V.append(state, null, msg)
     if (state.error) throw explain(state.error, 'error on generate')
   }
@@ -97,22 +99,17 @@ tape('read back', function (t) {
   var start = Date.now()
   pull(
     db.stream({ seqs: false }),
-    pull.drain(
-      function (msg) {
-        if (!(msg.timestamp > ts)) {
-          t.fail('messages out of order')
-        }
-        ts = msg.timestamp
-        _state = V.append(_state, null, msg.value)
-        if (_state.error) throw _state.error
-      },
-      function (err) {
-        if (err) throw err
-        t.equal(_state.queue.length, msgs.length)
+    pull.drain(function (msg) {
+      if (!(msg.timestamp > ts)) { t.fail('messages out of order') }
+      ts = msg.timestamp
+      _state = V.append(_state, null, msg.value)
+      if (_state.error) throw _state.error
+    }, function (err) {
+      if (err) throw err
+      t.equal(_state.queue.length, msgs.length)
 
-        console.log('revalidate', N / ((Date.now() - start) / 1000))
-        t.end()
-      }
-    )
+      console.log('revalidate', N / ((Date.now() - start) / 1000))
+      t.end()
+    })
   )
 })

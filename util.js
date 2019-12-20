@@ -9,15 +9,9 @@ function stdopts (opts) {
 }
 
 function msgFmt (keys, values, obj) {
-  if (keys && values) {
-    return obj
-  }
-  if (keys) {
-    return obj.key
-  }
-  if (values) {
-    return obj.value
-  }
+  if (keys && values) { return obj }
+  if (keys) { return obj.key }
+  if (values) { return obj.value }
   return null // i guess?
 }
 
@@ -31,16 +25,12 @@ exports.wait = function () {
   var waiting = []
   var value
   return {
-    get: function () {
-      return value
-    },
+    get: function () { return value },
     set: function (_value) {
       value = _value
 
       var l = waiting.length
-      for (var i = 0; i < l; ++i) {
-        waiting[i](null, value)
-      }
+      for (var i = 0; i < l; ++i) { waiting[i](null, value) }
       waiting = waiting.slice(l)
     },
     wait: function (cb) {
@@ -61,28 +51,23 @@ exports.wait = function () {
  *
  * @returns {object} the original message value, extracted from `value.meta.original`
  */
-const originalValue = (exports.originalValue = function (value) {
+const originalValue = exports.originalValue = function (value) {
   var copy = {}
 
-  for (const key in value) {
-    if (
-      key !== 'meta' &&
-      key !== 'cyphertext' &&
-      key !== 'private' &&
-      key !== 'unbox'
-    ) {
+  for (let key in value) {
+    if (key !== 'meta' && key !== 'cyphertext' && key !== 'private' && key !== 'unbox') {
       copy[key] = value[key]
     }
   }
 
   if (value.meta && value.meta.original) {
-    for (const key in value.meta.original) {
+    for (let key in value.meta.original) {
       copy[key] = value.meta.original[key]
     }
   }
 
   return copy
-})
+}
 
 /**
  * Remove metadata from messages and return *only* the original message, ready
@@ -92,10 +77,10 @@ const originalValue = (exports.originalValue = function (value) {
  *
  * @returns {object} the original data, extracted from `data.value.meta.original`
  */
-var originalData = (exports.originalData = function (data) {
+var originalData = exports.originalData = function (data) {
   data.value = originalValue(data.value)
   return data
-})
+}
 
 /**
  * Used to make modifications to values during streams, which is dependent on

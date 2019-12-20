@@ -12,12 +12,12 @@ module.exports = function (opts) {
     var keys = ssbKeys.generate()
 
     var prev
-    var init = (prev = create(keys, 'init', { public: keys.public }, null))
+    var init = prev = create(keys, 'init', { public: keys.public }, null)
     var q = [init]
 
     var l = 5
     while (l--) {
-      q.push((prev = create(keys, 'msg', { count: l }, prev)))
+      q.push(prev = create(keys, 'msg', { count: l }, prev))
     }
 
     console.log(q)
@@ -40,12 +40,12 @@ module.exports = function (opts) {
     var keys = ssbKeys.generate()
 
     var prev
-    var init = (prev = create(keys, 'init', { public: keys.public }, null))
+    var init = prev = create(keys, 'init', { public: keys.public }, null)
     var q = [init]
 
     var l = 5
     while (l--) {
-      q.push((prev = create(keys, 'msg', { count: l }, prev)))
+      q.push(prev = create(keys, 'msg', { count: l }, prev))
     }
 
     q.push(q[3])
@@ -68,6 +68,4 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) {
-  module.exports({})
-}
+if (!module.parent) { module.exports({}) }

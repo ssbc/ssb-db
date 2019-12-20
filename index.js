@@ -1,21 +1,15 @@
-var create = require('./create')
-var ssbKeys = require('ssb-keys')
-var path = require('path')
-var osenv = require('osenv')
-var mkdirp = require('mkdirp')
-var rimraf = require('rimraf')
-var valid = require('./lib/validators')
-var pkg = require('./package.json')
+var create     = require('./create')
+var ssbKeys    = require('ssb-keys')
+var path       = require('path')
+var osenv      = require('osenv')
+var mkdirp     = require('mkdirp')
+var rimraf     = require('rimraf')
+var valid      = require('./lib/validators')
+var pkg        = require('./package.json')
 
-function isString (s) {
-  return typeof s === 'string'
-}
-function isObject (o) {
-  return typeof o === 'object'
-}
-function isFunction (f) {
-  return typeof f === 'function'
-}
+function isString(s) { return 'string' === typeof s }
+function isObject(o) { return 'object' === typeof o }
+function isFunction (f) { return 'function' === typeof f }
 
 var manifest = {
   get: 'async',
@@ -37,20 +31,21 @@ var manifest = {
   status: 'sync',
   getVectorClock: 'async',
   version: 'sync',
-  help: 'sync'
+  help: 'sync',
 }
 
 module.exports = {
   manifest: manifest,
   permissions: {
-    master: { allow: null, deny: null },
-    anonymous: { allow: ['createHistoryStream'], deny: null }
+    master: {allow: null, deny: null},
+    anonymous: {allow: ['createHistoryStream'], deny: null}
   },
   init: function (api, opts) {
+
     // .temp: use a /tmp data directory
     // (useful for testing)
-    if (opts.temp) {
-      var name = isString(opts.temp) ? opts.temp : '' + Date.now()
+    if(opts.temp) {
+      var name = isString(opts.temp) ? opts.temp : ''+Date.now()
       opts.path = path.join(osenv.tmpdir(), name)
       rimraf.sync(opts.path)
     }
@@ -58,33 +53,26 @@ module.exports = {
     // load/create secure scuttlebutt data directory
     mkdirp.sync(opts.path)
 
-    if (!opts.keys) {
-      opts.keys = ssbKeys.generate(
-        'ed25519',
-        opts.seed && Buffer.from(opts.seed, 'base64')
-      )
-    }
+    if(!opts.keys)
+      opts.keys = ssbKeys.generate('ed25519', opts.seed && Buffer.from(opts.seed, 'base64'))
 
-    if (!opts.path) {
-      throw new Error(
-        'opts.path *must* be provided, or use opts.temp=name to create a test instance'
-      )
-    }
+    if(!opts.path)
+      throw new Error('opts.path *must* be provided, or use opts.temp=name to create a test instance')
 
     // main interface
     var ssb = create(opts.path, opts, opts.keys)
-    // treat the main feed as remote, because it's likely handled like that by others.
-    var feed = ssb.createFeed(opts.keys, { remote: true })
+    //treat the main feed as remote, because it's likely handled like that by others.
+    var feed = ssb.createFeed(opts.keys, {remote: true})
     var _close = api.close
     var close = function (arg, cb) {
-      if (typeof arg === 'function') cb = arg
+      if('function' === typeof arg) cb = arg
       ssb.flush(function (err) {
-        if (err) return cb(err)
+        if(err) return cb(err)
         // override to close the SSB database
         ssb.close(function (err) {
           if (err) return cb(err)
-          console.log('fallback to close')
-          _close(cb) // multiserver doesn't take a callback on close.
+          console.log("fallback to close")
+          _close(cb) //multiserver doesn't take a callback on close.
         })
       })
     }
@@ -92,89 +80,79 @@ module.exports = {
     function since () {
       var plugs = {}
       var sync = true
-      for (var k in ssb) {
-        if (ssb[k] && isObject(ssb[k]) && isFunction(ssb[k].since)) {
+      for(var k in ssb) {
+        if(ssb[k] && isObject(ssb[k]) && isFunction(ssb[k].since)) {
           plugs[k] = ssb[k].since.value
-          sync = sync && plugs[k] === ssb.since.value
+          sync = sync && (plugs[k] === ssb.since.value)
         }
       }
       return {
         since: ssb.since.value,
         plugins: plugs,
-        sync: sync
+        sync: sync,
       }
     }
     var self
-    return (self = {
-      id: feed.id,
-      keys: opts.keys,
+    return self = {
+      id                       : feed.id,
+      keys                     : opts.keys,
 
-      ready: function () {
+      ready                    : function () {
         return ssb.ready.value
       },
 
-      progress: function () {
+      progress                 : function () {
         return ssb.progress
       },
 
-      status: function () {
-        return { progress: self.progress(), db: ssb.status, sync: since() }
+      status                   : function () {
+        return {progress: self.progress(), db: ssb.status, sync: since() }
       },
 
-      version: function () {
+      version                  : function () {
         return pkg.version
       },
 
-      // temporary!
-      _flumeUse: function (name, flumeview) {
-        ssb.use(name, flumeview)
-        return ssb[name]
-      },
+      //temporary!
+      _flumeUse                :
+        function (name, flumeview) {
+          ssb.use(name, flumeview)
+          return ssb[name]
+        },
 
-      close: close,
+      close                    : close,
       del: valid.async(ssb.del, 'msgLink'),
-      publish: valid.async(feed.add, 'string|msgContent'),
-      add: valid.async(ssb.add, 'msg'),
-      queue: valid.async(ssb.queue, 'msg'),
-      get: valid.async(ssb.get, 'msgLink|number|object'),
+      publish                  : valid.async(feed.add, 'string|msgContent'),
+      add                      : valid.async(ssb.add, 'msg'),
+      queue                      : valid.async(ssb.queue, 'msg'),
+      get                      : valid.async(ssb.get, 'msgLink|number|object'),
 
-      post: ssb.post,
-      addMap: ssb.addMap,
+      post                     : ssb.post,
+      addMap                   : ssb.addMap,
 
-      since: since,
+      since                    : since,
 
-      latest: ssb.latest,
-      getLatest: valid.async(ssb.getLatest, 'feedId'),
-      latestSequence: valid.async(ssb.latestSequence, 'feedId'),
-      createFeed: ssb.createFeed,
-      whoami: function () {
-        return { id: feed.id }
-      },
-      createFeedStream: valid.source(ssb.createFeedStream, 'readStreamOpts?'),
-      createHistoryStream: valid.source(
-        ssb.createHistoryStream,
-        ['createHistoryStreamOpts'],
-        ['feedId', 'number?', 'boolean?']
-      ),
-      createLogStream: valid.source(ssb.createLogStream, 'readStreamOpts?'),
-      createUserStream: valid.source(
-        ssb.createUserStream,
-        'createUserStreamOpts'
-      ),
-      links: valid.source(ssb.links, 'linksOpts'),
-      sublevel: ssb.sublevel,
-      messagesByType: valid.source(
-        ssb.messagesByType,
-        'string|messagesByTypeOpts'
-      ),
-      createWriteStream: ssb.createWriteStream,
-      getVectorClock: ssb.getVectorClock,
-      getAtSequence: ssb.getAtSequence,
-      addUnboxer: ssb.addUnboxer,
-      box: ssb.box,
-      help: function () {
-        return require('./help')
-      }
-    })
+      latest                   : ssb.latest,
+      getLatest                : valid.async(ssb.getLatest, 'feedId'),
+      latestSequence           : valid.async(ssb.latestSequence, 'feedId'),
+      createFeed               : ssb.createFeed,
+      whoami                   : function () { return { id: feed.id } },
+      createFeedStream         : valid.source(ssb.createFeedStream, 'readStreamOpts?'),
+      createHistoryStream      : valid.source(ssb.createHistoryStream, ['createHistoryStreamOpts'], ['feedId', 'number?', 'boolean?']),
+      createLogStream          : valid.source(ssb.createLogStream, 'readStreamOpts?'),
+      createUserStream         : valid.source(ssb.createUserStream, 'createUserStreamOpts'),
+      links                    : valid.source(ssb.links, 'linksOpts'),
+      sublevel                 : ssb.sublevel,
+      messagesByType           : valid.source(ssb.messagesByType, 'string|messagesByTypeOpts'),
+      createWriteStream        : ssb.createWriteStream,
+      getVectorClock           : ssb.getVectorClock,
+      getAtSequence            : ssb.getAtSequence,
+      addUnboxer               : ssb.addUnboxer,
+      box                      : ssb.box,
+      help                     : function () { return require('./help') }
+    }
   }
 }
+
+
+

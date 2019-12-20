@@ -25,15 +25,9 @@ module.exports = function (db) {
     index.createFeedStream = function (opts) {
       opts = u.options(opts)
       // mutates opts
-      ltgt.toLtgt(
-        opts,
-        opts,
-        function (value) {
-          return [value, u.lo]
-        },
-        u.lo,
-        u.hi
-      )
+      ltgt.toLtgt(opts, opts, function (value) {
+        return [value, u.lo]
+      }, u.lo, u.hi)
 
       var keys = opts.keys
       var values = opts.values

@@ -12,15 +12,17 @@ var hash = ssbKeys.hash
 
 module.exports = function (opts) {
   var content = {
-    type: 'post',
-    is: 'text',
-    text: 'test',
-    timezone: 300,
-    rebroadcasts: {
-      msg: '1BHEHMwZlikXB3o1mg+fP3GVo/+Xb7p46u3rqt/hHkA=.blake2s',
-      feed: 'rbU6CvdwBXxO/fDyoKuRyKxmZYyeb5+l87R9XVkN8bs=.blake2s',
-      timestamp: 1414078805677,
-      timezone: 300
+    'type': 'post',
+    'is': 'text',
+    'text': 'test',
+    'timezone': 300,
+    'rebroadcasts': {
+      'msg':
+          '1BHEHMwZlikXB3o1mg+fP3GVo/+Xb7p46u3rqt/hHkA=.blake2s',
+      'feed':
+          'rbU6CvdwBXxO/fDyoKuRyKxmZYyeb5+l87R9XVkN8bs=.blake2s',
+      'timestamp': 1414078805677,
+      'timezone': 300
     }
   }
 
@@ -34,9 +36,7 @@ module.exports = function (opts) {
 
   var signed = {}
 
-  for (var k in msg) {
-    signed[k] = msg[k]
-  }
+  for (var k in msg) { signed[k] = msg[k] }
 
   signed.signature = Buffer.alloc(64).toString('base64')
 
@@ -81,6 +81,4 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) {
-  module.exports({})
-}
+if (!module.parent) { module.exports({}) }
