@@ -33,6 +33,7 @@ module.exports = function (opts) {
 
         t.deepEqual(_msg, msg.value)
         ssb.get({ id: msg.key, meta: true }, function (err, _msg2) {
+          if (err) throw err
           t.deepEqual(_msg2, msg)
 
           f.add({ type: 'wtf' }, function (err, msg) {
