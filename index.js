@@ -108,7 +108,7 @@ module.exports = {
 
   //    usage                    : valid.sync(usage, 'string?|boolean?'),
       close                    : close,
-      del: valid.async(ssb.del, 'msgLink'),
+      del: valid.async(ssb.del, 'msgLink|feedId'),
       publish                  : valid.async(feed.add, 'string|msgContent'),
       add                      : valid.async(ssb.add, 'msg'),
       queue                      : valid.async(ssb.queue, 'msg'),
