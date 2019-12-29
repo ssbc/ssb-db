@@ -51,7 +51,7 @@ module.exports = function (path, opts, keys) {
   const deleteMessage = (key, cb) => {
     db.keys.get(key, (err, val, seq) => {
       if (err) return cb(err)
-      if (seq == null) cb(new Error('seq is null!'))
+      if (seq == null) return cb(new Error('seq is null!'))
 
       _del(seq, cb)
     })
