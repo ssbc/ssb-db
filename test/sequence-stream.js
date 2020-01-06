@@ -24,7 +24,7 @@ test('initial sequence numbers', (t) => {
   })
 })
 
-test('resume sequence strem later', (t) => {
+test('resume sequence stream later', (t) => {
   const since = obv()
 
   pull(
