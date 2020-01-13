@@ -68,7 +68,11 @@ module.exports = (remote) => {
     return proxy.views[name]
   }
 
-  setInterval(() => console.log({pending}), 1000)
+  setInterval(() => {
+    Object.entries(proxy.views).forEach(([key, value]) => {
+      console.log(key, `${value.since.value / since.value}%`)
+    })
+  }, 1000)
 
   proxy.onReady = (cb) => {
     onReadyCb = cb
