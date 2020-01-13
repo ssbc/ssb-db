@@ -9,13 +9,17 @@ try {
   const os = require('os')
   const fs = require('fs')
 
-  createFakeFilename = () => path.join(
+  createFakeFilename = () => {
+    const result = path.join(
     fs.mkdtempSync(path.join(
-      os.tmpdir(),
-      'ssb-db-')
-    ),
-    'log.flumeproxy'
-  )
+        os.tmpdir(),
+        'ssb-db-')
+      ),
+      'log.flumeproxy'
+    )
+    console.log(`saving view to file ${result}`)
+    return result
+  }
 } catch (e) {
   // We're probably running in a browser.
   createFakeFilename = () => null
