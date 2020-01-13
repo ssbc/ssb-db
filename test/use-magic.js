@@ -34,14 +34,13 @@ const magic = (ssb) => {
 
 test('magic muxrpc test', (t) => {
   client({
-    remote: 'unix:/home/christianbundy/.ssb/socket~noauth:+oaWWDs8g73EZFUMfW37R/ULtFEjwKN/DczvdYihjbU=',
     manifest: {
       whoami: 'sync',
       get: 'async',
       about: {
         socialValue: 'async'
       },
-      sinceStream: 'source',
+      createSequenceStream: 'source',
       createLogStream: 'source',
       progress: 'sync'
     },
@@ -59,7 +58,6 @@ test('magic muxrpc test', (t) => {
       .onReady(() => {
         console.log('ready!')
 
-        t.comment('Publishing message...')
         ssb.whoami((meErr, { id }) => {
           t.error(meErr)
           ssb.get({ id: 0 }, (getErr, val) => {

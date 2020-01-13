@@ -29,7 +29,7 @@ module.exports = (remote) => {
   console.log('starting since stream')
   console.log(remote.sinceStream)
   pull(
-    remote.sinceStream(),
+    remote.createSequenceStream(),
     pull.drain((value) => {
       console.log({since: value})
       since.set(value)
