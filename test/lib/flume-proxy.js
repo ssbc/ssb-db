@@ -70,7 +70,7 @@ module.exports = (remote) => {
 
   setInterval(() => {
     Object.entries(proxy.views).forEach(([key, value]) => {
-      console.log(key, `${value.since.value / since.value}%`)
+      console.log(key, `${Math.round(value.since.value / since.value * 100)}%`)
     })
   }, 1000)
 
