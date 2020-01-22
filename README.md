@@ -2,7 +2,12 @@
 
 [secret-stack](https://github.com/ssbc/secret-stack) plugin which provides storing of valid secure-scuttlebutt messages in an append-only log.
 
-## What does it do?
+## Table of contents
+
+[What does it do?](#what-does-it-do) | [Example](#example) | [Concepts](#concepts) | [API](#api) | [Stability](#stability)  | [License](#License)
+___
+
+# What does it do?
 
 `ssb-db` provides tools for dealing with unforgeable append-only message feeds. You can create a feed, post messages to that feed, verify a feed created by someone else, stream messages to and from feeds, and more (see [API](#api)).
 
@@ -10,7 +15,7 @@
 
 This property makes `ssb-db` useful for peer-to-peer applications. `ssb-db` also makes it easy to encrypt messages.
 
-## Example
+# Example
 
 In this example, we create a feed, post a signed message to it, then create a stream that reads from the feed.
 
@@ -69,17 +74,17 @@ pull(
 )
 ```
 
-## Concepts
+# Concepts
 
 Building upon `ssb-db` requires understanding a few concepts that it uses to ensure the unforgeability of message feeds.
 
-### Identities
+## Identities
 
 An identity is simply a public/private key pair.
 
 Even though there is no worldwide store of identities, it's infeasible for anyone to forge your identity. Identities are binary strings, so not particularly human-readable.
 
-### Feeds
+## Feeds
 
 A feed is an append-only sequence of messages. Each feed is associated 1:1 with an identity. The feed is identified by its public key. This works because public keys are unique.
 
@@ -87,7 +92,7 @@ Since feeds are append-only, replication is simple:  request all messages in the
 
 Note that append-only really means append-only: you cannot delete an existing message. If you want to enable entities to be deleted or modified in your data model, that can be implemented in a layer on top of `ssb-db` using [delta encoding](https://en.wikipedia.org/wiki/Delta_encoding).
 
-### Messages
+## Messages
 
 Each message contains:
 
@@ -99,7 +104,7 @@ Each message contains:
   
 Since each message contains a reference to the previous message, a feed must be replicated in order, starting with the first message. This is the only way that the feed can be verified. A feed can be *viewed* in any order after it's been replicated.
 
-### Object ids
+## Object ids
 
 The text inside a message can refer to three types of ssb-db entities: messages, feeds, and blobs (i.e. attachments). Messages and blobs are referred to by their hashes, but a feed is referred to by its signing public key. Thus, a message within a feed can refer to another feed, or to a particular point _within_ a feed.
 
@@ -107,7 +112,7 @@ Object ids begin with a sigil `@` `%` and `&` for a `feedId`, `msgId` and `blobI
 
 Note that `ssb-db` does not include facilities for retrieving a blob given the hash.
 
-### Replication
+## Replication
 
 It is possible to easily replicate data between two instances of `ssb-db`.
 
@@ -115,7 +120,7 @@ First, they exchange maps of their newest data. Then, each one downloads all dat
 
 [ssb-server](https://github.com/ssbc/ssb-server) is a tool that makes it easy to replicate multiple instances of ssb-db using a decentralized network.
 
-### Security properties
+## Security properties
 
 `ssb-db` maintains useful security properties even when it is connected to a malicious ssb-db database. This makes it ideal as a store for peer-to-peer applications.
 
@@ -132,7 +137,7 @@ Imagine that we want to read from a feed for which we know the identity, but we'
 
 ## API
 
-### `SecretStack.use(require('ssb-db')) => SecretStackApp`
+## `SecretStack.use(require('ssb-db')) => SecretStackApp`
 
 Adds `ssb-db` persistence to a [secret-stack](https://github.com/ssbc/secret-stack) setup.
 Without other plugins, this instance will not have replication or querying. Loading `ssb-db` directly is useful for testing, but it's recommended to instead start from a plugin bundle like [ssb-server](https://github.com/ssbc/ssb-server)
@@ -141,9 +146,12 @@ Without other plugins, this instance will not have replication or querying. Load
 
 > In the API docs below, we'll just call it `db`
 
-### `db.get(id | seq | opts, cb)`
+## get: async
+```js
+db.get(id | seq | opts, cb)
+```
 
-Get an ssb message. 
+Get an ssb message.
 
 * If `id` is a message id, the message is returned.
 * If `seq` is provided, the message at that offset in the underlying flumelog is returned. 
@@ -153,18 +161,30 @@ Get an ssb message.
 
 Given that most other apis (such as createLogStream) by default return `{key, value, timestamp}` it's recommended to use `db.get({id: key, meta: true}, cb)`
 
-### `db.add(msg, cb)`
+## add: async
+```js
+db.add(msg, cb)
+```
 
 Append a raw message to the local log. `msg` must be a valid, signed message. [ssb-validate](https://github.com/ssbc/ssb-validate) is used internally to validate messages.
 
-### `db.publish(content, cb)`
+## publish: async
+```js
+db.publish(content, cb)
+```
 Create a valid message with `content` with the default identity and append it to the local log. [ssb-validate](https://github.com/ssbc/ssb-validate) is used to construct a valid message.
 
-### `db.whoami(cb)`
+## whoami: sync
+```js
+db.whoami(cb)
+```
 
 Call back with the default identity for the `db`.
 
-### `db.createLogStream({lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number}) => PullSource`
+## createLogStream: source
+```js
+db.createLogStream({lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number}): PullSource
+```
 
 Create a stream of the messages that have been written to this instance in the order they arrived. This is mainly intended for building views.
 The objects in this stream will be of the form:
@@ -197,13 +217,19 @@ Provides access to the raw [flumedb](https://github.com/flumedb/flumedb) log. Ra
 ```
 All options supported by [flumelog-offset](https://github.com/flumedb/flumelog-offset) are supported.
 
-### `db.createHistoryStream({id: feedId, seq: int?, live: bool?, limit: int?, keys: bool?, values: bool?}) -> PullSource`
+## createHistoryStream: source
+```js
+db.createHistoryStream({id: feedId, seq: int?, live: bool?, limit: int?, keys: bool?, values: bool?}) -> PullSource
+```
 
 Create a stream of the history of `id`. If `seq > 0`, then only stream messages with sequence numbers greater than `seq`. If `live` is true, the stream will be a [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
 > Note: since `createHistoryStream` is provided over the network to anonymous peers, not all options are supported. `createHistoryStream` does not decrypt private messages.
 
-### `db.messagesByType({type: string, live,old,reverse: bool?, gt,gte,lt,lte: timestamp, limit: number }) -> PullSource`
+## messagesByType: source
+```js
+db.messagesByType({type: string, live,old,reverse: bool?, gt,gte,lt,lte: timestamp, limit: number }) -> PullSource
+```
 
 Retrieve messages with a given type. All messages must have a type, so this is a good way to select messages that an application might use. This function returns a source pull-stream.
 
@@ -211,24 +237,31 @@ As with `createLogStream` messagesByType takes all the options from [pull-level#
 
 Ranges may be a timestamp, of the local received time.
 
-### `db.createFeedStream(lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number})`
+## createFeedStream: source
+```js
+db.createFeedStream(lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number})
+```
 
 Like `createLogStream`, but messages are in order of the claimed time, instead of the received time.
 This may sound like a much better idea, but has surprising effects with live messages (you may receive a old message in real time) but for old messages, it makes sense.
 
 All standard options are supported.
 
-### `db.createUserStream({id: feed_id, lt,lte,gt,gte: sequence, reverse,old,live,raw: boolean, limit: number})`
+## createUserStream: source
+```js
+db.createUserStream({id: feed_id, lt,lte,gt,gte: sequence, reverse,old,live,raw: boolean, limit: number})
+```
 
 `createUserStream` is like `createHistoryStream`, except all options are supported. Local access is allowed, but not remote anonymous access. `createUserStream` does decrypt private messages.
 
-### `db.links({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource`
-
-Get a stream of links from a feed to a blob/msg/feed id.
-
-The objects in this stream will be of the form:
-
+## links: source
+```js
+db.links({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
 ```
+
+Get a stream of links from a feed to a blob/msg/feed id. The objects in this stream will be of the form:
+
+```js
 { source: feedId, rel: String, dest: Id, key: MsgId, value: Object? }
 ```
 
@@ -241,7 +274,10 @@ The objects in this stream will be of the form:
 
 > Note: if `source`, and `dest` is provided, but not `rel`, ssb will have to scan all the links from source, and then filter by dest. Your query will be more efficient if you also provide `rel`.
 
-### `db.addMap(fn)`
+## addMap: async
+```js
+db.addMap(fn)
+```
 
 Add a map function to be applied to all messages on *read*. The `fn` function is should expect `(msg, cb)`, and must eventually call `cb(err, msg)` to finish.
 
@@ -279,26 +315,38 @@ db.addMap(function (msg, cb) {
 })
 ```
 
-### `db._flumeUse(name, flumeview) => View`
+## _flumeUse: view
+```js
+db._flumeUse(name, flumeview) => View
+```
 
 Add a [flumeview](https://github.com/flumedb/flumedb#views) to the current instance.
 This method was intended to be a temporary solution, but is now used by many plugins, which is why it starts with `_`.
 
 See [creating a secret-stack plugin](https://github.com/ssbc/secret-stack/blob/master/PLUGINS.md) for more details.
 
-### `db.getAtSequence([id, seq], cb(err, msg))`
+## getAtSequence: async
+```js
+db.getAtSequence([id, seq], cb(err, msg))
+```
 
 Get a message for a given feed `id` with given `sequence`. Calls back a message or an error, takes a two element array with a feed `id` as the first element, and `sequence` as second element.
 
 Needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
 
-### `db.getVectorClock(cb)`
+## getVectorClock: async
+```js
+db.getVectorClock(cb)
+```
 
 Load a map of `id` to latest `sequence` (`{<id>: <seq>,...}`) for every feed in the database.
 
 Needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
 
-### `db.progress`
+## progress: sync
+```js
+db.progress()
+```
 
 Return the current status of various parts of the scuttlebut system that indicate progress. This api is hooked by a number of plugins, but `ssb-db` adds an `indexes` section (which represents how fully built the indexes are).
 
@@ -315,7 +363,11 @@ The output might look like:
 
 Progress is represented linearly from `start` to `target`. Once `current` is equal to `target` the progress is complete. `start` shows how far it's come. The numbers could be anything, but `start <= current <= target` if all three numbers are equal that should be considered 100%
 
-### `db.status`
+
+## status: sync
+```js
+db.status()
+```
 
 Returns metadata about the status of various ssb plugins. ssb-db adds an `sync` section, that shows where each index is up to. output might took like this:
 
@@ -340,23 +392,38 @@ Returns metadata about the status of various ssb plugins. ssb-db adds an `sync` 
 
 `sync.since` is where the main log is up to, and `since.plugins.<name>` is where each plugin's indexes are up to.
 
-### `db.version`
+## version: sync
+```js
+db.version()
+```
 
 Return the version of `ssb-db`. currently, this returns only the ssb-db version and not the ssb-server version, or the version of any other plugins. [We should fix this soon](https://github.com/ssbc/ssb-server/issues/648)
 
-### `db.queue(msg, cb)`
+## queue: async 
+```js
+db.queue(msg, cb)
+```
 
 Add a message to be validated and written, but don't worry about actually writing it. The callback is called when the database is ready for more writes to be queued. Usually that means it's called back immediately. __This method is not exposed over RPC.__
 
-### `db.flush(cb)`
+## flush: async 
+```js
+db.flush(cb)
+```
 
 Callback when all queued writes are actually definitely written to the disk.
 
-### `db.post(fn({key, value: msg, timestamp})) => Ovb`
+## post: Ovbservable
+```js
+db.post(fn({key, value: msg, timestamp})) => Ovb
+```
 
 [Observable](https://github.com/dominictarr/obv) that calls `fn` whenever a message is appended (with that message). __This method is not exposed over RPC.__
 
-### `db.since(fn(seq)) => Obv`
+## since: Ovbservable
+```js
+db.since(fn(seq)) => Obv
+```
 
 On [observable](https://github.com/dominictarr/obv) of the current log sequence. This is always a positive integer that usually increases, except in the exceptional circumstance that the log is deleted or corrupted.
 
@@ -377,31 +444,47 @@ Add an unboxer object, any encrypted message is passed to the unboxer object to 
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
 
-### `db.unbox(data, key)`
+## unbox
+```js
+db.unbox(data, key)
+```
 
 Attempt to decrypt data using key. Key is a symmetric key, that is passed to the unboxer objects.
 
 ## Deprecated apis
 
-### `db.getLatest(feed, cb(err, {key, value: msg}))`
+## getLatest
+```js
+db.getLatest(feed, cb(err, {key, value: msg}))
+```
 
-Get the latest message for the given feed, with `{key, value: msg}` style.
+Get the latest message for the given feed, with `{key, value: msg}` style. Maybe used by some front ends, and by ssb-feed.
 
-Maybe used by some front ends, and by ssb-feed.
-
-### `db.latestSequence(feed, cb(err, sequence))`
+## latestSequene
+```js
+db.latestSequence(feed, cb(err, sequence))
+```
 
 Call back the sequence number of the latest message for the given feed.
 
-### `db.latest() => PullSource`
+## latest
+```js
+db.latest() => PullSource
+```
 
 Returns a stream of `{author, sequence, ts}` tuples. `ts` is the time claimed by the author, not the received time.
 
-### `db.createWriteStream() => PullSink`
+## createWriteStream
+```js
+db.createWriteStream() => PullSink`
+```
 
 Create a pull-stream sink that expects a stream of messages and calls `db.add` on each item, appending every valid message to the log.
 
-### `db.createFeed(keys?) => Feed`
+## createFeed
+```js
+db.createFeed(keys?) => Feed
+```
 
 __Use [ssb-identities](http://github.com/ssbc/ssb-identities) instead.__
 
@@ -413,7 +496,7 @@ May only be called locally, not from a [ssb-client](https://github.com/ssbc/ssb-
 
 The following methods apply to the Feed type.
 
-#### Feed#add(message, cb)
+### Feed#add(message, cb)
 
 Adds a message of a given type to a feed. This is the recommended way to append messages. 
 
@@ -421,11 +504,11 @@ Adds a message of a given type to a feed. This is the recommended way to append 
 
 If `message` has `recps` property which is an array of feed ids, then the message content will be encrypted using [private-box](https://github.com/auditdrivencrypto/private-box) to those recipients. Any invalid recipients will cause an error, instead of accidentially posting a message publically or without a recipient.
 
-#### Feed#id
+### Feed#id
 
 The id of the feed (which is the feed's public key)
 
-#### Feed#keys
+### Feed#keys
 
 The key pair for this feed.
 
