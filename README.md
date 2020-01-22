@@ -115,7 +115,6 @@ Note that `ssb-db` does not include facilities for retrieving a blob given the h
 ## Replication
 
 It is possible to easily replicate data between two instances of `ssb-db`.
-
 First, they exchange maps of their newest data. Then, each one downloads all data newer than its newest data.
 
 [ssb-server](https://github.com/ssbc/ssb-server) is a tool that makes it easy to replicate multiple instances of ssb-db using a decentralized network.
@@ -136,8 +135,10 @@ Imagine that we want to read from a feed for which we know the identity, but we'
 
 
 ## API
-
-## `SecretStack.use(require('ssb-db')) => SecretStackApp`
+## require('ssb-db')
+```js 
+SecretStack.use(require('ssb-db')) => SecretStackApp
+```
 
 Adds `ssb-db` persistence to a [secret-stack](https://github.com/ssbc/secret-stack) setup.
 Without other plugins, this instance will not have replication or querying. Loading `ssb-db` directly is useful for testing, but it's recommended to instead start from a plugin bundle like [ssb-server](https://github.com/ssbc/ssb-server)
@@ -151,7 +152,7 @@ Without other plugins, this instance will not have replication or querying. Load
 db.get(id | seq | opts, cb)
 ```
 
-Get an ssb message.
+Get a message by its hash-id.
 
 * If `id` is a message id, the message is returned.
 * If `seq` is provided, the message at that offset in the underlying flumelog is returned. 
@@ -174,103 +175,164 @@ db.publish(content, cb)
 ```
 Create a valid message with `content` with the default identity and append it to the local log. [ssb-validate](https://github.com/ssbc/ssb-validate) is used to construct a valid message.
 
-## whoami: sync
+This is the recommended method for publishing new messages, as it handles the tasks of correctly setting the message's timestamp, sequence number, previous-hash, and signature.
+
+ - `content` (object): The content of the message.
+   - `.type` (string): The object's type.
+
+
+## del: async
+
+> ⚠ This could break your feed. Please don't run this unless you understand it.
+
+Delete a message by its message key or a whole feed by its key. This only deletes the message from your local database, not the network, and could have unintended consequences if you try to delete a single message in the middle of a feed.
+
+The intended use-case is to delete all messages from a given feed *or* deleting a single message from the tip of your feed if you're completely confident that the message hasn't left your device.
+
 ```js
-db.whoami(cb)
+//Delete message
+del(msg.key, (err) => {
+  if (err) throw err
+})
 ```
 
-Call back with the default identity for the `db`.
+```js
+//Delete all author messages
+del(msg.value.author, (err) => {
+  if (err) throw err
+})
+```
+
+## whoami: sync
+```js
+db.whoami(cb) // {"id": FeedID }
+```
+Get information about the current ssb-server user.
 
 ## createLogStream: source
 ```js
-db.createLogStream({lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number}): PullSource
+db.createLogStream({ live, old, gt, gte, lt,lte, reverse, keys, calues,, limit, fillCache, keyEncoding, valueEncoding, raw }): PullSource
 ```
-
 Create a stream of the messages that have been written to this instance in the order they arrived. This is mainly intended for building views.
+
+  - `live` *(boolean)* Keep the stream open and emit new messages as they are received. Defaults to `false`.
+ - `old` *(boolean)* If `false` the output will not include the old data. *If live and old are both false, an error is thrown.* Defaults to `true`.
+ - `gt` (greater than), `gte` (greater than or equal) *(timestamp)*  Define the lower bound of the range to be streamed. Only records where the key is greater than (or equal to) this option will be included in the range. When `reverse=true` the order will be reversed, but the records streamed will be the same.
+ - `lt` (less than), `lte` (less than or equal) *(timestamp)* Define the higher bound of the range to be streamed. Only key/value pairs where the key is less than (or equal to) this option will be included in the range. When `reverse=true` the order will be reversed, but the records streamed will be the same.
+ - `reverse` *(boolean)* Set true and the stream output will be reversed. Beware that due to the way LevelDB works, a reverse seek will be slower than a forward seek. Defaults to `false`.
+ - `keys` *(boolean)* Whether the `data` event should contain keys. If set to `true` and `values` set to `false` then `data` events will simply be keys, rather than objects with a `key` property. Defaults to `true`.
+ - `values` *(boolean)* Whether the `data` event should contain values. If set to `true` and `keys` set to `false` then `data` events will simply be values, rather than objects with a `value` property. Defaults to `true`.
+ - `limit` *(number)* Limit the number of results collected by this stream. This number represents a *maximum* number of results and may not be reached if you get to the end of the data first. A value of `-1` means there is no limit. When `reverse=true` the highest keys will be returned instead of the lowest keys. Defaults to `false`.
+ - `keyEncoding` / `valueEncoding` *(string)* The encoding applied to each read piece of data.
+ - `raw` *(boolean)* Provides access to the raw [flumedb](https://github.com/flumedb/flumedb) log. Defaults to `false`.
+
+
 The objects in this stream will be of the form:
 
-``` js
+```json
 {
-  key: Hash, value: Message, timestamp: timestamp
+  "key": Hash,
+  "value": Message,
+  "timestamp": timestamp
 }
 ```
 
-* `timestamp` is generated by [monotonic-timestamp](https://github.com/dominictarr/monotonic-timestamp) when saving the message.
-* `gt, gte, lt, lte` ranges are supported, via [ltgt](https://github.com/dominictarr/ltgt).
-* If `reverse` is set to true, results will be from oldest to newest.
-* If `limit` is provided, the stream will stop after that many items.
-* `old` and `live` return wether to include `old` and `live` (newly written messages) as via [pull-live](https://github.com/pull-stream/pull-live)
+* `timestamp` * is the time which the message was received.
+It is generated by [monotonic-timestamp](https://github.com/dominictarr/monotonic-timestamp). The range queries (gt, gte, lt, lte) filter against this receive timestap.
 
-If `raw` option is provided, then instead createRawLogStream is called:
+If `raw` option is provided, then instead createRawLogStream is called, messages are returned in the form:
 
-```js
- db.createRawLogStream(lt,lte,gt,gte: offset, reverse,old,live: boolean, limit: number})
- ```
-
-Provides access to the raw [flumedb](https://github.com/flumedb/flumedb) log. Ranges refer to offsets in the log file. Messages are returned in the form:
-
-```
+```json
 {
-  seq: offset,
-  value: {key: Hash, value: Message, timestamp: timestamp}
+  "seq": offset,
+  "value": {
+    "key": Hash,
+    "value": Message,
+    "timestamp": timestamp
+  }
 }
 ```
 All options supported by [flumelog-offset](https://github.com/flumedb/flumelog-offset) are supported.
 
 ## createHistoryStream: source
 ```js
-db.createHistoryStream({id: feedId, seq: int?, live: bool?, limit: int?, keys: bool?, values: bool?}) -> PullSource
+db.createHistoryStream(id, seq, live) -> PullSource
+//or
+db.createHistoryStream({ id, seq, live, limit, keys, values, reverse }) -> PullSource
+
 ```
 
 Create a stream of the history of `id`. If `seq > 0`, then only stream messages with sequence numbers greater than `seq`. If `live` is true, the stream will be a [live mode](https://github.com/dominictarr/pull-level#example---reading)
 
+`createHistoryStream` and `createUserStream` serve the same purpose.
+
+`createHistoryStream` exists as a separate call because it provides fewer range parameters, which makes it safer for RPC between untrusted peers.
+
 > Note: since `createHistoryStream` is provided over the network to anonymous peers, not all options are supported. `createHistoryStream` does not decrypt private messages.
+
+- `id` *(FeedID)* The id of the feed to fetch.
+- `seq` *(number)* If `seq > 0`, then only stream messages with sequence numbers greater than `seq`. Defaults to `0`.
+- `live` *(boolean)*: Keep the stream open and emit new messages as they are received. Defaults to `false`
+- `keys` *(boolean)*: Whether the `data` event should contain keys. If set to `true` and `values` set to `false` then `data` events will simply be keys, rather than objects with a `key` property. Defaults to `true`
+- `values` *(boolean)* Whether the `data` event should contain values. If set to `true` and `keys` set to `false` then `data` events will simply be values, rather than objects with a `value` property. Defaults to `true`.
+- `limit` *(number)* Limit the number of results collected by this stream. This number represents a *maximum* number of results and may not be reached if you get to the end of the data first. A value of `-1` means there is no limit. When `reverse=true` the highest keys will be returned instead of the lowest keys. Defaults to `false`.
+- `reverse` *(boolean)* Set true and the stream output will be reversed. Beware that due to the way LevelDB works, a reverse seek will be slower than a forward seek. Defaults to `false`.
 
 ## messagesByType: source
 ```js
 db.messagesByType({type: string, live,old,reverse: bool?, gt,gte,lt,lte: timestamp, limit: number }) -> PullSource
 ```
 
-Retrieve messages with a given type. All messages must have a type, so this is a good way to select messages that an application might use. This function returns a source pull-stream.
+Retrieve messages with a given type, ordered by receive-time. All messages must have a type, so this is a good way to select messages that an application might use. This function returns a source pull-stream.
 
 As with `createLogStream` messagesByType takes all the options from [pull-level#read](https://github.com/dominictarr/pull-level#example---reading) (gt, lt, gte, lte, limit, reverse, live, old)
 
-Ranges may be a timestamp, of the local received time.
-
 ## createFeedStream: source
 ```js
-db.createFeedStream(lt,lte,gt,gte: timestamp, reverse,old,live,raw: boolean, limit: number})
+db.createFeedStream({ live, old, gt, gte, lt,lte, reverse, keys, calues,, limit, fillCache, keyEncoding, valueEncoding, raw }))
 ```
 
 Like `createLogStream`, but messages are in order of the claimed time, instead of the received time.
+
 This may sound like a much better idea, but has surprising effects with live messages (you may receive a old message in real time) but for old messages, it makes sense.
 
-All standard options are supported.
+The range queries (gt, gte, lt, lte) filter against this claimed timestap.
+
+As with `createLogStream` createFeedStream takes all the options from [pull-level#read](https://github.com/dominictarr/pull-level#example---reading) (gt, lt, gte, lte, limit, reverse, live, old)
+
 
 ## createUserStream: source
 ```js
-db.createUserStream({id: feed_id, lt,lte,gt,gte: sequence, reverse,old,live,raw: boolean, limit: number})
+db.createUserStream({ id, seq, live, old, gt, gte, lt, lte, reverse, keys, values, limit, fillCache, keyEncoding, valueEncoding })
 ```
 
 `createUserStream` is like `createHistoryStream`, except all options are supported. Local access is allowed, but not remote anonymous access. `createUserStream` does decrypt private messages.
 
 ## links: source
 ```js
-db.links({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
+db.links({ source, dest: feedId|msgId|blobId, rel, meta, keys, values, live, reverse }) -> PullSource
 ```
 
 Get a stream of links from a feed to a blob/msg/feed id. The objects in this stream will be of the form:
 
-```js
-{ source: feedId, rel: String, dest: Id, key: MsgId, value: Object? }
+```json
+{ 
+  "source": FeedId,
+  "rel": String,
+  "dest": Id,
+  "key": MsgId,
+  "value": Object?
+}
 ```
 
- - `source` *(string, optional)* Feed id.
- - `dest` *(string, optional)* An id or filter, specifying where the link should point to. To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs.
- - `rel` *(string, optional)* Filters the links by the relation string.
- - `opts.values` *(boolean)* If is set `value` will be the message the link occurs in. Defautlts to false
- - `opts.keys` *(boolean)* If is set `key` will be the message id. Defaults to true.
- - `opts.meta` If is unset `source, hash, rel` will be left off. Defaults to true.
+ - `source` *(string)* An id or filter, specifying where the link should originate from. To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs. Optional.
+ - `dest` *(string)* An id or filter, specifying where the link should point to. To filter, just use the sigil of the type you want: `@` for feeds, `%` for messages, and `&` for blobs. Optional.
+ - `rel` *(string)* Filters the links by the relation string. Optional.
+  - `live` *(boolean)*: Keep the stream open and emit new messages as they are received. Defaults to `false.
+ - `values` *(boolean)* Whether the `data` event should contain values. If set to `true` and `keys` set to `false` then `data` events will simply be values, rather than objects with a `value` property. Defaults to `false`.
+ - `keys` *(boolean)* Whether the `data` event should contain keys. If set to `true` and `values` set to `false` then `data` events will simply be keys, rather than objects with a `key` property. Defaults to `true`.
+ - `reverse` *(boolean)*: Set true and the stream output will be reversed. Beware that due to the way LevelDB works, a reverse seek will be slower than a forward seek. Defaults to `false`.
+ - `meta` If is unset `source, hash, rel` will be left off. Defaults to `true`.
 
 > Note: if `source`, and `dest` is provided, but not `rel`, ssb will have to scan all the links from source, and then filter by dest. Your query will be more efficient if you also provide `rel`.
 
@@ -369,7 +431,10 @@ Progress is represented linearly from `start` to `target`. Once `current` is equ
 db.status()
 ```
 
-Returns metadata about the status of various ssb plugins. ssb-db adds an `sync` section, that shows where each index is up to. output might took like this:
+Returns metadata about the status of various ssb plugins. ssb-db adds an `sync` section, that shows where each index is up to. 
+The purpose is to provide an overview of how ssb is working.
+
+Output might took like this:
 
 ```json
 {
