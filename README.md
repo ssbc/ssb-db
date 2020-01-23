@@ -149,7 +149,7 @@ Without other plugins, this instance will not have replication or querying. Load
 
 ## get: async
 ```js
-db.get(id | seq | opts, cb)
+db.get(id | seq | opts, cb) // cb(error, message)
 ```
 
 Get a message by its hash-id.
@@ -164,14 +164,14 @@ Given that most other apis (such as createLogStream) by default return `{key, va
 
 ## add: async
 ```js
-db.add(msg, cb)
+db.add(msg, cb) // cb(error, data)
 ```
 
 Append a raw message to the local log. `msg` must be a valid, signed message. [ssb-validate](https://github.com/ssbc/ssb-validate) is used internally to validate messages.
 
 ## publish: async
 ```js
-db.publish(content, cb)
+db.publish(content, cb) // cb(error, data)
 ```
 Create a valid message with `content` with the default identity and append it to the local log. [ssb-validate](https://github.com/ssbc/ssb-validate) is used to construct a valid message.
 
@@ -181,7 +181,7 @@ This is the recommended method for publishing new messages, as it handles the ta
    - `.type` (string): The object's type.
 
 
-## del: async
+## del: async 
 
 > ⚠ This could break your feed. Please don't run this unless you understand it.
 
@@ -191,21 +191,21 @@ The intended use-case is to delete all messages from a given feed *or* deleting 
 
 ```js
 //Delete message
-del(msg.key, (err) => {
+del(msg.key, (err, key) => {
   if (err) throw err
 })
 ```
 
 ```js
 //Delete all author messages
-del(msg.value.author, (err) => {
+del(msg.value.author, (err, key) => {
   if (err) throw err
 })
 ```
 
-## whoami: sync
+## whoami: async
 ```js
-db.whoami(cb) // {"id": FeedID }
+db.whoami(cb) // cb(error, {"id": FeedID })
 ```
 Get information about the current ssb-server user.
 
@@ -336,7 +336,7 @@ Get a stream of links from a feed to a blob/msg/feed id. The objects in this str
 
 > Note: if `source`, and `dest` is provided, but not `rel`, ssb will have to scan all the links from source, and then filter by dest. Your query will be more efficient if you also provide `rel`.
 
-## addMap: async
+## addMap: sync
 ```js
 db.addMap(fn)
 ```
@@ -389,7 +389,7 @@ See [creating a secret-stack plugin](https://github.com/ssbc/secret-stack/blob/m
 
 ## getAtSequence: async
 ```js
-db.getAtSequence([id, seq], cb(err, msg))
+db.getAtSequence([id, seq], cb) //cb(err, msg)
 ```
 
 Get a message for a given feed `id` with given `sequence`. Calls back a message or an error, takes a two element array with a feed `id` as the first element, and `sequence` as second element.
@@ -398,7 +398,7 @@ Needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
 
 ## getVectorClock: async
 ```js
-db.getVectorClock(cb)
+db.getVectorClock(cb) //cb(error, clock)
 ```
 
 Load a map of `id` to latest `sequence` (`{<id>: <seq>,...}`) for every feed in the database.
@@ -466,14 +466,14 @@ Return the version of `ssb-db`. currently, this returns only the ssb-db version 
 
 ## queue: async 
 ```js
-db.queue(msg, cb)
+db.queue(msg, cb) //cb(error, msg)
 ```
 
 Add a message to be validated and written, but don't worry about actually writing it. The callback is called when the database is ready for more writes to be queued. Usually that means it's called back immediately. __This method is not exposed over RPC.__
 
 ## flush: async 
 ```js
-db.flush(cb)
+db.flush(cb) //cb()
 ```
 
 Callback when all queued writes are actually definitely written to the disk.
@@ -509,7 +509,7 @@ Add an unboxer object, any encrypted message is passed to the unboxer object to 
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
 
-## unbox
+## unbox: sync
 ```js
 db.unbox(data, key)
 ```
@@ -518,42 +518,42 @@ Attempt to decrypt data using key. Key is a symmetric key, that is passed to the
 
 ## Deprecated apis
 
-## getLatest
+## getLatest: async
 ```js
-db.getLatest(feed, cb(err, {key, value: msg}))
+db.getLatest(feed, cb) //cb(err, {key, value: msg})
 ```
 
 Get the latest message for the given feed, with `{key, value: msg}` style. Maybe used by some front ends, and by ssb-feed.
 
-## latestSequene
+## latestSequene: async
 ```js
-db.latestSequence(feed, cb(err, sequence))
+db.latestSequence(feed, cb) //cb(err, sequence)
 ```
 
 Call back the sequence number of the latest message for the given feed.
 
-## latest
+## latest: source
 ```js
 db.latest() => PullSource
 ```
 
 Returns a stream of `{author, sequence, ts}` tuples. `ts` is the time claimed by the author, not the received time.
 
-## createWriteStream
+## createWriteStream: source
 ```js
 db.createWriteStream() => PullSink`
 ```
 
 Create a pull-stream sink that expects a stream of messages and calls `db.add` on each item, appending every valid message to the log.
 
-## createFeed
+## createFeed: sync
 ```js
-db.createFeed(keys?) => Feed
+db.createFeed(keys?)
 ```
 
 __Use [ssb-identities](http://github.com/ssbc/ssb-identities) instead.__
 
-Create a Feed object. A feed is a chain of messages signed by a single key (the identity of the feed).
+Create and return a Feed object. A feed is a chain of messages signed by a single key (the identity of the feed).
 
 This handles the state needed to append valid messages to a feed. If keys are not provided, then a new key pair will be generated.
 
