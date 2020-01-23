@@ -211,7 +211,7 @@ Get information about the current ssb-server user.
 
 ## createLogStream: source
 ```js
-db.createLogStream({ live, old, gt, gte, lt,lte, reverse, keys, calues,, limit, fillCache, keyEncoding, valueEncoding, raw }): PullSource
+db.createLogStream({ live, old, gt, gte, lt, lte, reverse, keys, values, limit, fillCache, keyEncoding, valueEncoding, raw }): PullSource
 ```
 Create a stream of the messages that have been written to this instance in the order they arrived. This is mainly intended for building views.
 
@@ -289,7 +289,7 @@ As with `createLogStream` messagesByType takes all the options from [pull-level#
 
 ## createFeedStream: source
 ```js
-db.createFeedStream({ live, old, gt, gte, lt,lte, reverse, keys, calues,, limit, fillCache, keyEncoding, valueEncoding, raw }))
+db.createFeedStream({ live, old, gt, gte, lt, lte, reverse, keys, value,, limit, fillCache, keyEncoding, valueEncoding, raw }))
 ```
 
 Like `createLogStream`, but messages are in order of the claimed time, instead of the received time.
@@ -478,19 +478,19 @@ db.flush(cb) //cb()
 
 Callback when all queued writes are actually definitely written to the disk.
 
-## post: Ovbservable
+## post: Observable
 ```js
 db.post(fn({key, value: msg, timestamp})) => Ovb
 ```
 
 [Observable](https://github.com/dominictarr/obv) that calls `fn` whenever a message is appended (with that message). __This method is not exposed over RPC.__
 
-## since: Ovbservable
+## since: Observable
 ```js
 db.since(fn(seq)) => Obv
 ```
 
-On [observable](https://github.com/dominictarr/obv) of the current log sequence. This is always a positive integer that usually increases, except in the exceptional circumstance that the log is deleted or corrupted.
+An [observable](https://github.com/dominictarr/obv) of the current log sequence. This is always a positive integer that usually increases, except in the exceptional circumstance that the log is deleted or corrupted.
 
 ### `db.addBoxer(box)`
 
