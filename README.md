@@ -147,7 +147,7 @@ Without other plugins, this instance will not have replication or querying. Load
 
 > In the API docs below, we'll just call it `db`
 
-## get: async
+## db.get: async
 ```js
 db.get(id | seq | opts, cb) // cb(error, message)
 ```
@@ -162,14 +162,14 @@ Get a message by its hash-id.
 
 Given that most other apis (such as createLogStream) by default return `{key, value, timestamp}` it's recommended to use `db.get({id: key, meta: true}, cb)`
 
-## add: async
+## db.add: async
 ```js
 db.add(msg, cb) // cb(error, data)
 ```
 
 Append a raw message to the local log. `msg` must be a valid, signed message. [ssb-validate](https://github.com/ssbc/ssb-validate) is used internally to validate messages.
 
-## publish: async
+## db.publish: async
 ```js
 db.publish(content, cb) // cb(error, data)
 ```
@@ -181,7 +181,7 @@ This is the recommended method for publishing new messages, as it handles the ta
    - `.type` (string): The object's type.
 
 
-## del: async 
+## db.del: async 
 
 > ⚠ This could break your feed. Please don't run this unless you understand it.
 
@@ -191,25 +191,25 @@ The intended use-case is to delete all messages from a given feed *or* deleting 
 
 ```js
 //Delete message
-del(msg.key, (err, key) => {
+db.del(msg.key, (err, key) => {
   if (err) throw err
 })
 ```
 
 ```js
 //Delete all author messages
-del(msg.value.author, (err, key) => {
+db.del(msg.value.author, (err, key) => {
   if (err) throw err
 })
 ```
 
-## whoami: async
+## db.whoami: async
 ```js
 db.whoami(cb) // cb(error, {"id": FeedID })
 ```
 Get information about the current ssb-server user.
 
-## createLogStream: source
+## db.createLogStream: source
 ```js
 db.createLogStream({ live, old, gt, gte, lt, lte, reverse, keys, values, limit, fillCache, keyEncoding, valueEncoding, raw }): PullSource
 ```
@@ -254,7 +254,7 @@ If `raw` option is provided, then instead createRawLogStream is called, messages
 ```
 All options supported by [flumelog-offset](https://github.com/flumedb/flumelog-offset) are supported.
 
-## createHistoryStream: source
+## db.createHistoryStream: source
 ```js
 db.createHistoryStream(id, seq, live) -> PullSource
 //or
@@ -278,7 +278,7 @@ Create a stream of the history of `id`. If `seq > 0`, then only stream messages 
 - `limit` *(number)* Limit the number of results collected by this stream. This number represents a *maximum* number of results and may not be reached if you get to the end of the data first. A value of `-1` means there is no limit. When `reverse=true` the highest keys will be returned instead of the lowest keys. Defaults to `false`.
 - `reverse` *(boolean)* Set true and the stream output will be reversed. Beware that due to the way LevelDB works, a reverse seek will be slower than a forward seek. Defaults to `false`.
 
-## messagesByType: source
+## db.messagesByType: source
 ```js
 db.messagesByType({type: string, live,old,reverse: bool?, gt,gte,lt,lte: timestamp, limit: number }) -> PullSource
 ```
@@ -287,7 +287,7 @@ Retrieve messages with a given type, ordered by receive-time. All messages must 
 
 As with `createLogStream` messagesByType takes all the options from [pull-level#read](https://github.com/dominictarr/pull-level#example---reading) (gt, lt, gte, lte, limit, reverse, live, old)
 
-## createFeedStream: source
+## db.createFeedStream: source
 ```js
 db.createFeedStream({ live, old, gt, gte, lt, lte, reverse, keys, value,, limit, fillCache, keyEncoding, valueEncoding, raw }))
 ```
@@ -301,14 +301,14 @@ The range queries (gt, gte, lt, lte) filter against this claimed timestap.
 As with `createLogStream` createFeedStream takes all the options from [pull-level#read](https://github.com/dominictarr/pull-level#example---reading) (gt, lt, gte, lte, limit, reverse, live, old)
 
 
-## createUserStream: source
+## db.createUserStream: source
 ```js
 db.createUserStream({ id, seq, live, old, gt, gte, lt, lte, reverse, keys, values, limit, fillCache, keyEncoding, valueEncoding })
 ```
 
 `createUserStream` is like `createHistoryStream`, except all options are supported. Local access is allowed, but not remote anonymous access. `createUserStream` does decrypt private messages.
 
-## links: source
+## db.links: source
 ```js
 db.links({ source, dest: feedId|msgId|blobId, rel, meta, keys, values, live, reverse }) -> PullSource
 ```
@@ -336,7 +336,7 @@ Get a stream of links from a feed to a blob/msg/feed id. The objects in this str
 
 > Note: if `source`, and `dest` is provided, but not `rel`, ssb will have to scan all the links from source, and then filter by dest. Your query will be more efficient if you also provide `rel`.
 
-## addMap: sync
+## db.addMap: sync
 ```js
 db.addMap(fn)
 ```
@@ -377,7 +377,7 @@ db.addMap(function (msg, cb) {
 })
 ```
 
-## _flumeUse: view
+## db._flumeUse: view
 ```js
 db._flumeUse(name, flumeview) => View
 ```
@@ -387,7 +387,7 @@ This method was intended to be a temporary solution, but is now used by many plu
 
 See [creating a secret-stack plugin](https://github.com/ssbc/secret-stack/blob/master/PLUGINS.md) for more details.
 
-## getAtSequence: async
+## db.getAtSequence: async
 ```js
 db.getAtSequence([id, seq], cb) //cb(err, msg)
 ```
@@ -396,7 +396,7 @@ Get a message for a given feed `id` with given `sequence`. Calls back a message 
 
 Needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
 
-## getVectorClock: async
+## db.getVectorClock: async
 ```js
 db.getVectorClock(cb) //cb(error, clock)
 ```
@@ -405,7 +405,7 @@ Load a map of `id` to latest `sequence` (`{<id>: <seq>,...}`) for every feed in 
 
 Needed for [ssb-ebt replication](https://github.com/ssbc/ssb-ebt)
 
-## progress: sync
+## db.progress: sync
 ```js
 db.progress()
 ```
@@ -426,7 +426,7 @@ The output might look like:
 Progress is represented linearly from `start` to `target`. Once `current` is equal to `target` the progress is complete. `start` shows how far it's come. The numbers could be anything, but `start <= current <= target` if all three numbers are equal that should be considered 100%
 
 
-## status: sync
+## db.status: sync
 ```js
 db.status()
 ```
@@ -457,35 +457,35 @@ Output might took like this:
 
 `sync.since` is where the main log is up to, and `since.plugins.<name>` is where each plugin's indexes are up to.
 
-## version: sync
+## db.version: sync
 ```js
 db.version()
 ```
 
 Return the version of `ssb-db`. currently, this returns only the ssb-db version and not the ssb-server version, or the version of any other plugins. [We should fix this soon](https://github.com/ssbc/ssb-server/issues/648)
 
-## queue: async 
+## db.queue: async 
 ```js
 db.queue(msg, cb) //cb(error, msg)
 ```
 
 Add a message to be validated and written, but don't worry about actually writing it. The callback is called when the database is ready for more writes to be queued. Usually that means it's called back immediately. __This method is not exposed over RPC.__
 
-## flush: async 
+## db.flush: async 
 ```js
 db.flush(cb) //cb()
 ```
 
 Callback when all queued writes are actually definitely written to the disk.
 
-## post: Observable
+## db.post: Observable
 ```js
 db.post(fn({key, value: msg, timestamp})) => Ovb
 ```
 
 [Observable](https://github.com/dominictarr/obv) that calls `fn` whenever a message is appended (with that message). __This method is not exposed over RPC.__
 
-## since: Observable
+## db.since: Observable
 ```js
 db.since(fn(seq)) => Obv
 ```
@@ -509,44 +509,44 @@ Add an unboxer object, any encrypted message is passed to the unboxer object to 
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
 
-## unbox: sync
+## db.unbox: sync
 ```js
 db.unbox(data, key)
 ```
 
 Attempt to decrypt data using key. Key is a symmetric key, that is passed to the unboxer objects.
 
-## Deprecated apis
+## db.Deprecated apis
 
-## getLatest: async
+## db.getLatest: async
 ```js
 db.getLatest(feed, cb) //cb(err, {key, value: msg})
 ```
 
 Get the latest message for the given feed, with `{key, value: msg}` style. Maybe used by some front ends, and by ssb-feed.
 
-## latestSequene: async
+## db.latestSequene: async
 ```js
 db.latestSequence(feed, cb) //cb(err, sequence)
 ```
 
 Call back the sequence number of the latest message for the given feed.
 
-## latest: source
+## db.latest: source
 ```js
 db.latest() => PullSource
 ```
 
 Returns a stream of `{author, sequence, ts}` tuples. `ts` is the time claimed by the author, not the received time.
 
-## createWriteStream: source
+## db.createWriteStream: source
 ```js
 db.createWriteStream() => PullSink`
 ```
 
 Create a pull-stream sink that expects a stream of messages and calls `db.add` on each item, appending every valid message to the log.
 
-## createFeed: sync
+## db.createFeed: sync
 ```js
 db.createFeed(keys?)
 ```
