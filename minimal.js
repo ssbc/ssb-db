@@ -237,8 +237,8 @@ module.exports = function (dirname, keys, opts) {
       return ssbKeys.box(content, recps)
     },
     unbox: {
-      key: function (content) { return ssbKeys.unboxKey(content, keys) },
-      value: function (content, key) { return ssbKeys.unboxBody(content, key) }
+      key: function (ciphertext) { return ssbKeys.unboxKey(ciphertext, keys) },
+      value: function (ciphertext, key) { return ssbKeys.unboxBody(ciphertext, key) }
     }
   }
   db.addBoxer(box1.box)
