@@ -76,17 +76,13 @@ module.exports = function (opts) {
     })
   })
 
-  tape('add encrypted message', function (t) {
+  tape('add encrypted message (using recps: String)', function (t) {
     ssb.post(function (msg) {
       t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
     })
 
     // secret message sent to self
-    feed.add({
-      recps: feed.id,
-      type: 'secret2',
-      secret: "it's a secret!"
-    }, function (err, msg) {
+    feed.add({ type: 'secret2', secret: "it's a secret!", recps: feed.id }, function (err, msg) {
       if (err) throw err
       t.notOk(err)
 
@@ -99,11 +95,11 @@ module.exports = function (opts) {
 
           // bob can also decrypt
           var content = ssbKeys.unbox(ctxt, alice.private)
-          t.deepEqual(content, {
-            type: 'secret2',
-            secret: "it's a secret!",
-            recps: [alice.id]
-          }, 'alice can decrypt')
+          t.deepEqual(
+            content,
+            { type: 'secret2', secret: "it's a secret!", recps: [alice.id] },
+            'alice can decrypt'
+          )
 
           t.end()
         })

@@ -28,7 +28,7 @@ function box (content, recps, boxers) {
     'private message requested, but no boxers could encrypt these recps: ' +
     JSON.stringify(recps)
   )
-  
+
   return ciphertext
 }
 
@@ -250,7 +250,7 @@ module.exports = function (dirname, keys, opts) {
     var recps = value.content.recps
     if (!recps) return value.content
 
-    if (typeof recps === 'string') recps = [recps]
+    if (typeof recps === 'string') recps = value.content.recps = [recps]
     if (!Array.isArray(recps)) throw new Error('private message field "recps" expects an Array of recipients')
     if (recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
 
