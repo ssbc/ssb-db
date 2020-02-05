@@ -167,7 +167,10 @@ ssb-db instance. As long as the malicious database does not have the private key
 SecretStack.use(require('ssb-db')) => SecretStackApp
 ```
 
-Adds `ssb-db` persistence to a [secret-stack](https://github.com/ssbc/secret-stack) setup.
+The design pattern of __ssb-db__ is for it to act as a plugin within the 
+[SecretStack](https://github.com/ssbc/secret-stack) plugin framework. The main export provides the plugin, 
+which extends the SecretStack app with this plugins functionality, and API.
+`ssb-db` adds persistence to a [SecretStack](https://github.com/ssbc/secret-stack) setup.
 Without other plugins, this instance will not have replication or querying. Loading `ssb-db` directly is 
 useful for testing, but it's recommended to instead start from a plugin bundle like 
 [ssb-server](https://github.com/ssbc/ssb-server)
