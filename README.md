@@ -67,19 +67,21 @@ app.publish({ type: 'post', text: 'My First Post!' }, function (err, msg) {
   console.log(msg.key)
 })
 
-// stream all messages for all keypairs.
+// collect all the messages into an array, calls back, and then ends
+// https://github.com/pull-stream/pull-stream/blob/master/docs/sinks/collect.md
 pull(
   app.createLogStream(),
-  pull.collect(function (err, ary) {
-    console.log(ary)
+  pull.collect(function (err, messagesArray) {
+    console.log(messagesArray)
   })
 )
 
-// stream all messages for a particular keypair.
+// collect all messages for a particular keypair into an array, calls back, and then ends
+// https://github.com/pull-stream/pull-stream/blob/master/docs/sinks/collect.md
 pull(
   app.createHistoryStream({id: app.id}),
-  pull.collect(function (err, ary) {
-    console.log(ary)
+  pull.collect(function (err, messagesArray) {
+    console.log(messagesArray)
   })
 )
 ```
