@@ -190,11 +190,13 @@ module.exports = function (dirname, keys, opts) {
   })
 
   db.append = wait(function (opts, cb) {
+    // db.box(opts.
     try {
       var msg = V.create(
         state.feeds[opts.keys.id],
-        opts.keys, opts.hmacKey || hmacKey,
-        db.box(opts, state.feeds[opts.keys.id]),
+        opts.keys,
+        opts.hmacKey || hmacKey,
+        db.box(opts.content, state.feeds[opts.keys.id]),
         timestamp()
       )
     } catch (err) {
@@ -237,7 +239,12 @@ module.exports = function (dirname, keys, opts) {
       return ssbKeys.box(content, recps)
     },
     unbox: {
-      key: function (ciphertext) { return ssbKeys.unboxKey(ciphertext, keys) },
+      key: function (ciphertext) { 
+        if (!ciphertext.endsWith('.box')) return null
+        // TODO move this inside of ssb-keys
+
+        return ssbKeys.unboxKey(ciphertext, keys)
+      },
       value: function (ciphertext, key) { return ssbKeys.unboxBody(ciphertext, key) }
     }
   }
@@ -245,16 +252,15 @@ module.exports = function (dirname, keys, opts) {
   db.addUnboxer(box1.unbox)
   // ////////////////////////////////
 
-  // db.box = function (value, state) {
-  db.box = function (value) {
-    var recps = value.content.recps
-    if (!recps) return value.content
+  db.box = function (content, state) { // state not used
+    var recps = content.recps
+    if (!recps) return content
 
-    if (typeof recps === 'string') recps = value.content.recps = [recps]
+    if (typeof recps === 'string') recps = content.recps = [recps]
     if (!Array.isArray(recps)) throw new Error('private message field "recps" expects an Array of recipients')
     if (recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
 
-    return box(value.content, recps, boxers)
+    return box(content, recps, boxers)
   }
   db.unbox = function (data, key) {
     return unbox(data, key, unboxers)

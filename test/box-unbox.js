@@ -76,6 +76,23 @@ module.exports = function (opts) {
     })
   })
 
+  tape('add encrypted message (using recps: [feedId])', function (t) {
+    const content = {
+      type: 'poke',
+      reason: 'why not',
+      recps: [ feed.id ]
+    }
+    feed.publish(content, (err, msg) => {
+      t.true(typeof msg.value.content === 'string', 'encrypted string')
+      t.true(msg.value.content.endsWith('.box'), 'of type .box')
+
+      const plain = ssbKeys.unbox(msg.value.content, alice.private)
+      t.deepEqual(plain, content, 'can be decrypted')
+
+      t.end()
+    })
+  })
+
   tape('add encrypted message (using recps: String)', function (t) {
     ssb.post(function (msg) {
       t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
@@ -163,6 +180,34 @@ module.exports = function (opts) {
           })
         )
       })
+    })
+  })
+
+  tape('addBoxer', function (t) {
+    const boxer = (content, recps) => {
+      if (!recps.every(r => r === '!test')) return null
+
+      return Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
+    }
+    ssb.addBoxer(boxer)
+
+    const content = {
+      type: 'poke',
+      reason: 'why not',
+      recps: [ '!test' ]
+    }
+    feed.publish(content, (err, msg) => {
+      if (err) throw err
+      t.true(typeof msg.value.content === 'string', 'encrypted string')
+      t.true(msg.value.content.endsWith('.box.hah'), 'of type .box.hah')
+
+      const base64 = msg.value.content.replace('.box.hah', '')
+      const plain = JSON.parse(
+        Buffer.from(base64, 'base64').toString('utf8')
+      )
+      t.deepEqual(plain, content, 'can be decrypted')
+
+      t.end()
     })
   })
 }
