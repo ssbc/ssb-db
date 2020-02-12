@@ -201,6 +201,7 @@ module.exports = function (opts) {
       t.true(typeof msg.value.content === 'string', 'encrypted string')
       t.true(msg.value.content.endsWith('.box.hah'), 'of type .box.hah')
 
+      // manually check we can "unbox"
       const base64 = msg.value.content.replace('.box.hah', '')
       const plain = JSON.parse(
         Buffer.from(base64, 'base64').toString('utf8')
@@ -208,6 +209,38 @@ module.exports = function (opts) {
       t.deepEqual(plain, content, 'can be decrypted')
 
       t.end()
+    })
+  })
+
+  tape('addUnboxer', function (t) {
+    const unboxer = {
+      key: function (ciphertext) {
+        if (!ciphertext.endsWith('.box.hah')) return null
+
+        return '"the key"'
+      },
+      value: function (ciphertext, key) {
+        const base64 = ciphertext.replace('.box.hah', '')
+        return JSON.parse(
+          Buffer.from(base64, 'base64').toString('utf8')
+        )
+      }
+    }
+    ssb.addUnboxer(unboxer)
+
+    const content = {
+      type: 'poke',
+      reason: 'why not',
+      recps: [ '!test' ]
+    }
+    const ciphertext = Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
+
+    feed.publish(ciphertext, (err, msg) => {
+      ssb.get({ id: msg.key, private: true, meta: true }, (err, msg) => {
+        if (err) throw err
+        t.deepEqual(msg.value.content, content, 'auto unboxing works')
+        t.end()
+      })
     })
   })
 }
