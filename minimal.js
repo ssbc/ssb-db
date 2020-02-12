@@ -13,25 +13,6 @@ var codec = require('./codec')
 
 function isFunction (f) { return typeof f === 'function' }
 
-function box (content, recps, boxers) {
-  if (!content) return content
-  var ciphertext
-
-  for (var i = 0; i < boxers.length; i++) {
-    const boxer = boxers[i]
-    ciphertext = boxer(content, recps)
-
-    if (ciphertext) break
-  }
-
-  if (!ciphertext) throw new Error(
-    'private message requested, but no boxers could encrypt these recps: ' +
-    JSON.stringify(recps)
-  )
-
-  return ciphertext
-}
-
 function unbox (data, key, unboxers) {
   var plaintext
   if (data && isString(data.value.content)) {
@@ -190,26 +171,29 @@ module.exports = function (dirname, keys, opts) {
   })
 
   db.append = wait(function (opts, cb) {
-    // db.box(opts.
-    try {
-      var msg = V.create(
-        state.feeds[opts.keys.id],
-        opts.keys,
-        opts.hmacKey || hmacKey,
-        db.box(opts.content, state.feeds[opts.keys.id]),
-        timestamp()
-      )
-    } catch (err) {
-      cb(err)
-      return
-    }
-
-    queue(msg, function (err) {
+    db.box(opts.content, state.feeds[opts.keys.id], function (err, content) {
       if (err) return cb(err)
-      var data = state.queue[state.queue.length - 1]
-      flush.push(function () {
-        cb(null, data)
+
+      try {
+        var msg = V.create(
+          state.feeds[opts.keys.id],
+          opts.keys,
+          opts.hmacKey || hmacKey,
+          content,
+          timestamp()
+        )
+      } catch (err) {
+        return cb(err)
+      }
+
+      queue(msg, function (err) {
+        if (err) return cb(err)
+        var data = state.queue[state.queue.length - 1]
+        flush.push(function () {
+          cb(null, data)
+        })
       })
+
     })
   })
 
@@ -233,10 +217,10 @@ module.exports = function (dirname, keys, opts) {
 
   /* TODO extract to ssb-private */
   var box1 = {
-    box: function (content, recps) {
-      if (!recps.every(isFeed)) return null
+    box: function (content, recps, cb) {
+      if (!recps.every(isFeed)) return cb(null, null)
 
-      return ssbKeys.box(content, recps)
+      cb(null, ssbKeys.box(content, recps))
     },
     unbox: {
       key: function (ciphertext) { 
@@ -252,15 +236,29 @@ module.exports = function (dirname, keys, opts) {
   db.addUnboxer(box1.unbox)
   // ////////////////////////////////
 
-  db.box = function (content, state) { // state not used
+  db.box = function (content, state, cb) { // state not used
     var recps = content.recps
-    if (!recps) return content
+    if (!recps) return cb(null, content)
 
     if (typeof recps === 'string') recps = content.recps = [recps]
-    if (!Array.isArray(recps)) throw new Error('private message field "recps" expects an Array of recipients')
-    if (recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
+    if (!Array.isArray(recps)) return cb(new Error('private message field "recps" expects an Array of recipients'))
+    if (recps.length === 0) return cb(new Error('private message field "recps" requires at least one recipient'))
 
-    return box(content, recps, boxers)
+    function attempt (i = 0) {
+      const boxer = boxers[i]
+
+      boxer(content, recps, function (err, ciphertext) {
+        if (err) console.error(err)
+        if (ciphertext) return cb(null, ciphertext)
+
+        if (i === boxers.length - 1) cb(RecpsError(recps))
+        else {
+          attempt(i + 1)
+        }
+      })
+    }
+
+    attempt()
   }
   db.unbox = function (data, key) {
     return unbox(data, key, unboxers)
@@ -271,4 +269,11 @@ module.exports = function (dirname, keys, opts) {
   }
 
   return db
+}
+
+function RecpsError (recps) {
+  return new Error(
+    'private message requested, but no boxers could encrypt these recps: ' +
+    JSON.stringify(recps)
+  )
 }

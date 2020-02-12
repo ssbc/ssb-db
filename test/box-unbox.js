@@ -184,10 +184,10 @@ module.exports = function (opts) {
   })
 
   tape('addBoxer', function (t) {
-    const boxer = (content, recps) => {
-      if (!recps.every(r => r === '!test')) return null
+    const boxer = (content, recps, cb) => {
+      if (!recps.every(r => r === '!test')) return cb(null, null)
 
-      return Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
+      cb(null, Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah')
     }
     ssb.addBoxer(boxer)
 

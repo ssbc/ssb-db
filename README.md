@@ -450,14 +450,16 @@ an [observable](https://github.com/dominictarr/obv) of the current log sequence.
 is always a positive integer that usually increases, except in the exceptional circumstance
 that the log is deleted or corrupted.
 
-### db.addBoxer(box)
+### db.addBoxer(boxer)
 
-add a box, which will be added to the list of boxers which will try to
+add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
-`box` is a function of signature `box(content, recps) => (String|null)`
-which is expected to either box the the message content and return a ciphertext String, or return null if it unable to.
+`box` is a function of signature `box(content, recps, cb)` which is expected either:
+- successfully box, calling back with a `ciphertext` String - `cb(null, ciphertext)`
+- communicate that it can't box this - `cb(null, null)`
+- communicate that it thought it could box this but hit an error - `cb(err)`
 
 ### db.addUnboxer({key: unboxKey, value: unboxValue})
 
@@ -469,6 +471,11 @@ where
 - `unboxValue(ciphertext, msgKey) => plaintext` is a function which takes a message key and uses it to try to extract the message content from the `ciphertext`
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
+
+### db.box(content, recps, cb)
+
+attempt to encrypt some `content` to `recps` (an Array of keys/ identifiers).
+callback has signature `cb(err, ciphertext)`
 
 ### db.unbox(data, key)
 
