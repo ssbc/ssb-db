@@ -30,7 +30,7 @@ function unbox (msg, msgKey, unboxers, cb) {
       return unboxer.value(msg.value.content, msgKey, msg.value, handleResult)
     }
 
-    unboxer.key(msg.value.content, msg.value, function (err, _msgKey) {
+    unboxer.key(msg.value.content, msg.value, (err, _msgKey) => {
       if (err) return cb(err)
       if (_msgKey) {
         msgKey = _msgKey  // used by decorate
@@ -152,7 +152,7 @@ module.exports = function (dirname, keys, opts) {
     return !state.queue.length
   }, 100)
 
-  queue.onDrain = function () {
+  queue.onDrain = function onDrain () {
     if (state.queue.length === 0) {
       var l = flush.length
       for (var i = 0; i < l; ++i) { flush[i]() }
@@ -189,7 +189,7 @@ module.exports = function (dirname, keys, opts) {
     }
   }
 
-  db.queue = wait(function (msg, cb) {
+  db.queue = wait(function dbQueue (msg, cb) {
     queue(msg, function (err) {
       var data = state.queue[state.queue.length - 1]
       if (err) cb(err)
@@ -197,8 +197,8 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
-  db.append = wait(function (opts, cb) {
-    db.box(opts.content, state.feeds[opts.keys.id], function (err, content) {
+  db.append = wait(function append (opts, cb) {
+    db.box(opts.content, state.feeds[opts.keys.id], (err, content) => {
       if (err) return cb(err)
 
       try {
@@ -224,21 +224,21 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
-  db.buffer = function () {
+  db.buffer = function buffer () {
     return queue.buffer
   }
 
-  db.flush = function (cb) {
+  db.flush = function dbFlush (cb) {
     // maybe need to check if there is anything currently writing?
     if (!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
     else flush.push(cb)
   }
 
-  db.addBoxer = function (boxer) {
+  db.addBoxer = function addBoxer (boxer) {
     boxers.push(boxer)
   }
 
-  db.addUnboxer = function (unboxer) {
+  db.addUnboxer = function addUnboxer (unboxer) {
     switch (typeof unboxer) {
       case 'function':
         unboxers.push(unboxer)
@@ -256,19 +256,19 @@ module.exports = function (dirname, keys, opts) {
 
   /* TODO extract to ssb-private */
   var box1 = {
-    boxer: function (content, recps, cb) {
+    boxer: (content, recps, cb) => {
       if (!recps.every(isFeed)) return cb(null, null)
 
       cb(null, ssbKeys.box(content, recps))
     },
     unboxer: {
-      key: function (ciphertext, value, cb) { 
+      key: (ciphertext, value, cb) => { 
         if (!ciphertext.endsWith('.box')) return cb(null, null)
         // TODO move this inside of ssb-keys
 
         cb(null, ssbKeys.unboxKey(ciphertext, keys))
       },
-      value: function (ciphertext, msgKey, value, cb) {
+      value: (ciphertext, msgKey, value, cb) => {
         cb(null, ssbKeys.unboxBody(ciphertext, msgKey))
       }
     }
@@ -277,7 +277,7 @@ module.exports = function (dirname, keys, opts) {
   db.addUnboxer(box1.unboxer)
   // ////////////////////////////////
 
-  db.box = function (content, state, cb) { // state not used
+  db.box = function dbBox (content, state, cb) { // state not used
     var recps = content.recps
     if (!recps) return cb(null, content)
 
@@ -288,7 +288,7 @@ module.exports = function (dirname, keys, opts) {
     function attempt (i = 0) {
       const boxer = boxers[i]
 
-      boxer(content, recps, function (err, ciphertext) {
+      boxer(content, recps, (err, ciphertext) => {
         if (err) return console.error(err)
         if (ciphertext) return cb(null, ciphertext)
 
@@ -299,7 +299,7 @@ module.exports = function (dirname, keys, opts) {
 
     attempt()
   }
-  db.unbox = function (msg, msgKey, cb) {
+  db.unbox = function dbUnbox (msg, msgKey, cb) {
     return unbox(msg, msgKey, unboxers, cb)
   }
 
