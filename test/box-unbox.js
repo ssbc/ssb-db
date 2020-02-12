@@ -41,32 +41,35 @@ module.exports = function (opts) {
           var content2 = ssbKeys.unbox(ctxt, bob.private)
           t.deepEqual(content, { type: 'secret', okay: true }, 'bob can decrypt')
 
-          var pmsg = ssb.unbox(ary[0])
-          t.notOk(msg.unbox, 'did not mutate original message')
-          var unboxKey = pmsg.value.unbox
-          t.equal(typeof unboxKey, 'string')
-          t.ok(pmsg)
-          t.deepEqual(pmsg.value.content, content2)
+          ssb.unbox(ary[0], null, (err, pmsg) => {
+            t.notOk(msg.unbox, 'did not mutate original message')
+            var unboxKey = pmsg.value.unbox
+            t.equal(typeof unboxKey, 'string')
 
-          console.log('boxed', ary[0].value)
-          ssb2.add(ary[0].value, function (err) {
-            if (err) throw err
-            ssb2.get({ id: pmsg.key, private: true }, function (err, _msg) {
+            t.ok(pmsg)
+            t.deepEqual(pmsg.value.content, content2)
+
+            // console.log('boxed', ary[0].value)
+            ssb2.add(ary[0].value, function (err) {
               if (err) throw err
-              console.log('LOAD', _msg)
-              t.deepEqual(_msg, msg) // not decrypted
-              t.equal(typeof _msg.content, 'string')
-              //              return t.end()
-              var pmsg2 = ssb2.unbox({ value: _msg }, unboxKey)
-              t.deepEqual(pmsg2.value, pmsg.value)
-
-              ssb2.get({ id: pmsg.key, private: true, unbox: unboxKey }, function (err, __msg) {
+              ssb2.get({ id: pmsg.key, private: true }, function (err, _msg) {
                 if (err) throw err
-                t.deepEqual(__msg, pmsg.value)
-                ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
-                  if (err) throw err
-                  t.deepEqual(__msg, pmsg.value)
-                  t.end()
+                // console.log('LOAD', _msg)
+                t.deepEqual(_msg, msg, 'not decrypted')
+                t.equal(typeof _msg.content, 'string')
+
+                ssb2.unbox({ value: _msg }, unboxKey, (err, pmsg2) => {
+                  t.deepEqual(pmsg2.value, pmsg.value)
+
+                  ssb2.get({ id: pmsg.key, private: true, unbox: unboxKey }, function (err, __msg) {
+                    if (err) throw err
+                    t.deepEqual(__msg, pmsg.value)
+                    ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
+                      if (err) throw err
+                      t.deepEqual(__msg, pmsg.value)
+                      t.end()
+                    })
+                  })
                 })
               })
             })
@@ -214,16 +217,16 @@ module.exports = function (opts) {
 
   tape('addUnboxer', function (t) {
     const unboxer = {
-      key: function (ciphertext) {
-        if (!ciphertext.endsWith('.box.hah')) return null
+      key: function (ciphertext, vale, cb) {
+        if (!ciphertext.endsWith('.box.hah')) return cb(null, null)
 
-        return '"the key"'
+        cb(null, '"the key"')
       },
-      value: function (ciphertext, key) {
+      value: function (ciphertext, msgKey, value, cb) {
         const base64 = ciphertext.replace('.box.hah', '')
-        return JSON.parse(
+        cb(null, JSON.parse(
           Buffer.from(base64, 'base64').toString('utf8')
-        )
+        ))
       }
     }
     ssb.addUnboxer(unboxer)

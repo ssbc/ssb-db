@@ -467,8 +467,13 @@ add an unboxer object, any encrypted message is passed to the unboxer object to
 test if it can be unboxed (decrypted)
 
 where
-- `unboxKey(ciphertext) => msgKey` is a function which tries to extract the message key from the encrypted content (`ciphertext`)
-- `unboxValue(ciphertext, msgKey) => plaintext` is a function which takes a message key and uses it to try to extract the message content from the `ciphertext`
+- `unboxKey(msg.value.content, msg.value, cb)`
+  - is a function which tries to extract the message key from the encrypted content (`ciphertext`).
+  - is expected to callback `cb(err, msgKey)` which `msgKey` is the key for the message
+- `unboxValue(msg.value.content, msgKey, msg.value, cb)`
+  - is a function which takes a `msgKey` and uses it to try to extract the plaintext from the `ciphertext`
+  - is expected to callback `cb(err, plaintext)`
+
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
 

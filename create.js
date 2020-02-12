@@ -83,19 +83,18 @@ module.exports = function create (path, opts, keys) {
       return db.keys.get(key, function (err, data) {
         if (err) return cb(err)
 
-        if (isPrivate && unbox) {
-          data = db.unbox(data, unbox)
+        if (!isPrivate) {
+          if (meta) cb(null, { key, value: data.value, timestamp: data.timestamp })
+          else cb(null, data.value)
         }
+        else {
+          db.unbox(data, unbox, function (err, result) {
+            if (err) return cb(err)
 
-        let result
-
-        if (isPrivate) {
-          result = data.value
-        } else {
-          result = u.originalValue(data.value)
+            if (meta) cb(null, { key, value: result.value, timestamp: result.timestamp })
+            else cb(null, result.value)
+          })
         }
-
-        cb(null, !meta ? result : {key: data.key, value: result, timestamp: data.timestamp})
       })
     } else if (ref.isMsgLink(key)) {
       var link = ref.parseLink(key)

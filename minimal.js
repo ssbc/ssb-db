@@ -12,44 +12,67 @@ var u = require('./util')
 var codec = require('./codec')
 
 function isFunction (f) { return typeof f === 'function' }
+function isString (s) { return typeof s === 'string' }
 
-function unbox (data, key, unboxers) {
-  var plaintext
-  if (data && isString(data.value.content)) {
-    for (var i = 0; i < unboxers.length; i++) {
-      var unboxer = unboxers[i]
-      if (isFunction(unboxer)) {
-        plaintext = unboxer(data.value.content, data.value)
-      } else {
-        if (!key) key = unboxer.key(data.value.content, data.value)
-        if (key) plaintext = unboxer.value(data.value.content, key, data.value)
+function unbox (msg, msgKey, unboxers, cb) {
+  if (!msg || !isString(msg.value.content)) return cb(null, msg)
+
+  attempt()
+  function attempt (i = 0) {
+    if (i === unboxers.length) return cb(null, msg)
+
+    const unboxer = unboxers[i]
+    if (isFunction(unboxer)) {
+      return unboxer(msg.value.content, msg.value, handleResult)
+    }
+
+    if (msgKey) {
+      return unboxer.value(msg.value.content, msgKey, msg.value, handleResult)
+    }
+
+    unboxer.key(msg.value.content, msg.value, function (err, _msgKey) {
+      if (err) return cb(err)
+      if (_msgKey) {
+        msgKey = _msgKey  // used by decorate
+        unboxer.value(msg.value.content, msgKey, msg.value, handleResult)
       }
+      else attempt(i + 1)
+    })
+  }
+  
+  function handleResult (err, plaintext) {
+    if (err) return cb(err)
+    if (plaintext) return cb(null, decorate(msg, plaintext))
 
-      if (plaintext) {
-        var msg = {}
-        for (var k in data.value) { msg[k] = data.value[k] }
+    attempt(i + 1)
+  }
 
-        // set `meta.original.content`
-        msg.meta = u.metaBackup(msg, 'content')
+  function decorate(msg, plaintext) {
+    var value = {}
+    for (var k in msg.value) { value[k] = msg.value[k] }
 
-        // modify content now that it's saved at `meta.original.content`
-        msg.content = plaintext
+    // set `meta.original.content`
+    value.meta = u.metaBackup(value, 'content')
 
-        // set meta properties for private messages
-        msg.meta.private = true
-        if (key) { msg.meta.unbox = key.toString('base64') }
+    // modify content now that it's saved at `meta.original.content`
+    value.content = plaintext
 
-        // backward-compatibility with previous property location
-        // this property location may be deprecated in favor of `msg.meta`
-        msg.cyphertext = msg.meta.original.content
-        msg.private = msg.meta.private
-        if (key) { msg.unbox = msg.meta.unbox }
+    // set meta properties for private messages
+    value.meta.private = true
+    if (msgKey) { value.meta.unbox = msgKey.toString('base64') }
 
-        return { key: data.key, value: msg, timestamp: data.timestamp }
-      }
+    // backward-compatibility with previous property location
+    // this property location may be deprecated in favor of `value.meta`
+    value.cyphertext = value.meta.original.content
+    value.private = value.meta.private
+    if (msgKey) { value.unbox = value.meta.unbox }
+
+    return {
+      key: msg.key,
+      value,
+      timestamp: msg.timestamp
     }
   }
-  return data
 }
 
 /*
@@ -63,10 +86,6 @@ possible, cb when the message is queued.
 write a message, callback once it's definitely written.
 */
 
-function isString (s) {
-  return typeof s === 'string'
-}
-
 module.exports = function (dirname, keys, opts) {
   var caps = opts && opts.caps || {}
   var hmacKey = caps.sign
@@ -76,7 +95,15 @@ module.exports = function (dirname, keys, opts) {
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
-  const unboxerMap = (msg, cb) => cb(null, db.unbox(msg))
+  const unboxerMap = (msg, cb) => {
+    db.unbox(msg, null, (err, unboxed) => {
+      if (err) {
+        console.error(err)
+        return cb(null, msg)
+      }
+      cb(null, unboxed)
+    })
+  }
   const maps = [ unboxerMap ]
   const chainMaps = (val, cb) => {
     // assumes `maps.length >= 1`
@@ -212,28 +239,42 @@ module.exports = function (dirname, keys, opts) {
   }
 
   db.addUnboxer = function (unboxer) {
-    unboxers.push(unboxer)
+    switch (typeof unboxer) {
+      case 'function':
+        unboxers.push(unboxer)
+        break
+
+      case 'object':
+        if (typeof unboxer.key !== 'function') throw new Error('invalid unboxer')
+        if (typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
+        unboxers.push(unboxer)
+        break
+
+      default: throw new Error('invalid unboxer')
+    }
   }
 
   /* TODO extract to ssb-private */
   var box1 = {
-    box: function (content, recps, cb) {
+    boxer: function (content, recps, cb) {
       if (!recps.every(isFeed)) return cb(null, null)
 
       cb(null, ssbKeys.box(content, recps))
     },
-    unbox: {
-      key: function (ciphertext) { 
-        if (!ciphertext.endsWith('.box')) return null
+    unboxer: {
+      key: function (ciphertext, value, cb) { 
+        if (!ciphertext.endsWith('.box')) return cb(null, null)
         // TODO move this inside of ssb-keys
 
-        return ssbKeys.unboxKey(ciphertext, keys)
+        cb(null, ssbKeys.unboxKey(ciphertext, keys))
       },
-      value: function (ciphertext, key) { return ssbKeys.unboxBody(ciphertext, key) }
+      value: function (ciphertext, msgKey, value, cb) {
+        cb(null, ssbKeys.unboxBody(ciphertext, msgKey))
+      }
     }
   }
-  db.addBoxer(box1.box)
-  db.addUnboxer(box1.unbox)
+  db.addBoxer(box1.boxer)
+  db.addUnboxer(box1.unboxer)
   // ////////////////////////////////
 
   db.box = function (content, state, cb) { // state not used
@@ -248,20 +289,18 @@ module.exports = function (dirname, keys, opts) {
       const boxer = boxers[i]
 
       boxer(content, recps, function (err, ciphertext) {
-        if (err) console.error(err)
+        if (err) return console.error(err)
         if (ciphertext) return cb(null, ciphertext)
 
         if (i === boxers.length - 1) cb(RecpsError(recps))
-        else {
-          attempt(i + 1)
-        }
+        else attempt(i + 1)
       })
     }
 
     attempt()
   }
-  db.unbox = function (data, key) {
-    return unbox(data, key, unboxers)
+  db.unbox = function (msg, msgKey, cb) {
+    return unbox(msg, msgKey, unboxers, cb)
   }
 
   db.addMap = function (fn) {
