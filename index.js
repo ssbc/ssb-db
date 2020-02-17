@@ -152,7 +152,6 @@ module.exports = {
       getAtSequence            : ssb.getAtSequence,
       addBoxer                 : ssb.addBoxer,
       addUnboxer               : ssb.addUnboxer,
-      box                      : ssb.box,
       help                     : function () { return require('./help') }
     }
   }

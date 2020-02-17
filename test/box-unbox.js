@@ -4,6 +4,7 @@ var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
 
 var createSSB = require('./create-ssb')
+var { originalValue } = require('../util')
 
 module.exports = function (opts) {
   var alice = ssbKeys.generate()
@@ -16,7 +17,8 @@ module.exports = function (opts) {
   var feed = ssb.createFeed(alice)
 
   tape('add encrypted message', function (t) {
-    var boxed = ssbKeys.box({ type: 'secret', okay: true }, [alice.public, bob.public])
+    var original = { type: 'secret', okay: true }
+    var boxed = ssbKeys.box(original, [alice.public, bob.public])
 
     ssb.post(function (msg) {
       t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
@@ -27,49 +29,41 @@ module.exports = function (opts) {
       t.notOk(err)
 
       pull(
-        ssb.messagesByType('secret'),
+        ssb.messagesByType({ type: 'secret', private: true }),
         pull.collect(function (err, ary) {
           if (err) throw err
-          console.log('ALICE', alice.id)
-          console.log('SSB', ssb.id)
-          var msg = ary[0].value
-          var ctxt = msg.content
-          var content = ssbKeys.unbox(ctxt, alice.private)
-          t.deepEqual(content, { type: 'secret', okay: true }, 'alice can decrypt')
+          // console.log('ALICE', alice.id)
+          // console.log('SSB', ssb.id)
 
-          // bob can also decrypt
-          var content2 = ssbKeys.unbox(ctxt, bob.private)
-          t.deepEqual(content, { type: 'secret', okay: true }, 'bob can decrypt')
+          var pmsg = ary[0]
+          var ctxt = pmsg.value.meta.original.content
 
-          ssb.unbox(ary[0], null, (err, pmsg) => {
-            t.notOk(msg.unbox, 'did not mutate original message')
-            var unboxKey = pmsg.value.unbox
-            t.equal(typeof unboxKey, 'string')
+          t.deepEqual(ssbKeys.unbox(ctxt, alice.private), original, 'alice can decrypt')
+          t.deepEqual(ssbKeys.unbox(ctxt, bob.private), original, 'bob can decrypt')
 
-            t.ok(pmsg)
-            t.deepEqual(pmsg.value.content, content2)
+          var unboxKey = pmsg.value.meta.unbox
+          t.equal(typeof unboxKey, 'string', 'has unbox key')
 
-            // console.log('boxed', ary[0].value)
-            ssb2.add(ary[0].value, function (err) {
+          t.deepEqual(pmsg.value.content, original, 'did not mutate original message')
+
+          const rawMsg = originalValue(pmsg.value) // puts all the ciphertext back in place, strips meta
+          ssb2.add(rawMsg, function (err) {
+            if (err) throw err
+
+            ssb2.get({ id: pmsg.key, private: true }, function (err, _msg) {
               if (err) throw err
-              ssb2.get({ id: pmsg.key, private: true }, function (err, _msg) {
+
+              t.equal(typeof _msg.content, 'string', 'cipherstring content')
+              t.deepEqual(_msg, rawMsg, 'not decrypted')
+
+              ssb2.get({ id: pmsg.key, private: true, unbox: unboxKey }, function (err, __msg) {
                 if (err) throw err
-                // console.log('LOAD', _msg)
-                t.deepEqual(_msg, msg, 'not decrypted')
-                t.equal(typeof _msg.content, 'string')
 
-                ssb2.unbox({ value: _msg }, unboxKey, (err, pmsg2) => {
-                  t.deepEqual(pmsg2.value, pmsg.value)
-
-                  ssb2.get({ id: pmsg.key, private: true, unbox: unboxKey }, function (err, __msg) {
-                    if (err) throw err
-                    t.deepEqual(__msg, pmsg.value)
-                    ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
-                      if (err) throw err
-                      t.deepEqual(__msg, pmsg.value)
-                      t.end()
-                    })
-                  })
+                t.deepEqual(__msg, pmsg.value, 'same msg')
+                ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
+                  if (err) throw err
+                  t.deepEqual(__msg, pmsg.value)
+                  t.end()
                 })
               })
             })
@@ -187,10 +181,10 @@ module.exports = function (opts) {
   })
 
   tape('addBoxer', function (t) {
-    const boxer = (content, recps, cb) => {
-      if (!recps.every(r => r === '!test')) return cb(null, null)
+    const boxer = (content, recps) => {
+      if (!recps.every(r => r === '!test')) return
 
-      cb(null, Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah')
+      return Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
     }
     ssb.addBoxer(boxer)
 
@@ -217,16 +211,16 @@ module.exports = function (opts) {
 
   tape('addUnboxer', function (t) {
     const unboxer = {
-      key: function (ciphertext, vale, cb) {
-        if (!ciphertext.endsWith('.box.hah')) return cb(null, null)
+      key: function (ciphertext, value) {
+        if (!ciphertext.endsWith('.box.hah')) return
 
-        cb(null, '"the key"')
+        return '"the msgKey"'
       },
-      value: function (ciphertext, msgKey, value, cb) {
+      value: function (ciphertext, msgKey) {
         const base64 = ciphertext.replace('.box.hah', '')
-        cb(null, JSON.parse(
+        return JSON.parse(
           Buffer.from(base64, 'base64').toString('utf8')
-        ))
+        )
       }
     }
     ssb.addUnboxer(unboxer)

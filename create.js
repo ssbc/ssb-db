@@ -88,12 +88,10 @@ module.exports = function create (path, opts, keys) {
           else cb(null, data.value)
         }
         else {
-          db.unbox(data, unbox, function (err, result) {
-            if (err) return cb(err)
+          const result = db._unbox(data, unbox)
 
-            if (meta) cb(null, { key, value: result.value, timestamp: result.timestamp })
-            else cb(null, result.value)
-          })
+          if (meta) cb(null, { key, value: result.value, timestamp: result.timestamp })
+          else cb(null, result.value)
         }
       })
     } else if (ref.isMsgLink(key)) {

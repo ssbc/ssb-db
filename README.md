@@ -456,24 +456,24 @@ add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
-`box` is a function of signature `box(content, recps, cb)` which is expected either:
-- successfully box, calling back with a `ciphertext` String - `cb(null, ciphertext)`
-- communicate that it can't box this - `cb(null, null)`
-- communicate that it thought it could box this but hit an error - `cb(err)`
+`box` is a function of signature `box(content, recps) => ciphertext` which is expected either:
+- successfully box, returning a `ciphertext` String
+- communicate that it can't box this by returning undefined (or null)
+- communicate it hit a problem by throwing an error
 
-### db.addUnboxer({key: unboxKey, value: unboxValue})
+### db.addUnboxer({ key: unboxKey, value: unboxValue, init: initBoxer })
 
 add an unboxer object, any encrypted message is passed to the unboxer object to
 test if it can be unboxed (decrypted)
 
 where
-- `unboxKey(msg.value.content, msg.value, cb)`
+- `unboxKey(msg.value.content, msg.value) => msgKey`
   - is a function which tries to extract the message key from the encrypted content (`ciphertext`).
-  - is expected to callback `cb(err, msgKey)` which `msgKey` is the key for the message
-- `unboxValue(msg.value.content, msgKey, msg.value, cb)`
-  - is a function which takes a `msgKey` and uses it to try to extract the plaintext from the `ciphertext`
-  - is expected to callback `cb(err, plaintext)`
-
+  - is expected to return `msgKey` which is the key for the message
+- `unboxValue(msg.value.content, msgKey) => plainContent`
+  - is a function which takes a `msgKey` and uses it to try to extract the `plainContent` from the `ciphertext- `initBoxer(done)`
+  - is an optional initialisation function (useful for asynchronously setting up state for unboxer)
+  - it's pased a `done` callback which you need to call once everything is ready to go
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
 

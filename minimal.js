@@ -14,40 +14,47 @@ var codec = require('./codec')
 function isFunction (f) { return typeof f === 'function' }
 function isString (s) { return typeof s === 'string' }
 
-function unbox (msg, msgKey, unboxers, cb) {
-  if (!msg || !isString(msg.value.content)) return cb(null, msg)
+function box (content, boxers) {
+  var recps = content.recps
+  if (!recps) return content
 
-  attempt()
-  function attempt (i = 0) {
-    if (i === unboxers.length) return cb(null, msg)
+  if (typeof recps === 'string') recps = content.recps = [recps]
+  if (!Array.isArray(recps)) throw new Error('private message field "recps" expects an Array of recipients')
+  if (recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
 
+  var ciphertext
+  for (var i = 0; i < boxers.length; i++) {
+    const boxer = boxers[i]
+    ciphertext = boxer(content, recps)
+
+    if (ciphertext) break
+  }
+  if (!ciphertext) throw RecpsError(recps)
+
+  return ciphertext
+}
+
+function unbox (msg, msgKey, unboxers) {
+  if (!msg || !isString(msg.value.content)) return msg
+
+  var plain
+  for (var i = 0; i < unboxers.length; i++) {
     const unboxer = unboxers[i]
+
     if (isFunction(unboxer)) {
-      return unboxer(msg.value.content, msg.value, handleResult)
+      plain = unboxer(msg.value.content, msg.value)
     }
-
-    if (msgKey) {
-      return unboxer.value(msg.value.content, msgKey, msg.value, handleResult)
+    else {
+      if (!msgKey) msgKey = unboxer.key(msg.value.content, msg.value)
+      if (msgKey) plain = unboxer.value(msg.value.content, msgKey)
     }
-
-    unboxer.key(msg.value.content, msg.value, (err, _msgKey) => {
-      if (err) return cb(err)
-      if (_msgKey) {
-        msgKey = _msgKey  // used by decorate
-        unboxer.value(msg.value.content, msgKey, msg.value, handleResult)
-      }
-      else attempt(i + 1)
-    })
-  }
-  
-  function handleResult (err, plaintext) {
-    if (err) return cb(err)
-    if (plaintext) return cb(null, decorate(msg, plaintext))
-
-    attempt(i + 1)
+    if (plain) break
   }
 
-  function decorate(msg, plaintext) {
+  if (!plain) return msg
+  return decorate(msg, plain)
+
+  function decorate (msg, plain) {
     var value = {}
     for (var k in msg.value) { value[k] = msg.value[k] }
 
@@ -55,7 +62,7 @@ function unbox (msg, msgKey, unboxers, cb) {
     value.meta = u.metaBackup(value, 'content')
 
     // modify content now that it's saved at `meta.original.content`
-    value.content = plaintext
+    value.content = plain
 
     // set meta properties for private messages
     value.meta.private = true
@@ -95,15 +102,13 @@ module.exports = function (dirname, keys, opts) {
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
-  const unboxerMap = (msg, cb) => {
-    db.unbox(msg, null, (err, unboxed) => {
-      if (err) {
-        console.error(err)
-        return cb(null, msg)
-      }
-      cb(null, unboxed)
-    })
-  }
+  const unboxerMap = wait((msg, cb) => {
+    try {
+      cb(null, unbox(msg, null, unboxers))
+    } catch (err) {
+      cb(err)
+    }
+  })
   const maps = [ unboxerMap ]
   const chainMaps = (val, cb) => {
     // assumes `maps.length >= 1`
@@ -171,11 +176,24 @@ module.exports = function (dirname, keys, opts) {
         queue: []
       }
     }
-    ready = true
 
-    var l = waiting.length
-    for (var i = 0; i < l; ++i) { waiting[i]() }
-    waiting = waiting.slice(l)
+    var n = 0
+    for (var i = 0; i < unboxers.length; i++) {
+      if (!isFunction(unboxers[i].init)) continue
+
+      n++
+      unboxers[i].init(next)
+    }
+
+    function next () {
+      if (--n) return
+
+      ready = true
+
+      var l = waiting.length
+      for (var i = 0; i < l; ++i) { waiting[i]() }
+      waiting = waiting.slice(l)
+    }
   })
 
   function wait (fn) {
@@ -198,29 +216,25 @@ module.exports = function (dirname, keys, opts) {
   })
 
   db.append = wait(function append (opts, cb) {
-    db.box(opts.content, state.feeds[opts.keys.id], (err, content) => {
+    try {
+      const content = box(opts.content, boxers)
+      var msg = V.create(
+        state.feeds[opts.keys.id],
+        opts.keys,
+        opts.hmacKey || hmacKey,
+        content,
+        timestamp()
+      )
+    } catch (err) {
+      return cb(err)
+    }
+
+    queue(msg, function (err) {
       if (err) return cb(err)
-
-      try {
-        var msg = V.create(
-          state.feeds[opts.keys.id],
-          opts.keys,
-          opts.hmacKey || hmacKey,
-          content,
-          timestamp()
-        )
-      } catch (err) {
-        return cb(err)
-      }
-
-      queue(msg, function (err) {
-        if (err) return cb(err)
-        var data = state.queue[state.queue.length - 1]
-        flush.push(function () {
-          cb(null, data)
-        })
+      var data = state.queue[state.queue.length - 1]
+      flush.push(function () {
+        cb(null, data)
       })
-
     })
   })
 
@@ -247,6 +261,7 @@ module.exports = function (dirname, keys, opts) {
       case 'object':
         if (typeof unboxer.key !== 'function') throw new Error('invalid unboxer')
         if (typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
+        if (unboxer.init && typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
         unboxers.push(unboxer)
         break
 
@@ -256,20 +271,24 @@ module.exports = function (dirname, keys, opts) {
 
   /* TODO extract to ssb-private */
   var box1 = {
-    boxer: (content, recps, cb) => {
-      if (!recps.every(isFeed)) return cb(null, null)
+    boxer: (content, recps) => {
+      if (!recps.every(isFeed)) return
 
-      cb(null, ssbKeys.box(content, recps))
+      return ssbKeys.box(content, recps)
     },
     unboxer: {
-      key: (ciphertext, value, cb) => { 
-        if (!ciphertext.endsWith('.box')) return cb(null, null)
-        // TODO move this inside of ssb-keys
-
-        cb(null, ssbKeys.unboxKey(ciphertext, keys))
+      init: (done) => {
+        // loads trial keys into box1State (memory)
+        done()
       },
-      value: (ciphertext, msgKey, value, cb) => {
-        cb(null, ssbKeys.unboxBody(ciphertext, msgKey))
+      key: (ciphertext, msg) => {
+        if (!ciphertext.endsWith('.box')) return
+        // todo move this inside of ssb-keys
+
+        return ssbKeys.unboxKey(ciphertext, keys)
+      },
+      value: (ciphertext, msgKey) => {
+        return ssbKeys.unboxBody(ciphertext, msgKey)
       }
     }
   }
@@ -277,34 +296,12 @@ module.exports = function (dirname, keys, opts) {
   db.addUnboxer(box1.unboxer)
   // ////////////////////////////////
 
-  db.box = function dbBox (content, state, cb) { // state not used
-    var recps = content.recps
-    if (!recps) return cb(null, content)
-
-    if (typeof recps === 'string') recps = content.recps = [recps]
-    if (!Array.isArray(recps)) return cb(new Error('private message field "recps" expects an Array of recipients'))
-    if (recps.length === 0) return cb(new Error('private message field "recps" requires at least one recipient'))
-
-    function attempt (i = 0) {
-      const boxer = boxers[i]
-
-      boxer(content, recps, (err, ciphertext) => {
-        if (err) return console.error(err)
-        if (ciphertext) return cb(null, ciphertext)
-
-        if (i === boxers.length - 1) cb(RecpsError(recps))
-        else attempt(i + 1)
-      })
-    }
-
-    attempt()
-  }
-  db.unbox = function dbUnbox (msg, msgKey, cb) {
-    return unbox(msg, msgKey, unboxers, cb)
-  }
-
   db.addMap = function (fn) {
     maps.push(fn)
+  }
+
+  db._unbox = function dbUnbox (msg, msgKey) {
+    return unbox(msg, msgKey, unboxers)
   }
 
   return db
