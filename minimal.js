@@ -10,88 +10,7 @@ var ssbKeys = require('ssb-keys')
 var isFeed = require('ssb-ref').isFeed
 var u = require('./util')
 var codec = require('./codec')
-
-function isFunction (f) { return typeof f === 'function' }
-function isString (s) { return typeof s === 'string' }
-
-function box (content, boxers) {
-  var recps = content.recps
-  if (!recps) return content
-
-  if (typeof recps === 'string') recps = content.recps = [recps]
-  if (!Array.isArray(recps)) throw new Error('private message field "recps" expects an Array of recipients')
-  if (recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
-
-  var ciphertext
-  for (var i = 0; i < boxers.length; i++) {
-    const boxer = boxers[i]
-    ciphertext = boxer(content, recps)
-
-    if (ciphertext) break
-  }
-  if (!ciphertext) throw RecpsError(recps)
-
-  return ciphertext
-}
-
-function unbox (msg, msgKey, unboxers) {
-  if (!msg || !isString(msg.value.content)) return msg
-
-  var plain
-  for (var i = 0; i < unboxers.length; i++) {
-    const unboxer = unboxers[i]
-
-    if (isFunction(unboxer)) {
-      plain = unboxer(msg.value.content, msg.value)
-    }
-    else {
-      if (!msgKey) msgKey = unboxer.key(msg.value.content, msg.value)
-      if (msgKey) plain = unboxer.value(msg.value.content, msgKey)
-    }
-    if (plain) break
-  }
-
-  if (!plain) return msg
-  return decorate(msg, plain)
-
-  function decorate (msg, plain) {
-    var value = {}
-    for (var k in msg.value) { value[k] = msg.value[k] }
-
-    // set `meta.original.content`
-    value.meta = u.metaBackup(value, 'content')
-
-    // modify content now that it's saved at `meta.original.content`
-    value.content = plain
-
-    // set meta properties for private messages
-    value.meta.private = true
-    if (msgKey) { value.meta.unbox = msgKey.toString('base64') }
-
-    // backward-compatibility with previous property location
-    // this property location may be deprecated in favor of `value.meta`
-    value.cyphertext = value.meta.original.content
-    value.private = value.meta.private
-    if (msgKey) { value.unbox = value.meta.unbox }
-
-    return {
-      key: msg.key,
-      value,
-      timestamp: msg.timestamp
-    }
-  }
-}
-
-/*
-## queue (msg, cb)
-
-add a message to the log, buffering the write to make it as fast as
-possible, cb when the message is queued.
-
-## append (msg, cb)
-
-write a message, callback once it's definitely written.
-*/
+var { box, unbox } = require('./autobox')
 
 module.exports = function (dirname, keys, opts) {
   var caps = opts && opts.caps || {}
@@ -134,9 +53,21 @@ module.exports = function (dirname, keys, opts) {
     .use('last', require('./indexes/last')())
 
   var state = V.initial()
-  var ready = false
-  var waiting = []
-  var flush = []
+  var setup = new u.AsyncJobQueue()
+  var waiting = new u.AsyncJobQueue()
+  var flush = new u.AsyncJobQueue() // doesn't currenlty use async-done
+
+  function wait (fn) {
+    return function (value, cb) {
+      if (setup.isEmpty()) fn(value, cb)
+      else {
+        waiting.add(() => fn(value, cb))
+        setup.runAll(() => {
+          waiting.runAll()
+        })
+      }
+    }
+  }
 
   var append = db.rawAppend = db.append
   db.post = Obv()
@@ -159,51 +90,7 @@ module.exports = function (dirname, keys, opts) {
 
   queue.onDrain = function onDrain () {
     if (state.queue.length === 0) {
-      var l = flush.length
-      for (var i = 0; i < l; ++i) { flush[i]() }
-      flush = flush.slice(l)
-    }
-  }
-
-  db.last.get(function (_, last) {
-    // copy to so we avoid weirdness, because this object
-    // tracks the state coming in to the database.
-    for (var k in last) {
-      state.feeds[k] = {
-        id: last[k].id,
-        timestamp: last[k].ts || last[k].timestamp,
-        sequence: last[k].sequence,
-        queue: []
-      }
-    }
-
-    var n = 0
-    for (var i = 0; i < unboxers.length; i++) {
-      if (!isFunction(unboxers[i].init)) continue
-
-      n++
-      unboxers[i].init(next)
-    }
-
-    function next () {
-      if (--n) return
-
-      ready = true
-
-      var l = waiting.length
-      for (var i = 0; i < l; ++i) { waiting[i]() }
-      waiting = waiting.slice(l)
-    }
-  })
-
-  function wait (fn) {
-    return function (value, cb) {
-      if (ready) fn(value, cb)
-      else {
-        waiting.push(function () {
-          fn(value, cb)
-        })
-      }
+      flush.runAll()
     }
   }
 
@@ -215,7 +102,7 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
-  db.append = wait(function append (opts, cb) {
+  db.append = wait(function dbAppend (opts, cb) {
     try {
       const content = box(opts.content, boxers)
       var msg = V.create(
@@ -232,9 +119,7 @@ module.exports = function (dirname, keys, opts) {
     queue(msg, function (err) {
       if (err) return cb(err)
       var data = state.queue[state.queue.length - 1]
-      flush.push(function () {
-        cb(null, data)
-      })
+      flush.add(() => cb(null, data))
     })
   })
 
@@ -245,7 +130,11 @@ module.exports = function (dirname, keys, opts) {
   db.flush = function dbFlush (cb) {
     // maybe need to check if there is anything currently writing?
     if (!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
-    else flush.push(cb)
+    else flush.add(() => cb())
+  }
+
+  db.addMap = function (fn) {
+    maps.push(fn)
   }
 
   db.addBoxer = function addBoxer (boxer) {
@@ -262,14 +151,42 @@ module.exports = function (dirname, keys, opts) {
         if (typeof unboxer.key !== 'function') throw new Error('invalid unboxer')
         if (typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
         if (unboxer.init && typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
+
+        if (unboxer.init) {
+          setup.add(unboxer.init)
+          setup.runAll()
+        }
         unboxers.push(unboxer)
+
         break
 
       default: throw new Error('invalid unboxer')
     }
   }
 
-  /* TODO extract to ssb-private */
+  db._unbox = function dbUnbox (msg, msgKey) {
+    return unbox(msg, msgKey, unboxers)
+  }
+
+  /* initialise some state */
+  setup.add(done => {
+    db.last.get((_, last) => {
+      // copy to so we avoid weirdness, because this object
+      // tracks the state coming in to the database.
+      for (var k in last) {
+        state.feeds[k] = {
+          id: last[k].id,
+          timestamp: last[k].ts || last[k].timestamp,
+          sequence: last[k].sequence,
+          queue: []
+        }
+      }
+      done()
+    })
+  })
+  setup.runAll()
+
+  // TODO extract to ssb-private //////
   var box1 = {
     boxer: (content, recps) => {
       if (!recps.every(isFeed)) return
@@ -277,10 +194,10 @@ module.exports = function (dirname, keys, opts) {
       return ssbKeys.box(content, recps)
     },
     unboxer: {
-      init: (done) => {
-        // loads trial keys into box1State (memory)
-        done()
-      },
+      // init: (done) => {
+      //   // loads trial keys into box1State (memory)
+      //   done()
+      // },
       key: (ciphertext, msg) => {
         if (!ciphertext.endsWith('.box')) return
         // todo move this inside of ssb-keys
@@ -294,22 +211,7 @@ module.exports = function (dirname, keys, opts) {
   }
   db.addBoxer(box1.boxer)
   db.addUnboxer(box1.unboxer)
-  // ////////////////////////////////
-
-  db.addMap = function (fn) {
-    maps.push(fn)
-  }
-
-  db._unbox = function dbUnbox (msg, msgKey) {
-    return unbox(msg, msgKey, unboxers)
-  }
+  // /TODO /////////////////////////////
 
   return db
-}
-
-function RecpsError (recps) {
-  return new Error(
-    'private message requested, but no boxers could encrypt these recps: ' +
-    JSON.stringify(recps)
-  )
 }

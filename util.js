@@ -159,3 +159,50 @@ exports.metaBackup = (msgValue, property) => {
 
   return msgValue.meta
 }
+
+exports.AsyncJobQueue = class AsyncJobQueue {
+  constructor () {
+    this.queue = []
+    this.running = 0
+    this.callbacks = []
+  }
+
+  add (fn) {
+    if (typeof fn !== 'function') throw new Error('JobQueue#add expects a function')
+    this.queue.push(fn)
+  }
+
+  runAll (done = noop) {
+    if (this.isEmpty()) return done()
+    if (typeof done !== 'function') throw new Error('AsyncJobQueue extpents "done" callback function')
+
+    const batch = this.queue
+    this.queue = []
+
+    this.callbacks.push(done)
+
+    for (var job of batch) {
+      this.running++
+      job(() => {
+        this.running--
+        this._runCallbacks()
+      })
+    }
+  }
+  _runCallbacks () {
+    if (this.running) return
+
+    var n = this.callbacks.length
+
+    for (var i = 0; i < n; i++) {
+      this.callbacks[i]()
+    }
+    this.callbacks = this.callbacks.slice(n)
+  }
+
+  isEmpty () {
+    return this.queue.length === 0 && this.running === 0
+  }
+}
+
+function noop () {}

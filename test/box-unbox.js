@@ -79,7 +79,7 @@ module.exports = function (opts) {
       reason: 'why not',
       recps: [ feed.id ]
     }
-    feed.publish(content, (err, msg) => {
+    feed.publish(content, (_, msg) => {
       t.true(typeof msg.value.content === 'string', 'encrypted string')
       t.true(msg.value.content.endsWith('.box'), 'of type .box')
 
@@ -154,25 +154,25 @@ module.exports = function (opts) {
   })
 
   tape('test indexes on end-to-end messages', function (t) {
-    feed.add(ssbKeys.box({
-      type: 'secret', okay: true
-    }, [alice.public, bob.public]
-    ), function (err, msg) {
+    var ciphertext = ssbKeys.box(
+      { type: 'secret', okay: true },
+      [alice.public, bob.public]
+    )
+    feed.add(ciphertext, function (err, msg) {
       if (err) throw err
-      feed.add(ssbKeys.box({
-        type: 'secret', post: 'wow', reply: msg.key
-      }, [alice.public, bob.public]
-      ), function (err, msg2) {
+
+      var ciphertext2 = ssbKeys.box(
+        { type: 'secret', post: 'wow', reply: msg.key },
+        [alice.public, bob.public]
+      )
+      feed.add(ciphertext2, function (err, msg2) {
         if (err) throw err
+
         pull(
           ssb.links({ dest: msg.key, type: 'msg', keys: false }),
           pull.collect(function (err, ary) {
             if (err) throw err
-            t.deepEqual(ary, [{
-              source: msg2.value.author,
-              rel: 'reply',
-              dest: msg.key
-            }])
+            t.deepEqual(ary, [{ source: msg2.value.author, rel: 'reply', dest: msg.key }])
             t.end()
           })
         )
@@ -209,8 +209,44 @@ module.exports = function (opts) {
     })
   })
 
-  tape('addUnboxer', function (t) {
+  tape('addUnboxer (simple)', function (t) {
+    const unboxer = function (ciphertext, value) {
+      if (!ciphertext.endsWith('.box.hah')) return
+
+      const base64 = ciphertext.replace('.box.hah', '')
+      return JSON.parse(
+        Buffer.from(base64, 'base64').toString('utf8')
+      )
+    }
+    ssb.addUnboxer(unboxer)
+
+    const content = {
+      type: 'poke',
+      reason: 'why not',
+      recps: [ '!test' ]
+    }
+    const ciphertext = Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
+
+    feed.publish(ciphertext, (_, msg) => {
+      ssb.get({ id: msg.key, private: true, meta: true }, (err, msg) => {
+        if (err) throw err
+        t.deepEqual(msg.value.content, content, 'auto unboxing works')
+        t.end()
+      })
+    })
+  })
+
+  tape('addUnboxer (with init)', function (t) {
+    var initDone = false
+
     const unboxer = {
+      init: function (done) {
+        setTimeout(() => {
+          t.ok(true, 'calls init')
+          initDone = true
+          done()
+        }, 500)
+      },
       key: function (ciphertext, value) {
         if (!ciphertext.endsWith('.box.hah')) return
 
@@ -224,6 +260,7 @@ module.exports = function (opts) {
       }
     }
     ssb.addUnboxer(unboxer)
+    t.false(initDone)
 
     const content = {
       type: 'poke',
@@ -232,9 +269,13 @@ module.exports = function (opts) {
     }
     const ciphertext = Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
 
-    feed.publish(ciphertext, (err, msg) => {
+    feed.publish(ciphertext, (_, msg) => {
+      t.true(initDone, 'unboxer completed initialisation before publish')
+
       ssb.get({ id: msg.key, private: true, meta: true }, (err, msg) => {
         if (err) throw err
+
+        t.true(initDone, 'unboxer completed initialisation before get')
         t.deepEqual(msg.value.content, content, 'auto unboxing works')
         t.end()
       })
