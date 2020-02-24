@@ -3,7 +3,7 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 var cont = require('cont')
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 function cmpstr (a, b) {
   return a < b ? -1 : a === b ? 0 : 1

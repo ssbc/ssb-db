@@ -5,7 +5,7 @@ var tape = require('tape')
 
 var Abortable = require('pull-abortable')
 
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 var compare = require('ltgt').compare
 var generate = require('ssb-keys').generate
