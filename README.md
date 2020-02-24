@@ -456,7 +456,7 @@ add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
-`box` is a function of signature `box(content, recps) => ciphertext` which is expected either:
+`boxer` is a function of signature `boxer(content, recps) => ciphertext` which is expected either:
 - successfully box, returning a `ciphertext` String
 - communicate that it can't box this by returning undefined (or null)
 - communicate it hit a problem by throwing an error
@@ -468,12 +468,12 @@ test if it can be unboxed (decrypted)
 
 where
 - `unboxKey(msg.value.content, msg.value) => msgKey`
-  - is a function which tries to extract the message key from the encrypted content (`ciphertext`).
-  - is expected to return `msgKey` which is the key for the message
+    - is a function which tries to extract the message key from the encrypted content (`ciphertext`).
+    - is expected to return `msgKey` which is the key for the message
 - `unboxValue(msg.value.content, msgKey) => plainContent`
-  - is a function which takes a `msgKey` and uses it to try to extract the `plainContent` from the `ciphertext- `initBoxer(done)`
-  - is an optional initialisation function (useful for asynchronously setting up state for unboxer)
-  - it's pased a `done` callback which you need to call once everything is ready to go
+    - is a function which takes a `msgKey` and uses it to try to extract the `plainContent` from the `ciphertext- `initBoxer(done)`
+    - is an optional initialisation function (useful for asynchronously setting up state for unboxer)
+    - it's pased a `done` callback which you need to call once everything is ready to go
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
 
