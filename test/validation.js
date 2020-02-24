@@ -5,7 +5,7 @@ var explain = require('explain-error')
 var generate = require('ssb-keys').generate
 var hash = require('ssb-keys').hash
 var v = require('ssb-validate')
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 module.exports = function (opts) {
   var create = require('ssb-feed/util').create

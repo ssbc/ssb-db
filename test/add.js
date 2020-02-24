@@ -3,7 +3,7 @@ var tape = require('tape')
 var pull = require('pull-stream')
 var crypto = require('crypto')
 
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 module.exports = function (opts) {
   var ssb = createSSB('test-ssb-feed', {})

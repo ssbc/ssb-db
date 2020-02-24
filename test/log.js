@@ -4,7 +4,7 @@ var pull = require('pull-stream')
 var timestamp = require('monotonic-timestamp')
 var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 var generate = ssbKeys.generate
 
