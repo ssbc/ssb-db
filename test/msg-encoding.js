@@ -5,7 +5,7 @@ var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var hexpp = require('hexpp')
 var codec = require('../codec')
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 var generate = ssbKeys.generate
 var hash = ssbKeys.hash

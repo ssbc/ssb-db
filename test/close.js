@@ -2,7 +2,7 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 tape('load', function (t) {
   var ssb = createSSB('test-ssb-feed')

@@ -2,11 +2,12 @@
 
 var join = require('path').join
 var EventEmitter = require('events')
-
 var pull = require('pull-stream')
 var ref = require('ssb-ref')
 var ssbKeys = require('ssb-keys')
 
+var createDB = require('./db')
+var extras = require('./extras')
 var u = require('./util')
 
 function isString (s) {
@@ -17,13 +18,13 @@ function errorCB (err) {
   if (err) throw err
 }
 
-module.exports = function (path, opts, keys) {
+module.exports = function create (path, opts, keys) {
   //_ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
   if(!path) throw new Error('path must be provided')
 
   keys = keys || ssbKeys.generate()
 
-  var db = require('./db')(join(opts.path || path, 'flume'), keys, opts)
+  var db = createDB(join(opts.path || path, 'flume'), keys, opts)
 
   // UGLY HACK, but...
   // fairly sure that something up the stack expects ssb to be an event emitter.
@@ -34,13 +35,37 @@ module.exports = function (path, opts, keys) {
   var _get = db.get
   var _del = db.del
 
-  db.del = (key, cb) => {
+  const deleteFeed = (feed, cb) => {
+    pull(
+      db.createUserStream({ id: feed }),
+      pull.asyncMap((msg, cb) => {
+        const key = msg.key
+
+        deleteMessage(key, (err) => {
+          cb(err, key)
+        })
+      }),
+      pull.collect(cb)
+    )
+  }
+
+  const deleteMessage = (key, cb) => {
     db.keys.get(key, (err, val, seq) => {
       if (err) return cb(err)
-      if (seq == null) cb(new Error('seq is null!'))
+      if (seq == null) return cb(new Error('seq is null!'))
 
       _del(seq, cb)
     })
+  }
+
+  db.del = (target, cb) => {
+    if (ref.isMsg(target)) {
+      deleteMessage(target, cb)
+    } else if (ref.isFeed(target)) {
+      deleteFeed(target, cb)
+    } else {
+      cb(new Error('deletion target must be a message or feed'))
+    }
   }
 
   db.get = function (key, cb) {
@@ -116,7 +141,7 @@ module.exports = function (path, opts, keys) {
 
   // pull in the features that are needed to pass the tests
   // and that sbot, etc uses but are slow.
-  require('./extras')(db, opts, keys)
+  extras(db, opts, keys)
 
   // writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {
@@ -161,7 +186,3 @@ module.exports = function (path, opts, keys) {
 
   return db
 }
-
-
-
-

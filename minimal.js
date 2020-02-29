@@ -2,30 +2,46 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-var codec = require('./codec')
 var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv = require('obv')
 var ssbKeys = require('ssb-keys')
-var box = ssbKeys.box
-var u = require('./util')
 var isFeed = require('ssb-ref').isFeed
+var u = require('./util')
+var codec = require('./codec')
 
-var isArray = Array.isArray
 function isFunction (f) { return typeof f === 'function' }
 
-function unbox (data, unboxers, key) {
+function box (content, recps, boxers) {
+  if (!content) return content
+  var ciphertext
+
+  for (var i = 0; i < boxers.length; i++) {
+    const boxer = boxers[i]
+    ciphertext = boxer(content, recps)
+
+    if (ciphertext) break
+  }
+
+  if (!ciphertext) throw new Error(
+    'private message requested, but no boxers could encrypt these recps: ' +
+    JSON.stringify(recps)
+  )
+
+  return ciphertext
+}
+
+function unbox (data, key, unboxers) {
   var plaintext
   if (data && isString(data.value.content)) {
     for (var i = 0; i < unboxers.length; i++) {
       var unboxer = unboxers[i]
-
       if (isFunction(unboxer)) {
         plaintext = unboxer(data.value.content, data.value)
       } else {
         if (!key) key = unboxer.key(data.value.content, data.value)
-        if (key) plaintext = unboxer.value(data.value.content, key)
+        if (key) plaintext = unboxer.value(data.value.content, key, data.value)
       }
 
       if (plaintext) {
@@ -71,14 +87,11 @@ function isString (s) {
 }
 
 module.exports = function (dirname, keys, opts) {
-  var hmacKey = opts && opts.caps && opts.caps.sign
+  var caps = opts && opts.caps || {}
+  var hmacKey = caps.sign
 
-  var mainUnboxer = {
-    key: function (content) { return ssbKeys.unboxKey(content, keys) },
-    value: function (content, key) { return ssbKeys.unboxBody(content, key) }
-  }
-
-  var unboxers = [ mainUnboxer ]
+  var boxers = []
+  var unboxers = []
 
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
@@ -178,23 +191,10 @@ module.exports = function (dirname, keys, opts) {
 
   db.append = wait(function (opts, cb) {
     try {
-      var content = opts.content
-      var recps = opts.content.recps
-      if (recps) {
-        const isNonEmptyArrayOfFeeds = isArray(recps) && recps.every(isFeed) && recps.length > 0
-        if (isFeed(recps) || isNonEmptyArrayOfFeeds) {
-          recps = opts.content.recps = [].concat(recps) // force to array
-          content = opts.content = box(opts.content, recps)
-        } else {
-          const errMsg = 'private message recipients must be valid, was:' + JSON.stringify(recps)
-          throw new Error(errMsg)
-        }
-      }
-
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys, opts.hmacKey || hmacKey,
-        content,
+        db.box(opts, state.feeds[opts.keys.id]),
         timestamp()
       )
     } catch (err) {
@@ -221,17 +221,48 @@ module.exports = function (dirname, keys, opts) {
     else flush.push(cb)
   }
 
+  db.addBoxer = function (boxer) {
+    boxers.push(boxer)
+  }
+
   db.addUnboxer = function (unboxer) {
     unboxers.push(unboxer)
   }
 
-  db.unbox = function (data, key) {
-    return unbox(data, unboxers, key)
+  /* TODO extract to ssb-private */
+  var box1 = {
+    box: function (content, recps) {
+      if (!recps.every(isFeed)) return null
+
+      return ssbKeys.box(content, recps)
+    },
+    unbox: {
+      key: function (ciphertext) { return ssbKeys.unboxKey(ciphertext, keys) },
+      value: function (ciphertext, key) { return ssbKeys.unboxBody(ciphertext, key) }
+    }
   }
+  db.addBoxer(box1.box)
+  db.addUnboxer(box1.unbox)
+  // ////////////////////////////////
+
+  // db.box = function (value, state) {
+  db.box = function (value) {
+    var recps = value.content.recps
+    if (!recps) return value.content
+
+    if (typeof recps === 'string') recps = value.content.recps = [recps]
+    if (!Array.isArray(recps)) throw new Error('private message field "recps" expects an Array of recipients')
+    if (recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
+
+    return box(value.content, recps, boxers)
+  }
+  db.unbox = function (data, key) {
+    return unbox(data, key, unboxers)
+  }
+
   db.addMap = function (fn) {
     maps.push(fn)
   }
 
   return db
 }
-

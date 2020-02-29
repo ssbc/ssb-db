@@ -5,7 +5,7 @@ var cont = require('cont')
 var typewise = require('typewiselite')
 var ssbKeys = require('ssb-keys')
 
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 var createFeed = require('ssb-feed')
 
 function sort (a) {

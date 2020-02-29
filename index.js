@@ -118,7 +118,11 @@ module.exports = {
       },
 
       status                   : function () {
-        return {progress: self.progress(), db: ssb.status, sync: since() }
+        return {
+          progress: self.progress(),
+          db: ssb.status,
+          sync: since()
+        }
       },
 
       version                  : function () {
@@ -139,17 +143,16 @@ module.exports = {
       },
 
       //temporary!
-      _flumeUse                :
-        function (name, flumeview) {
-          ssb.use(name, flumeview)
-          return ssb[name]
-        },
+      _flumeUse                : function (name, flumeview) {
+        ssb.use(name, flumeview)
+        return ssb[name]
+      },
 
       close                    : close,
-      del: valid.async(ssb.del, 'msgLink'),
+      del                      : valid.async(ssb.del, 'msgLink|feedId'),
       publish                  : valid.async(feed.add, 'string|msgContent'),
       add                      : valid.async(ssb.add, 'msg'),
-      queue                      : valid.async(ssb.queue, 'msg'),
+      queue                    : valid.async(ssb.queue, 'msg'),
       get                      : valid.async(ssb.get, 'msgLink|number|object'),
 
       post                     : ssb.post,
@@ -172,12 +175,10 @@ module.exports = {
       createWriteStream        : ssb.createWriteStream,
       getVectorClock           : ssb.getVectorClock,
       getAtSequence            : ssb.getAtSequence,
+      addBoxer                 : ssb.addBoxer,
       addUnboxer               : ssb.addUnboxer,
       box                      : ssb.box,
       help                     : function () { return require('./help') }
     }
   }
 }
-
-
-

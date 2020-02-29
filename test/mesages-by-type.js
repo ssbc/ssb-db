@@ -3,7 +3,7 @@ var cont = require('cont')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
-var createSSB = require('./util')
+var createSSB = require('./create-ssb')
 
 function all (stream, cb) {
   pull(stream, pull.collect(cb))
