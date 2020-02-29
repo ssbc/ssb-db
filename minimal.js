@@ -204,8 +204,8 @@ module.exports = function (dirname, keys, opts) {
 
         return ssbKeys.unboxKey(ciphertext, keys)
       },
-      value: (ciphertext, msgKey) => {
-        return ssbKeys.unboxBody(ciphertext, msgKey)
+      value: (ciphertext, msg, readKey) => {
+        return ssbKeys.unboxBody(ciphertext, readKey)
       }
     }
   }

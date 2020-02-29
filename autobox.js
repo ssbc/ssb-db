@@ -30,7 +30,7 @@ function RecpsError (recps) {
   )
 }
 
-function unbox (msg, msgKey, unboxers) {
+function unbox (msg, readKey, unboxers) {
   if (!msg || !isString(msg.value.content)) return msg
 
   var plain
@@ -41,8 +41,8 @@ function unbox (msg, msgKey, unboxers) {
       plain = unboxer(msg.value.content, msg.value)
     }
     else {
-      if (!msgKey) msgKey = unboxer.key(msg.value.content, msg.value)
-      if (msgKey) plain = unboxer.value(msg.value.content, msgKey)
+      if (!readKey) readKey = unboxer.key(msg.value.content, msg.value)
+      if (readKey) plain = unboxer.value(msg.value.content, msg.value, readKey)
     }
     if (plain) break
   }
@@ -62,13 +62,13 @@ function unbox (msg, msgKey, unboxers) {
 
     // set meta properties for private messages
     value.meta.private = true
-    if (msgKey) { value.meta.unbox = msgKey.toString('base64') }
+    if (readKey) { value.meta.unbox = readKey.toString('base64') }
 
     // backward-compatibility with previous property location
     // this property location may be deprecated in favor of `value.meta`
     value.cyphertext = value.meta.original.content
     value.private = value.meta.private
-    if (msgKey) { value.unbox = value.meta.unbox }
+    if (readKey) { value.unbox = value.meta.unbox }
 
     return {
       key: msg.key,
