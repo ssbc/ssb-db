@@ -8,7 +8,7 @@ var content = { type: 'whatever' }
 
 tape('load', function (t) {
   t.plan(1)
-  var ssb = createSSB('test-ssb-feed', { keys })
+  var ssb = createSSB('test-ssb-feed', { keys, temp: false })
 
   ssb.createFeed().add(content, function (err, msg) {
     if (err) throw err
