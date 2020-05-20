@@ -510,6 +510,15 @@ returns a stream of `{author, sequence, ts}` tuples.
 create a pull-stream sink that expects a stream of messages and calls `db.add`
 on each item, appending every valid message to the log.
 
+### db.createSequenceStream() => PullSource
+
+Create a pull-stream source that provides the latest sequence number from the
+database. Each time a message is appended the sequence number should increase
+and a new event should be sent through the stream.
+
+Note: In the future this stream may be debounced. The number of events passed
+through this stream may be less than the number of messages appended.
+
 ### db.createFeed(keys?) => Feed (deprecated)
 
 _*deprecated*: use [ssb-identities](http://github.com/ssbc/ssb-identities) instead_
