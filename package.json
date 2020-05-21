@@ -38,7 +38,7 @@
     "ssb-feed": "^2.2.1",
     "ssb-private1": "^1.0.1",
     "tap-spec": "^5.0.0",
-    "tape": "^4.13.2",
+    "tape": "^5.0.0",
     "typewiselite": "^1.0.0"
   },
   "scripts": {
