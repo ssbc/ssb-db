@@ -4,21 +4,20 @@ function isFunction (f) { return typeof f === 'function' }
 function isString (s) { return typeof s === 'string' }
 
 function box (content, boxers) {
-  var recps = content.recps
-  if (!recps) return content
+  if (!content.recps) return content
 
-  if (typeof recps === 'string') recps = content.recps = [recps]
-  if (!Array.isArray(recps)) throw new Error('private message field "recps" expects an Array of recipients')
-  if (recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
+  if (typeof content.recps === 'string') content.recps = [content.recps]
+  if (!Array.isArray(content.recps)) throw new Error('private message field "recps" expects an Array of recipients')
+  if (content.recps.length === 0) throw new Error('private message field "recps" requires at least one recipient')
 
   var ciphertext
   for (var i = 0; i < boxers.length; i++) {
     const boxer = boxers[i]
-    ciphertext = boxer(content, recps)
+    ciphertext = boxer(content)
 
     if (ciphertext) break
   }
-  if (!ciphertext) throw RecpsError(recps)
+  if (!ciphertext) throw RecpsError(content.recps)
 
   return ciphertext
 }
