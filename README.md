@@ -556,6 +556,18 @@ the key pair for this feed.
 
 Stable: Expect patches, possible features additions.
 
+
+## Known Bugs
+
+### Closing & starting the db quickly
+
+- problem: if you start a server, close it, and then _immediately_ open it again, ssb-db doesn't work right
+- solution: put the second open in a `setImmediate` or `setTimeout` (see `test/close.js` for example)
+
+This bug was added `20.0.0` by Mix adding support for private groups. Christian and Mix spent hours
+following the traces into flumedb, and have been unable to determine why this is happening.
+We decided to proceed like this by balancing the benefits afforded by the change made with the costs.
+
 ## License
 
 MIT
