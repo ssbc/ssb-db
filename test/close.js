@@ -6,9 +6,11 @@ var createSSB = require('./create-ssb')
 var keys = require('ssb-keys').generate()
 var content = { type: 'whatever' }
 
+const name = `test-ssb-close-${Date.now()}`
+
 tape('load', function (t) {
   t.plan(1)
-  var ssb = createSSB('test-ssb-feed', { keys, temp: false })
+  var ssb = createSSB(name, { keys, temp: false })
 
   ssb.createFeed().add(content, function (err, msg) {
     if (err) throw err
@@ -22,7 +24,7 @@ tape('load', function (t) {
 
 tape('reopen', function (t) {
   t.plan(1)
-  var ssb = createSSB('test-ssb-feed', { keys, temp: false })
+  var ssb = createSSB(name, { keys, temp: false })
 
   pull(
     ssb.createLogStream(),
