@@ -31,6 +31,20 @@ module.exports = function (opts) {
 
   var feed = ssb.createFeed(alice)
 
+  tape('error when trying to encrypt without boxer', (t) => {
+    t.plan(2);
+    const darlene = ssbKeys.generate()
+    const darleneSSB = createSSB('test-ssb-darlene', { keys: darlene })
+    const darleneFeed = ssb.createFeed(darlene)
+    darleneFeed.add(
+      { type: "error", recps: [alice, darlene] },
+      (err, msg) => {
+	t.ok(err);
+	t.notOk(msg);
+        t.end()
+      })
+  })
+
   tape('add pre-encrypted message', function (t) {
     var original = { type: 'secret', okay: true }
     var boxed = ssbKeys.box(original, [alice.public, bob.public])
