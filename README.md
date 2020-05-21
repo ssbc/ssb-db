@@ -450,25 +450,37 @@ an [observable](https://github.com/dominictarr/obv) of the current log sequence.
 is always a positive integer that usually increases, except in the exceptional circumstance
 that the log is deleted or corrupted.
 
-### db.addBoxer(box)
+### db.addBoxer(boxer)
 
-add a box, which will be added to the list of boxers which will try to
+add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
-`box` is a function of signature `box(content, recps) => (String|null)`
-which is expected to either box the the message content and return a ciphertext String, or return null if it unable to.
+`boxer` is a function of signature `boxer(msg.value.content) => ciphertext` which is expected to:
+- successfully box the content (based on `content.recps`), returning a `ciphertext` String
+- not know how to box this content (because recps are outside it's understanding), and `undefined` (or `null`)
+- break (because it should know how to handle `recps`, but can't), and so throw an `Error`
 
-### db.addUnboxer({key: unboxKey, value: unboxValue})
+### db.addUnboxer({ key: unboxKey, value: unboxValue, init: initBoxer })
 
 add an unboxer object, any encrypted message is passed to the unboxer object to
 test if it can be unboxed (decrypted)
 
 where
-- `unboxKey(ciphertext) => msgKey` is a function which tries to extract the message key from the encrypted content (`ciphertext`)
-- `unboxValue(ciphertext, msgKey) => plaintext` is a function which takes a message key and uses it to try to extract the message content from the `ciphertext`
+- `unboxKey(msg.value.content, msg.value) => readKey`
+    - is a function which tries to extract the message key from the encrypted content (`ciphertext`).
+    - is expected to return `readKey` which is the read capability for the message
+- `unboxValue(msg.value.content, msg.value, readKey) => plainContent`
+    - is a function which takes a `readKey` and uses it to try to extract the `plainContent` from the `ciphertext- `initBoxer(done)`
+    - is an optional initialisation function (useful for asynchronously setting up state for unboxer)
+    - it's pased a `done` callback which you need to call once everything is ready to go
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
+
+### db.box(content, recps, cb)
+
+attempt to encrypt some `content` to `recps` (an Array of keys/ identifiers).
+callback has signature `cb(err, ciphertext)`
 
 ### db.unbox(data, key)
 
