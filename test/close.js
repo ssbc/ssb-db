@@ -26,7 +26,7 @@ tape('reopen', function (t) {
   t.plan(1)
 
   // HACK: See readme section on 'known bugs'.
-  setImmediate(() => {
+  setTimeout(() => {
     var ssb = createSSB(name, { keys, temp: false })
 
     pull(
@@ -37,5 +37,5 @@ tape('reopen', function (t) {
         t.deepEqual(ary[0].value.content, content, 'reopen works fine')
       })
     )
-  })
+  }, 100)
 })
