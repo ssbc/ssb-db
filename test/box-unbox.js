@@ -221,8 +221,8 @@ module.exports = function (opts) {
   })
 
   tape('addBoxer', function (t) {
-    const boxer = (content, recps) => {
-      if (!recps.every(r => r === '!test')) return
+    const boxer = (content) => {
+      if (!content.recps.every(r => r === '!test')) return
 
       return Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
     }

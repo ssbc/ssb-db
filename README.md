@@ -456,10 +456,10 @@ add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
-`boxer` is a function of signature `boxer(msg.value.content, msg.value.content.recps) => ciphertext` which is expected either:
-- successfully box, returning a `ciphertext` String
-- communicate that it can't box this by returning undefined (or null)
-- communicate it hit a problem by throwing an error
+`boxer` is a function of signature `boxer(msg.value.content) => ciphertext` which is expected to:
+- successfully box the content (based on `content.recps`), returning a `ciphertext` String
+- not know how to box this content (because recps are outside it's understanding), and `undefined` (or `null`)
+- break (because it should know how to handle `recps`, but can't), and so throw an `Error`
 
 ### db.addUnboxer({ key: unboxKey, value: unboxValue, init: initBoxer })
 
