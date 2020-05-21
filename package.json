@@ -36,13 +36,15 @@
     "hexpp": "^2.0.0",
     "pull-abortable": "^4.1.1",
     "ssb-feed": "^2.2.1",
+    "ssb-private1": "^1.0.1",
     "tap-spec": "^5.0.0",
-    "tape": "^4.8.0",
+    "tape": "^4.13.2",
     "typewiselite": "^1.0.0"
   },
   "scripts": {
     "prepublishOnly": "npm ls && npm test",
-    "test": "set -e; for t in test/*.js; do node $t | tap-spec; done"
+    "test": "set -e; for t in test/*.js; do node $t; done",
+    "test:pretty": "npm test | tap-spec"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
   "license": "MIT",

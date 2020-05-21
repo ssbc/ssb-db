@@ -6,8 +6,6 @@ var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv = require('obv')
-var ssbKeys = require('ssb-keys')
-var isFeed = require('ssb-ref').isFeed
 var u = require('./util')
 var codec = require('./codec')
 var { box, unbox } = require('./autobox')
@@ -185,33 +183,6 @@ module.exports = function (dirname, keys, opts) {
     })
   })
   setup.runAll()
-
-  // TODO extract to ssb-private //////
-  var box1 = {
-    boxer: (content, recps) => {
-      if (!recps.every(isFeed)) return
-
-      return ssbKeys.box(content, recps)
-    },
-    unboxer: {
-      // init: (done) => {
-      //   // loads trial keys into box1State (memory)
-      //   done()
-      // },
-      key: (ciphertext, msg) => {
-        if (!ciphertext.endsWith('.box')) return
-        // todo move this inside of ssb-keys
-
-        return ssbKeys.unboxKey(ciphertext, keys)
-      },
-      value: (ciphertext, msg, readKey) => {
-        return ssbKeys.unboxBody(ciphertext, readKey)
-      }
-    }
-  }
-  db.addBoxer(box1.boxer)
-  db.addUnboxer(box1.unboxer)
-  // /TODO /////////////////////////////
 
   return db
 }

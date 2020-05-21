@@ -2,6 +2,7 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
+var box1 = require('ssb-private1/box1')
 
 var createSSB = require('./create-ssb')
 var { originalValue } = require('../util')
@@ -11,18 +12,31 @@ module.exports = function (opts) {
   var bob = ssbKeys.generate()
   var charles = ssbKeys.generate()
 
+  /* NOTE
+   * This is an older test which was written when box1 encryption was part
+   * of this model.
+   * To ensure these tests still run, we've added box1 back in.
+   *
+   * For parts dependent on this, see lines commented with:
+   *   DEPENDENCY - ssb-private1
+   */
+
   var ssb = createSSB('test-ssb', { keys: alice })
+  ssb.addBoxer(box1(alice).boxer)
+  ssb.addUnboxer(box1(alice).unboxer)
+
   var ssb2 = createSSB('test-ssb2', { keys: charles })
+  ssb2.addBoxer(box1(charles).boxer)
+  ssb2.addUnboxer(box1(charles).unboxer)
 
   var feed = ssb.createFeed(alice)
 
-  tape('add encrypted message', function (t) {
+  tape('add pre-encrypted message', function (t) {
     var original = { type: 'secret', okay: true }
     var boxed = ssbKeys.box(original, [alice.public, bob.public])
 
-    ssb.post(function (msg) {
-      t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
-    })
+    var postObserved
+    var listener = ssb.post(msg => { postObserved = msg })
 
     feed.add(boxed, function (err, msg) {
       if (err) throw err
@@ -50,19 +64,25 @@ module.exports = function (opts) {
           ssb2.add(rawMsg, function (err) {
             if (err) throw err
 
+            /* DEPENDENCY - ssb-private1 */
             ssb2.get({ id: pmsg.key, private: true }, function (err, _msg) {
               if (err) throw err
 
               t.equal(typeof _msg.content, 'string', 'cipherstring content')
               t.deepEqual(_msg, rawMsg, 'not decrypted')
 
+              /* DEPENDENCY - ssb-private1 */
               ssb2.get({ id: pmsg.key, private: true, unbox: unboxKey }, function (err, __msg) {
                 if (err) throw err
 
                 t.deepEqual(__msg, pmsg.value, 'same msg')
+                /* DEPENDENCY - ssb-private1 */
                 ssb2.get(pmsg.key + '?unbox=' + unboxKey, function (err, __msg) {
                   if (err) throw err
                   t.deepEqual(__msg, pmsg.value)
+
+                  listener()
+                  t.true(typeof postObserved.value.content === 'string', 'post obs messages should not be decrypted')
                   t.end()
                 })
               })
@@ -73,7 +93,22 @@ module.exports = function (opts) {
     })
   })
 
+  tape('add pre-encrypted message (suffix check)', function (t) {
+    const junk = 'asdasdasdasd'
+    feed.add(junk, function (err) {
+      t.true(err.message.match(/encrypted string/), 'invalid strings miss suffix .box*')
+
+      const validJunk = 'asdasdasdasd.box66'
+      feed.add(validJunk, function (err) {
+        t.false(err, 'valid strings have suffix .box*')
+
+        t.end()
+      })
+    })
+  })
+
   tape('add encrypted message (using recps: [feedId])', function (t) {
+    /* DEPENDENCY - ssb-private1 */
     const content = {
       type: 'poke',
       reason: 'why not',
@@ -91,9 +126,9 @@ module.exports = function (opts) {
   })
 
   tape('add encrypted message (using recps: String)', function (t) {
-    ssb.post(function (msg) {
-      t.equal('string', typeof msg.value.content, 'messages should not be decrypted')
-    })
+    /* DEPENDENCY - ssb-private1 */
+    var postObserved
+    var listener = ssb.post(msg => { postObserved = msg })
 
     // secret message sent to self
     feed.add({ type: 'secret2', secret: "it's a secret!", recps: feed.id }, function (err, msg) {
@@ -114,6 +149,9 @@ module.exports = function (opts) {
             { type: 'secret2', secret: "it's a secret!", recps: [alice.id] },
             'alice can decrypt'
           )
+
+          listener()
+          t.true(typeof postObserved.value.content === 'string', 'post obs messages should not be decrypted')
 
           t.end()
         })
@@ -141,6 +179,7 @@ module.exports = function (opts) {
   })
 
   tape('retreive already decrypted messages', function (t) {
+    /* DEPENDENCY - ssb-private1 */
     pull(
       ssb.messagesByType({ type: 'secret', private: true }),
       pull.collect(function (err, ary) {
@@ -154,6 +193,7 @@ module.exports = function (opts) {
   })
 
   tape('test indexes on end-to-end messages', function (t) {
+    /* DEPENDENCY - ssb-private1 */
     var ciphertext = ssbKeys.box(
       { type: 'secret', okay: true },
       [alice.public, bob.public]
