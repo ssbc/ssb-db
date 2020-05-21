@@ -24,14 +24,18 @@ tape('load', function (t) {
 
 tape('reopen', function (t) {
   t.plan(1)
-  var ssb = createSSB(name, { keys, temp: false })
 
-  pull(
-    ssb.createLogStream(),
-    pull.collect(function (err, ary) {
-      if (err) throw err
+  // HACK: See readme section on 'known bugs'.
+  setImmediate(() => {
+    var ssb = createSSB(name, { keys, temp: false })
 
-      t.deepEqual(ary[0].value.content, content, 'reopen works fine')
-    })
-  )
+    pull(
+      ssb.createLogStream(),
+      pull.collect(function (err, ary) {
+        if (err) throw err
+
+        t.deepEqual(ary[0].value.content, content, 'reopen works fine')
+      })
+    )
+  })
 })
