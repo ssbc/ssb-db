@@ -84,7 +84,7 @@ module.exports = function create (path, opts, keys) {
         if (err) return cb(err)
 
         if (!isPrivate) {
-          if (meta) cb(null, { key, value: data.value, timestamp: data.timestamp })
+          if (meta) cb(null, { key, value: u.originalValue(data.value), timestamp: data.timestamp })
           else cb(null, data.value)
         }
         else {
