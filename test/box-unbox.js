@@ -331,7 +331,16 @@ module.exports = function (opts) {
 
         t.true(initDone, 'unboxer completed initialisation before get')
         t.deepEqual(msg.value.content, content, 'auto unboxing works')
-        t.end()
+
+        // This tests the default behavior of `ssb.get()`, which should never
+        // decrypt messages by default.
+        ssb.get({ id: msg.key, meta: true }, (err, msg) => {
+          if (err) throw err
+
+          console.log(msg.value)
+          t.equal(typeof msg.value.content, 'string', 'unboxing is not done automatically by default')
+          t.end()
+        })
       })
     })
   })
