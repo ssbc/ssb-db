@@ -85,7 +85,7 @@ module.exports = function create (path, opts, keys) {
 
         if (!isPrivate) {
           if (meta) cb(null, { key, value: u.originalValue(data.value), timestamp: data.timestamp })
-          else cb(null, data.value)
+          else cb(null, u.originalValue(data.value))
         }
         else {
           const result = db._unbox(data, unbox)
