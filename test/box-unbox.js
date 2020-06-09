@@ -342,8 +342,12 @@ module.exports = function () {
           }
         }
 
-        const assertBoxedAsync = async (methodName, options) => 
+        const assertBoxedAsync = async (methodName, options) => {
           assertBoxed(methodName, await promisify(ssb[methodName])(options))
+          if (typeof options === 'object' && Array.isArray(options) === false) {
+            assertBoxed(methodName, await promisify(ssb[methodName])({ ...options, private: false } ))
+          }
+        }
 
         // This tests the default behavior of `ssb.get()`, which should never
         // decrypt messages by default. This is **very important**.
@@ -353,20 +357,37 @@ module.exports = function () {
         await assertBoxedAsync('getAtSequence', [msg.value.author, msg.value.sequence])
         await assertBoxedAsync('getLatest', msg.value.author)
 
-        const assertBoxedSource = (methodName, options) => new Promise((resolve) => {
+        const assertBoxedSourceOnce = (methodName, options) => new Promise((resolve) => {
           pull(
             ssb[methodName](options),
             pull.collect((err, val) => {
               t.error(err, `${methodName}() does not error`)
-              if (methodName === 'createRawLogStream')  {
-                assertBoxed(methodName, val[0].value)
-              } else {
-                assertBoxed(methodName, val[0])
+              switch (methodName) {
+                case 'createRawLogStream': 
+                  assertBoxed(methodName, val[0].value)
+                  break;
+                case 'createFeedStream':
+                case 'createUserStream':
+                case 'messagesByType':
+                  // Apparently some methods take `{ private: false }` to mean
+                  // "don't return any private messages". :/
+                  if (options.private === undefined) {
+                    assertBoxed(methodName, val[0].value)
+                  }
+                  break
+                default:
+                  assertBoxed(methodName, val[0])
               }
               resolve()
             })
           )
         })
+
+        // Test the default **and** `{ private: false }`.
+        const assertBoxedSource = async (methodName, options) => {
+          await assertBoxedSourceOnce(methodName, options)
+          await assertBoxedSourceOnce(methodName, { ...options, private: false })
+        }
 
         await assertBoxedSource('createLogStream', { limit: 1, reverse: true })
         await assertBoxedSource('createHistoryStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
