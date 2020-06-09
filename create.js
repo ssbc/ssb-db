@@ -133,7 +133,12 @@ module.exports = function create (path, opts, keys) {
   }
 
   db.createRawLogStream = function (opts) {
-    return db.stream(opts)
+    return pull(
+      db.stream(opts),
+      pull.map(({ seq, value }) => {
+        return { seq, value: u.originalData(value)}
+      })
+    )
   }
 
   // pull in the features that are needed to pass the tests
