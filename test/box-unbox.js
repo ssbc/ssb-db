@@ -334,8 +334,12 @@ module.exports = function () {
         t.deepEqual(msg.value.content, content, 'auto unboxing works')
 
         const assertBoxed = (methodName, message) => {
-          t.equal(message.key, msg.key, `${methodName}() returned correct message`)
-          t.equal(typeof message.value.content, 'string', `${methodName}() does not unbox by default`)
+          if (typeof message.key === 'string') {
+            t.equal(message.key, msg.key, `${methodName}() returned correct message`)
+            t.equal(typeof message.value.content, 'string', `${methodName}() does not unbox by default`)
+          } else {
+            t.equal(typeof message.content, 'string', `${methodName}() does not unbox by default`)
+          }
         }
 
         const assertBoxedAsync = async (methodName, options) => 
@@ -343,6 +347,8 @@ module.exports = function () {
 
         // This tests the default behavior of `ssb.get()`, which should never
         // decrypt messages by default. This is **very important**.
+        await assertBoxedAsync('get', msg.key)
+        await assertBoxedAsync('get', { id: msg.key })
         await assertBoxedAsync('get', { id: msg.key, meta: true })
         await assertBoxedAsync('getAtSequence', [msg.value.author, msg.value.sequence])
         await assertBoxedAsync('getLatest', msg.value.author)
