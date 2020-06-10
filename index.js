@@ -35,7 +35,7 @@ var manifest = {
   status: 'sync',
   getVectorClock: 'async',
   version: 'sync',
-  help: 'sync',
+  help: 'sync'
 }
 
 module.exports = {
