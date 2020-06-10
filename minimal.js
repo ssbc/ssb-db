@@ -9,7 +9,7 @@ var Obv = require('obv')
 var u = require('./util')
 var codec = require('./codec')
 var { box, unbox } = require('./autobox')
-const fs = require('fs')
+const mkdirp = require('mkdirp')
 
 module.exports = function (dirname, keys, opts) {
   var caps = opts && opts.caps || {}
@@ -18,7 +18,7 @@ module.exports = function (dirname, keys, opts) {
   var boxers = []
   var unboxers = []
 
-  fs.mkdirSync(dirname, { recursive: true })
+  mkdirp.sync(dirname)
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
   const unboxerMap = wait((msg, cb) => {
