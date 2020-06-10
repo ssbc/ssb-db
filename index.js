@@ -1,7 +1,7 @@
 var create     = require('./create')
 var ssbKeys    = require('ssb-keys')
 var path       = require('path')
-var osenv      = require('osenv')
+var os         = require('os')
 var mkdirp     = require('mkdirp')
 var rimraf     = require('rimraf')
 var valid      = require('./lib/validators')
@@ -51,7 +51,7 @@ module.exports = {
     // (useful for testing)
     if(opts.temp) {
       var name = isString(opts.temp) ? opts.temp : ''+Date.now()
-      opts.path = path.join(osenv.tmpdir(), name)
+      opts.path = path.join(os.tmpdir(), name)
       rimraf.sync(opts.path)
     }
 
