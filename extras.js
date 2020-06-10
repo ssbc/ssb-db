@@ -6,7 +6,7 @@ var Format = u.Format
 
 module.exports = function (db, config, keys) {
   db
-    .use('time', ViewLevel(2, function (data) {
+    .use('time', ViewLevel(3, function (data) {
       return [data.timestamp]
     }))
     .use('feed', require('./indexes/feed')())

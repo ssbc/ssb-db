@@ -7,7 +7,7 @@ var u = require('../util')
 var ViewLevel = require('flumeview-level')
 
 module.exports = function (db, opts) {
-  var createIndex = ViewLevel(2, function (data) {
+  var createIndex = ViewLevel(3, function (data) {
     return [[data.value.author, data.value.sequence]]
   })
 

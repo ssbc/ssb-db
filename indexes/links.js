@@ -30,7 +30,7 @@ module.exports = function () {
     return a
   }
 
-  var createIndex = ViewLevel(2, function (data) {
+  var createIndex = ViewLevel(3, function (data) {
     return indexMsg(data.timestamp, data.key, data.value)
   })
 

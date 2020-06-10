@@ -2,7 +2,7 @@ var FlumeviewLevel = require('flumeview-level')
 
 module.exports = function db (dir, keys, opts) {
   const db = require('./minimal')(dir, keys, opts)
-    .use('keys', FlumeviewLevel(3, (msg) => [ msg.key ]))
+    .use('keys', FlumeviewLevel(4, (msg) => [ msg.key ]))
     .use('clock', require('./indexes/clock')())
 
   db.progress = {}

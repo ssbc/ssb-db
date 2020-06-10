@@ -15,7 +15,7 @@ function resolveTimestamp (msg) {
 }
 
 module.exports = function (db) {
-  var createIndex = ViewLevel(3, function (data) {
+  var createIndex = ViewLevel(4, function (data) {
     return [[resolveTimestamp(data), data.value.author]]
   })
 
