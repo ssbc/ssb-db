@@ -75,6 +75,7 @@ module.exports = function () {
           t.deepEqual(pmsg.value.content, original, 'did not mutate original message')
 
           const rawMsg = originalValue(pmsg.value) // puts all the ciphertext back in place, strips meta
+
           ssb2.add(rawMsg, function (err) {
             if (err) throw err
 

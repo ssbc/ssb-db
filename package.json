@@ -13,6 +13,7 @@
     "flumelog-offset": "^3.4.2",
     "flumeview-level": "^4.0.3",
     "flumeview-reduce": "^1.3.17",
+    "hashlru": "^2.3.0",
     "ltgt": "^2.2.0",
     "mkdirp": "^0.5.1",
     "monotonic-timestamp": "~0.0.8",
