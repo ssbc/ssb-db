@@ -136,7 +136,7 @@ module.exports = function create (path, opts, keys) {
     return pull(
       db.stream(opts),
       pull.map(({ seq, value }) => {
-        return { seq, value: u.originalData(value)}
+        return { seq, value: u.originalData(value) }
       })
     )
   }
@@ -144,6 +144,14 @@ module.exports = function create (path, opts, keys) {
   // pull in the features that are needed to pass the tests
   // and that sbot, etc uses but are slow.
   extras(db, opts, keys)
+  // - adds indexes: links, feed, time
+  // - adds methods:
+  //   - db.createLogStream
+  //   - db.createFeedStream
+  //   - db.creareUserStream
+  //   - db.latest
+  //   - db.latestSequence
+  //   - db.getLatest
 
   // writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {

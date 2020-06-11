@@ -10,6 +10,8 @@ module.exports = function () {
     }
     const api = init(_api, opts)
 
+    Object.keys(api).forEach(m => console.log(m))
+
     Object.keys(manifest).forEach(method => {
       t.equal(typeof api[method], 'function', `api.${method}`)
     })

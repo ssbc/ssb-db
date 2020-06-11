@@ -39,8 +39,8 @@ module.exports = function () {
     darleneFeed.add(
       { type: "error", recps: [alice, darlene] },
       (err, msg) => {
-	t.ok(err);
-	t.notOk(msg);
+        t.ok(err);
+        t.notOk(msg);
         t.end()
       })
   })
@@ -165,7 +165,7 @@ module.exports = function () {
           )
 
           listener()
-          t.true(typeof postObserved.value.content === 'string', 'post obs messages should not be decrypted')
+          t.true(typeof postObserved.value.content === 'string', 'db.post obs messages should not be decrypted')
 
           t.end()
         })
@@ -363,7 +363,7 @@ module.exports = function () {
             pull.collect((err, val) => {
               t.error(err, `${methodName}() does not error`)
               switch (methodName) {
-                case 'createRawLogStream': 
+                case 'createRawLogStream':
                   assertBoxed(methodName, val[0].value)
                   break;
                 case 'createFeedStream':
@@ -396,6 +396,7 @@ module.exports = function () {
         await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
         await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true})
         await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true})
+        // createRawLogStream currently not exported as a method
 
         t.end()
 
