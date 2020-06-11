@@ -84,8 +84,8 @@ module.exports = function create (path, opts, keys) {
         if (err) return cb(err)
 
         if (!isPrivate) {
-          if (meta) cb(null, { key, value: data.value, timestamp: data.timestamp })
-          else cb(null, data.value)
+          if (meta) cb(null, { key, value: u.originalValue(data.value), timestamp: data.timestamp })
+          else cb(null, u.originalValue(data.value))
         }
         else {
           const result = db._unbox(data, unbox)
@@ -133,12 +133,25 @@ module.exports = function create (path, opts, keys) {
   }
 
   db.createRawLogStream = function (opts) {
-    return db.stream(opts)
+    return pull(
+      db.stream(opts),
+      pull.map(({ seq, value }) => {
+        return { seq, value: u.originalData(value) }
+      })
+    )
   }
 
   // pull in the features that are needed to pass the tests
   // and that sbot, etc uses but are slow.
   extras(db, opts, keys)
+  // - adds indexes: links, feed, time
+  // - adds methods:
+  //   - db.createLogStream
+  //   - db.createFeedStream
+  //   - db.creareUserStream
+  //   - db.latest
+  //   - db.latestSequence
+  //   - db.getLatest
 
   // writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {
