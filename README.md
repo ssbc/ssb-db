@@ -278,10 +278,12 @@ you may receive a old message in real time - but for old messages, it makes sens
 
 all standard options are supported.
 
-### db.createUserStream ({id: feed_id, lt,lte,gt,gte: sequence, reverse,old,live,raw: boolean, limit: number})
+### db.createUserStream ({id: feed_id, lt,lte,gt,gte: sequence, reverse,old,live,raw: boolean, limit: number, private: boolean})
 
-`createUserStream` is like `createHistoryStream`, except all options are supported. Local access is allowed, but not
-remote anonymous access. `createUserStream` does decrypt private messages.
+`createUserStream` is like `createHistoryStream`, except all options are
+supported. Local access is allowed, but not remote anonymous access.
+`createUserStream` can decrypt private messages if you pass the option
+`{ private: true }`.
 
 ### db.links({source: feedId?, dest: feedId|msgId|blobId?, rel: string?, meta: true?, keys: true?, values: false?, live:false?, reverse: false?}) -> PullSource
 
