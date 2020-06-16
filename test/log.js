@@ -4,11 +4,12 @@ var pull = require('pull-stream')
 var timestamp = require('monotonic-timestamp')
 var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
-var createSSB = require('./create-ssb')
+
+var createSSB = require('./util/create-ssb')
 
 var generate = ssbKeys.generate
 
-module.exports = function (opts) {
+function run (opts = {}) {
   tape('simple', function (t) {
     var ssb = createSSB('test-ssb-log1')
 
@@ -198,4 +199,5 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+run()
+

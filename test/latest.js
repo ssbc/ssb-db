@@ -3,7 +3,7 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 var cont = require('cont')
-var createSSB = require('./create-ssb')
+var createSSB = require('./util/create-ssb')
 
 var db = createSSB('test-ssb-latest')
 

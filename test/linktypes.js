@@ -4,9 +4,9 @@ var pull = require('pull-stream')
 var cont = require('cont')
 var typewise = require('typewiselite')
 var ssbKeys = require('ssb-keys')
-
-var createSSB = require('./create-ssb')
 var createFeed = require('ssb-feed')
+
+var createSSB = require('./util/create-ssb')
 
 function sort (a) {
   return a.sort(function (a, b) {
@@ -19,8 +19,8 @@ function sort (a) {
   })
 }
 
-module.exports = function (opts) {
-  var ssb = createSSB('test-ssb-links')
+function run (opts = {}) {
+  var ssb = createSSB('test-ssb-linktypes')
 
   var all = function (stream) {
     return function (cb) {
@@ -251,4 +251,5 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+run()
+

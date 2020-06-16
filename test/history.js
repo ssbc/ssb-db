@@ -1,14 +1,12 @@
 'use strict'
 
-var pull = require('pull-stream')
 var tape = require('tape')
-
+var pull = require('pull-stream')
 var Abortable = require('pull-abortable')
-
-var createSSB = require('./create-ssb')
-
 var compare = require('ltgt').compare
 var generate = require('ssb-keys').generate
+
+var createSSB = require('./util/create-ssb')
 
 // create a instance with a feed
 // then have another instance follow it.
@@ -25,7 +23,7 @@ function sort (ary) {
   })
 }
 
-module.exports = function (opts) {
+function run (opts) {
   var create = require('ssb-feed/util').create
 
   function init (ssb, n, cb) {
@@ -193,4 +191,5 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+run()
+

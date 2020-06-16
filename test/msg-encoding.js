@@ -5,12 +5,12 @@ var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
 var hexpp = require('hexpp')
 var codec = require('../codec')
-var createSSB = require('./create-ssb')
+var createSSB = require('./util/create-ssb')
 
 var generate = ssbKeys.generate
 var hash = ssbKeys.hash
 
-module.exports = function (opts) {
+function run (opts = {}) {
   var content = {
     'type': 'post',
     'is': 'text',
@@ -81,4 +81,4 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+run()

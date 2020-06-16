@@ -4,11 +4,12 @@ const mkdirp = require("mkdirp");
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
-const create = require('../create');
+
+const create = require('../../create');
 
 const randomName = () => crypto.randomBytes(16).toString("hex");
 
-module.exports = function createSSB(name = randomName(), opts = {}) {
+module.exports = function createSSB (name = randomName(), opts = {}) {
   const dir = path.join(os.tmpdir(), name);
 
   if (opts.temp !== false) {

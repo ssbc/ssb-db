@@ -1,20 +1,20 @@
 var V = require('ssb-validate')
 var tape = require('tape')
 var ssbKeys = require('ssb-keys')
-var keys = ssbKeys.generate()
-
 var pull = require('pull-stream')
 var explain = require('explain-error')
 var timestamp = require('monotonic-timestamp')
 
+var minimal = require('../minimal')
+
+var keys = ssbKeys.generate()
 var dirname = '/tmp/test_ssb_append' + Date.now()
 
 var K = [keys]
-
 for (var i = 0; i < 100; i++) K.push(ssbKeys.generate())
 
 var a
-var db = a = require('../minimal')(dirname)
+var db = a = minimal(dirname)
 db.ready.set(true)
 var MSG
 tape('setup', function (t) {
