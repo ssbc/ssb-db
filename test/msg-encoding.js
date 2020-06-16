@@ -74,7 +74,7 @@ function run (opts = {}) {
           if (err) throw err
           t.equal(ary.length, 1)
           console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })

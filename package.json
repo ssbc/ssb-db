@@ -40,6 +40,7 @@
     "explain-error": "^1.0.4",
     "hexpp": "^2.0.0",
     "pull-abortable": "^4.1.1",
+    "secret-stack": "^6.3.1",
     "ssb-feed": "^2.2.1",
     "ssb-private1": "^1.0.1",
     "tap-spec": "^5.0.0",

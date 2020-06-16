@@ -49,7 +49,7 @@ tape('latest', function (t) {
         })
         t.deepEqual(n.sort(), [alice.id, bob.id, carol.id].sort())
         console.log(ary)
-        t.end()
+        db.close(t.end)
       })
     )
   })

@@ -10,21 +10,22 @@ var content = { type: 'whatever' }
 const name = `test-ssb-close-${Date.now()}`
 
 tape('load', function (t) {
-  t.plan(1)
+  t.plan(2)
   var ssb = createSSB(name, { keys, temp: false })
 
-  ssb.createFeed().add(content, function (err, msg) {
+  ssb.publish(content, function (err, msg) {
     if (err) throw err
     // console.log(msg)
 
-    ssb.close(function () {
+    ssb.close(function (err) {
+      t.error(err)
       t.ok(true, 'closes + runs callback')
     })
   })
 })
 
 tape('reopen', function (t) {
-  t.plan(1)
+  t.plan(2)
 
   // HACK: See readme section on 'known bugs'.
   setTimeout(() => {
@@ -36,6 +37,10 @@ tape('reopen', function (t) {
         if (err) throw err
 
         t.deepEqual(ary[0].value.content, content, 'reopen works fine')
+        ssb.close((err) => {
+          t.error(err)
+          t.end()
+        })
       })
     )
   }, 100)

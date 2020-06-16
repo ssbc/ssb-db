@@ -21,6 +21,7 @@ var manifest = {
   createFeedStream: 'source',
   createHistoryStream: 'source',
   createLogStream: 'source',
+  createRawLogStream: 'source',
   createSequenceStream: 'source',
   createUserStream: 'source',
   createWriteStream: 'sink',
@@ -78,7 +79,6 @@ module.exports = {
         // override to close the SSB database
         ssb.close(function (err) {
           if (err) return cb(err)
-          console.log("fallback to close")
           _close(cb) //multiserver doesn't take a callback on close.
         })
       })
@@ -151,6 +151,7 @@ module.exports = {
       createFeedStream         : valid.source(ssb.createFeedStream, 'readStreamOpts?'),
       createHistoryStream      : valid.source(ssb.createHistoryStream, ['createHistoryStreamOpts'], ['feedId', 'number?', 'boolean?']),
       createLogStream          : valid.source(ssb.createLogStream, 'readStreamOpts?'),
+      createRawLogStream       : valid.source(ssb.createRawLogStream, 'readStreamOpts?'),
       createUserStream         : valid.source(ssb.createUserStream, 'createUserStreamOpts'),
       createSequenceStream     : () => {
         // If the initial value is `undefined` we want it to be `-1`.

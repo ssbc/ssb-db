@@ -158,7 +158,7 @@ function run (opts = {}) {
                     }
                   }, function () {
                     if (state.queue.length > 0) { t.pass('validate passes') }
-                    t.end()
+                    ssb.close(t.end)
                   })
                 )
               }

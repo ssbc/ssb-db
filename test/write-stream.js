@@ -31,7 +31,7 @@ function run (opts = {}) {
         }, ~~(Math.random() * 500))
       }),
       ssb.createWriteStream(function (err) {
-        if (err) throw err
+        t.error(err)
         t.end()
       })
     )
@@ -63,7 +63,7 @@ function run (opts = {}) {
       }),
       ssb.createWriteStream(function (err) {
         if (err) throw err
-        t.end()
+        ssb.close(t.end)
       })
     )
   })

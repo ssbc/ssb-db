@@ -67,7 +67,7 @@ function run (opts = {}) {
 
                 t.equal(ary.length, 1)
                 t.equal(typeof ary[0], 'string')
-                t.end()
+                dbA.close(t.end)
               })
             })
           })

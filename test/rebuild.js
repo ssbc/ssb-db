@@ -18,7 +18,7 @@ tape("basic rebuild", async (t) => {
 
   await promisify(db.rebuild)();
 
-  t.end();
+  db.close(t.end)
 });
 
 tape("new unboxer rebuild", async (t) => {
@@ -26,8 +26,8 @@ tape("new unboxer rebuild", async (t) => {
   const feed = db.createFeed();
   const myId = feed.keys.id;
 
-  db.use('latestByBoxStatus', FlumeviewLevel(1, (msg) => {
-    console.log('GOT MSG')
+  const latestByBoxStatus = db._flumeUse('latestByBoxStatus', FlumeviewLevel(1, (msg) => {
+    console.log('GOT MSG', msg)
     if (typeof msg.value.content === 'string') {
       return ['boxed']
     } else {
@@ -48,10 +48,10 @@ tape("new unboxer rebuild", async (t) => {
 
   await promisify(feed.add)(content);
 
-  const boxed = await promisify(db.latestByBoxStatus.get)('boxed')
+  const boxed = await promisify(latestByBoxStatus.get)('boxed')
   t.ok(boxed, "indexes can't see the unboxed message, it remains boxed")
 
-  const msgBefore = await promisify(db.get)(0);
+  const msgBefore = await promisify(db.get)({ id: boxed.key, meta: true, private: true });
 
   t.equal(
     typeof msgBefore.value.content,
@@ -80,8 +80,10 @@ tape("new unboxer rebuild", async (t) => {
 
   await promisify(db.rebuild)()
 
-  const msgAfter = await promisify(db.get)(0);
+  const msgAfter = await promisify(db.get)({ id: boxed.key, meta: true, private: true });
 
+  // NOTE: Flumeview-Level doesn't actually unbox the message, since it only
+  // runs `get(id)` under the hood.
   t.equal(
     typeof msgAfter.value.content,
     "object",
@@ -93,8 +95,8 @@ tape("new unboxer rebuild", async (t) => {
   // Test seems to be failing because FlumeDB rebuilds aren't actually
   // rebuilding anything. I could've sworn that I've seen a rebuild before, but
   // the view map doesn't see the message during the "rebuild". :/
-  const unboxed = await promisify(db.latestByBoxStatus.get)('unboxed')
+  const unboxed = await promisify(latestByBoxStatus.get)('unboxed')
   t.ok(unboxed, 'indexes see the unboxed message')
 
-  t.end();
+  db.close(t.end);
 });

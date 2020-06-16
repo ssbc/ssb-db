@@ -185,7 +185,7 @@ function run (opts) {
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 5)
-        t.end()
+        ssb.close(t.end)
       })
     )
   })

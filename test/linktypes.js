@@ -158,13 +158,12 @@ function run (opts = {}) {
         _alice: all(ssb.links({ dest: alice.id, source: '@' })),
         _carol: all(ssb.links({ dest: carol.id, source: 'feed' }))
       })(function (err, r) {
-        if (err) throw err
+        t.error(err)
 
         console.log({
           alice: alice.id,
           bob: bob.id,
           carol: carol.id
-
         })
 
         t.deepEqual(sort(r.alice), sort([
@@ -245,7 +244,7 @@ function run (opts = {}) {
           { type: 'follow', follow: bob.id },
           { type: 'poke', poke: bob.id }
         ])
-        t.end()
+        ssb.close(t.end)
       })
     })
   })

@@ -121,7 +121,7 @@ function run (opts) {
           dest: bob.id,
           rel: 'foo'
         })
-        t.end()
+        db.close(t.end)
       })
     )
 

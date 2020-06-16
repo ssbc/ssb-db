@@ -2,15 +2,13 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
-var createFeed = require('ssb-feed')
 var createSSB = require('./util/create-ssb')
 
 function run (opts) {
   tape('simple', function (t) {
     var ssb = createSSB('test-ssb-feed')
-    var feed = ssb.createFeed(ssbKeys.generate())
 
-    feed.add({ type: 'msg', value: 'hello there!' }, function (err, msg) {
+    ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
       if (err) throw err
       t.assert(!!msg)
       t.assert(!!msg.key)
@@ -23,7 +21,7 @@ function run (opts) {
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
           console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })
@@ -32,16 +30,15 @@ function run (opts) {
   tape('tail', function (t) {
     var ssb = createSSB('test-ssb-feed2')
 
-    var feed = createFeed(ssb, ssbKeys.generate(), opts)
-
     console.log('add 1'); console.log('add 2')
     var nDrains = 0
     var nAdds = 2
-    feed.add({ type: 'msg', value: 'hello there!' }, function (err, msg1) {
+    ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg1) {
       if (err) throw err
       var lasthash = msg1.key
       function addAgain () {
-        feed.add({ type: 'msg', value: 'message ' + nDrains }, function (err, msgX) {
+        console.log('adding again')
+        ssb.publish({ type: 'msg', value: 'message ' + nDrains }, function (err, msgX) {
           if (err) throw err
           t.equal(msgX.value.previous, lasthash)
           console.log(msgX.value.previous, lasthash)
@@ -62,9 +59,8 @@ function run (opts) {
           nDrains++
           console.log('drain', nDrains)
           if (nDrains === 5) {
-            t.assert(true)
-            t.end()
             clearInterval(int)
+            ssb.close(t.end)
           }
         })
       )
@@ -75,19 +71,17 @@ function run (opts) {
   tape('tail, parallel add', function (t) {
     var ssb = createSSB('test-ssb-feed3')
 
-    var feed = createFeed(ssb, ssbKeys.generate(), opts)
-
     console.log('add 1'); console.log('add 2')
     var nDrains = 0
     var nAdds = 2
     var l = 7
-    feed.add({ type: 'msg', value: 'hello there!' }, function (err, msg1) {
+    ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg1) {
       if (err) throw err
 
       var lasthash = msg1.key
       function addAgain () {
         console.log('ADD')
-        feed.add({ type: 'msg', value: 'message ' + nDrains }, function (err, msgX) {
+        ssb.publish({ type: 'msg', value: 'message ' + nDrains }, function (err, msgX) {
           t.equal(msgX.value.previous, lasthash)
           console.log(msgX.value.previous, lasthash)
           lasthash = msgX.key
@@ -109,29 +103,30 @@ function run (opts) {
           console.log('drain', nDrains)
           if (nDrains === 5) {
             t.assert(true)
-            t.end()
+            ssb.close(t.end)
           }
         })
       )
       addAgain()
     })
   })
-
   tape('keys only', function (t) {
-    var ssb = createSSB('test-ssb-feed4')
-    var feed = createFeed(ssb, ssbKeys.generate(), opts)
+    const ssb = createSSB('test-ssb-feed4')
+    console.log({ ssb, opts})
 
-    feed.add({ type: 'msg', value: 'hello there!' }, function (err, msg) {
-      if (err) throw err
-      t.assert(!!msg)
+    console.log('about to add')
+    ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
+      console.log('done')
+      t.error(err)
+      t.ok(msg)
       pull(
         ssb.createFeedStream({ values: false }),
         pull.collect(function (err, ary) {
-          if (err) throw err
+          t.error(err)
           t.equal(ary.length, 1)
           t.ok(typeof ary[0] === 'string')
           console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })
@@ -140,9 +135,7 @@ function run (opts) {
   tape('values only', function (t) {
     var ssb = createSSB('test-ssb-feed5')
 
-    var feed = createFeed(ssb, ssbKeys.generate(), opts)
-
-    feed.add({ type: 'msg', value: 'hello there!' }, function (err, msg) {
+    ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
       if (err) throw err
       t.assert(!!msg)
       pull(
@@ -152,7 +145,7 @@ function run (opts) {
           t.equal(ary.length, 1)
           t.ok(typeof ary[0].content.type === 'string')
           console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })
