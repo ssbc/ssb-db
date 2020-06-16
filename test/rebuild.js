@@ -1,9 +1,8 @@
 const tape = require("tape");
-const createSsb = require("./create-ssb");
 const FlumeviewLevel = require('flumeview-level')
-
-
 const { promisify } = require("util");
+
+const createSsb = require("./util/create-ssb");
 
 tape("basic rebuild", async (t) => {
   const db = createSsb();

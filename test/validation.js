@@ -5,9 +5,10 @@ var explain = require('explain-error')
 var generate = require('ssb-keys').generate
 var hash = require('ssb-keys').hash
 var v = require('ssb-validate')
-var createSSB = require('./create-ssb')
 
-module.exports = function (opts) {
+var createSSB = require('./util/create-ssb')
+
+function run (opts = {}) {
   var create = require('ssb-feed/util').create
   var ssb = createSSB('test-ssb-validate')
 
@@ -169,4 +170,5 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports(require('../')) }
+run()
+

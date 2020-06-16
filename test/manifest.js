@@ -2,7 +2,7 @@
 var tape = require('tape')
 var { manifest, init } = require('../')
 
-module.exports = function () {
+function run () {
   tape('manifest', t => {
     const _api = {}
     const opts = {
@@ -20,4 +20,4 @@ module.exports = function () {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+run()

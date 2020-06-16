@@ -5,10 +5,10 @@ var ssbKeys = require('ssb-keys')
 var box1 = require('ssb-private1/box1')
 const { promisify } = require('util')
 
-var createSSB = require('./create-ssb')
 var { originalValue } = require('../util')
+var createSSB = require('./util/create-ssb')
 
-module.exports = function () {
+function run () {
   var alice = ssbKeys.generate()
   var bob = ssbKeys.generate()
   var charles = ssbKeys.generate()
@@ -399,10 +399,9 @@ module.exports = function () {
         // createRawLogStream currently not exported as a method
 
         t.end()
-
       })
     })
   })
 }
 
-if (!module.parent) { module.exports({}) }
+run()
