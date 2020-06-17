@@ -12,7 +12,7 @@ var { box, unbox } = require('./autobox')
 const mkdirp = require('mkdirp')
 
 module.exports = function (dirname, keys, opts) {
-  var caps = opts && opts.caps || {}
+  var caps = (opts && opts.caps) || {}
   var hmacKey = caps.sign
 
   var boxers = []
@@ -22,6 +22,7 @@ module.exports = function (dirname, keys, opts) {
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
   const unboxerMap = wait((msg, cb) => {
+    console.log('unboxerMap!')
     try {
       cb(null, unbox(msg, null, unboxers))
     } catch (err) {
@@ -51,6 +52,8 @@ module.exports = function (dirname, keys, opts) {
   // false says the database is not ready yet!
   var db = Flume(log, true, chainMaps)
     .use('last', require('./indexes/last')())
+  // TODO flume may be starting streams before all the chainMap details are ready / initialised
+  // we should come back and check that / get it to for sure wait
 
   var state = V.initial()
   var setup = new u.AsyncJobQueue()
@@ -170,6 +173,9 @@ module.exports = function (dirname, keys, opts) {
 
   /* initialise some state */
   setup.add(done => {
+    // TODO There's an impossible
+    // the unboxer doesn't start working till the indexing is finished
+    // but the unboxer is dependent on the indexing (for loading db.last)
     db.last.get((_, last) => {
       // copy to so we avoid weirdness, because this object
       // tracks the state coming in to the database.
