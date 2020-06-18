@@ -21,8 +21,26 @@ module.exports = function (dirname, keys, opts) {
   mkdirp.sync(dirname)
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
-  const unboxerMap = wait((msg, cb) => {
-    console.log('unboxerMap!')
+  var state = V.initial()
+  var flush = new u.AsyncJobQueue() // doesn't currenlty use async-done
+
+  var ready = {
+    unboxers: new u.AsyncJobQueue(),
+    validators: new u.AsyncJobQueue()
+  }
+
+  function waitForUnboxers (fn) {
+    return function (...args) {
+      ready.unboxers.runAll(() => fn(...args))
+    }
+  }
+  function waitForValidators (fn) {
+    return function (...args) {
+      ready.validators.runAll(() => fn(...args))
+    }
+  }
+
+  const unboxerMap = waitForUnboxers((msg, cb) => {
     try {
       cb(null, unbox(msg, null, unboxers))
     } catch (err) {
@@ -55,23 +73,6 @@ module.exports = function (dirname, keys, opts) {
   // TODO flume may be starting streams before all the chainMap details are ready / initialised
   // we should come back and check that / get it to for sure wait
 
-  var state = V.initial()
-  var setup = new u.AsyncJobQueue()
-  var waiting = new u.AsyncJobQueue()
-  var flush = new u.AsyncJobQueue() // doesn't currenlty use async-done
-
-  function wait (fn) {
-    return function (value, cb) {
-      if (setup.isEmpty()) fn(value, cb)
-      else {
-        waiting.add(() => fn(value, cb))
-        setup.runAll(() => {
-          waiting.runAll()
-        })
-      }
-    }
-  }
-
   var append = db.rawAppend = db.append
   db.post = Obv()
   var queue = AsyncWrite(function (_, cb) {
@@ -97,7 +98,7 @@ module.exports = function (dirname, keys, opts) {
     }
   }
 
-  db.queue = wait(function dbQueue (msg, cb) {
+  db.queue = waitForValidators(function dbQueue (msg, cb) {
     queue(msg, function (err) {
       var data = state.queue[state.queue.length - 1]
       if (err) cb(err)
@@ -105,7 +106,7 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
-  db.append = wait(function dbAppend (opts, cb) {
+  db.append = waitForUnboxers(waitForValidators(function dbAppend (opts, cb) {
     try {
       const content = box(opts.content, boxers)
       var msg = V.create(
@@ -124,7 +125,7 @@ module.exports = function (dirname, keys, opts) {
       var data = state.queue[state.queue.length - 1]
       flush.add(() => cb(null, data))
     })
-  })
+  }))
 
   db.buffer = function buffer () {
     return queue.buffer
@@ -156,8 +157,8 @@ module.exports = function (dirname, keys, opts) {
         if (unboxer.init && typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
 
         if (unboxer.init) {
-          setup.add(unboxer.init)
-          setup.runAll()
+          ready.unboxers.add(unboxer.init)
+          ready.unboxers.runAll()
         }
         unboxers.push(unboxer)
 
@@ -172,7 +173,7 @@ module.exports = function (dirname, keys, opts) {
   }
 
   /* initialise some state */
-  setup.add(done => {
+  ready.validators.add(done => {
     // TODO There's an impossible
     // the unboxer doesn't start working till the indexing is finished
     // but the unboxer is dependent on the indexing (for loading db.last)
@@ -190,7 +191,7 @@ module.exports = function (dirname, keys, opts) {
       done()
     })
   })
-  setup.runAll()
+  ready.validators.runAll()
 
   return db
 }
