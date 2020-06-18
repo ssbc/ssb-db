@@ -27,19 +27,18 @@ module.exports = function (dirname, keys, opts) {
   // NOTE unbox.withCache needs to be instantiated *inside* this scope
   // otherwise the cache is shared across instances!
 
-  var ready = {
-    unboxers: new u.AsyncJobQueue(),
-    validators: new u.AsyncJobQueue()
-  }
-
-  function waitForUnboxers (fn) {
-    return function (...args) {
-      ready.unboxers.runAll(() => fn(...args))
-    }
+  var setup = {
+    validators: new u.AsyncJobQueue(),
+    unboxers: new u.AsyncJobQueue()
   }
   function waitForValidators (fn) {
     return function (...args) {
-      ready.validators.runAll(() => fn(...args))
+      setup.validators.runAll(() => fn(...args))
+    }
+  }
+  function waitForUnboxers (fn) {
+    return function (...args) {
+      setup.unboxers.runAll(() => fn(...args))
     }
   }
 
@@ -160,8 +159,8 @@ module.exports = function (dirname, keys, opts) {
         if (unboxer.init && typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
 
         if (unboxer.init) {
-          ready.unboxers.add(unboxer.init)
-          ready.unboxers.runAll()
+          setup.unboxers.add(unboxer.init)
+          setup.unboxers.runAll()
         }
         unboxers.push(unboxer)
 
@@ -182,7 +181,7 @@ module.exports = function (dirname, keys, opts) {
   }
 
   /* initialise some state */
-  ready.validators.add(done => {
+  setup.validators.add(done => {
     // TODO There's an impossible
     // the unboxer doesn't start working till the indexing is finished
     // but the unboxer is dependent on the indexing (for loading db.last)
@@ -200,7 +199,7 @@ module.exports = function (dirname, keys, opts) {
       done()
     })
   })
-  ready.validators.runAll()
+  setup.validators.runAll()
 
   return db
 }
