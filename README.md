@@ -363,7 +363,6 @@ live, old)
 db.createFeedStream({ live, old, gt, gte, lt, lte, reverse, keys, value,, limit, fillCache, keyEncoding, 
 valueEncoding, raw }))
 ```
-
 Like `createLogStream`, but messages are in order of the claimed time, instead of the received time.
 
 This may sound like a much better idea, but has surprising effects with live messages (you may receive a old 
@@ -378,12 +377,13 @@ live, old)
 
 ## db.createUserStream: source
 ```js
-db.createUserStream({ id, seq, live, old, gt, gte, lt, lte, reverse, keys, values, limit, fillCache, keyEncoding, 
-valueEncoding })
+db.createUserStream({id: feed_id, lt, lte ,gt ,gte: sequence, reverse, old, live, raw: boolean, limit: number, private: boolean})
 ```
 
-`createUserStream` is like `createHistoryStream`, except all options are supported. Local access is allowed, but
- not remote anonymous access. `createUserStream` does decrypt private messages.
+`createUserStream` is like `createHistoryStream`, except all options are
+supported. Local access is allowed, but not remote anonymous access.
+`createUserStream` can decrypt private messages if you pass the option
+`{ private: true }`.
 
 ## db.links: source
 ```js
@@ -593,28 +593,44 @@ db.since(fn(seq)) => Obv
 An [observable](https://github.com/dominictarr/obv) of the current log sequence. This is always a positive 
 integer that usually increases, except in the exceptional circumstance that the log is deleted or corrupted.
 
-### `db.addBoxer(box)`
+### db.addBoxer(boxer)
 
-Add a box, which will be added to the list of boxers which will try to
+Add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
-`box` is a function of signature `box(content, recps) => (String|null)`
-which is expected to either box the the message content and return a ciphertext String, or return null if it unable to.
+`boxer` is a function of signature `boxer(msg.value.content) => ciphertext` which is expected to:
+- successfully box the content (based on `content.recps`), returning a `ciphertext` String
+- not know how to box this content (because recps are outside it's understanding), and `undefined` (or `null`)
+- break (because it should know how to handle `recps`, but can't), and so throw an `Error`
 
-### `db.addUnboxer({key: unboxKey, value: unboxValue})`
+## db.addUnboxer: sync
+```js
+db.addUnboxer({ key: unboxKey, value: unboxValue, init: initBoxer })
+```
+Add an unboxer object, any encrypted message is passed to the unboxer object to
+test if it can be unboxed (decrypted)
 
-Add an unboxer object, any encrypted message is passed to the unboxer object to test if it can be unboxed (decrypted) where
-- `unboxKey(ciphertext) => msgKey` is a function which tries to extract the message key from the encrypted content (`ciphertext`)
-- `unboxValue(ciphertext, msgKey) => plaintext` is a function which takes a message key and uses it to try to extract the message content from the `ciphertext`
+Where:
+- `unboxKey(msg.value.content, msg.value) => readKey`
+    - Is a function which tries to extract the message key from the encrypted content (`ciphertext`).
+    - Is expected to return `readKey` which is the read capability for the message
+    - `unboxValue(msg.value.content, msg.value, readKey) => plainContent`
+    - Is a function which takes a `readKey` and uses it to try to extract the `plainContent` from the `ciphertext- `initBoxer(done)`
+    - Is an optional initialisation function (useful for asynchronously setting up state for unboxer)
+    - It's pased a `done` callback which you need to call once everything is ready to go
 
 NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
+
+## db.box(content, recps, cb)
+
+attempt to encrypt some `content` to `recps` (an Array of keys/ identifiers).
+callback has signature `cb(err, ciphertext)`
 
 ## db.unbox: sync
 ```js
 db.unbox(data, key)
 ```
-
 Attempt to decrypt data using key. Key is a symmetric key, that is passed to the unboxer objects.
 
 ## db.Deprecated apis
@@ -646,7 +662,6 @@ time.
 ```js
 db.createWriteStream() => PullSink`
 ```
-
 Create a pull-stream sink that expects a stream of messages and calls `db.add` on each item, appending every 
 valid message to the log.
 
@@ -655,6 +670,16 @@ valid message to the log.
 db.createFeed(keys?)
 ```
 
+## db.createSequenceStream() => PullSource
+
+Create a pull-stream source that provides the latest sequence number from the
+database. Each time a message is appended the sequence number should increase
+and a new event should be sent through the stream.
+
+Note: In the future this stream may be debounced. The number of events passed
+through this stream may be less than the number of messages appended.
+
+## db.createFeed(keys?) => Feed (deprecated)
 __Use [ssb-identities](http://github.com/ssbc/ssb-identities) instead.__
 
 Create and return a Feed object. A feed is a chain of messages signed by a single key (the identity of the feed).
@@ -688,6 +713,18 @@ The key pair for this feed.
 ## Stability
 
 __Stable__ Expect patches, possible features additions.
+
+
+## Known Bugs
+
+### Closing & starting the db quickly
+
+- problem: if you start a server, close it, and then _immediately_ open it again, ssb-db doesn't work right
+- solution: put the second open in a `setImmediate` or `setTimeout` (see `test/close.js` for example)
+
+This bug was added `20.0.0` by Mix adding support for private groups. Christian and Mix spent hours
+following the traces into flumedb, and have been unable to determine why this is happening.
+We decided to proceed like this by balancing the benefits afforded by the change made with the costs.
 
 ## License
 

@@ -83,19 +83,16 @@ module.exports = function create (path, opts, keys) {
       return db.keys.get(key, function (err, data) {
         if (err) return cb(err)
 
-        if (isPrivate && unbox) {
-          data = db.unbox(data, unbox)
+        if (!isPrivate) {
+          if (meta) cb(null, { key, value: u.originalValue(data.value), timestamp: data.timestamp })
+          else cb(null, u.originalValue(data.value))
         }
+        else {
+          const result = db._unbox(data, unbox)
 
-        let result
-
-        if (isPrivate) {
-          result = data.value
-        } else {
-          result = u.originalValue(data.value)
+          if (meta) cb(null, { key, value: result.value, timestamp: result.timestamp })
+          else cb(null, result.value)
         }
-
-        cb(null, !meta ? result : {key: data.key, value: result, timestamp: data.timestamp})
       })
     } else if (ref.isMsgLink(key)) {
       var link = ref.parseLink(key)
@@ -136,12 +133,25 @@ module.exports = function create (path, opts, keys) {
   }
 
   db.createRawLogStream = function (opts) {
-    return db.stream(opts)
+    return pull(
+      db.stream(opts),
+      pull.map(({ seq, value }) => {
+        return { seq, value: u.originalData(value) }
+      })
+    )
   }
 
   // pull in the features that are needed to pass the tests
   // and that sbot, etc uses but are slow.
   extras(db, opts, keys)
+  // - adds indexes: links, feed, time
+  // - adds methods:
+  //   - db.createLogStream
+  //   - db.createFeedStream
+  //   - db.creareUserStream
+  //   - db.latest
+  //   - db.latestSequence
+  //   - db.getLatest
 
   // writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {

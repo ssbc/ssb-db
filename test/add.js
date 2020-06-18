@@ -3,11 +3,11 @@ var tape = require('tape')
 var pull = require('pull-stream')
 var crypto = require('crypto')
 
-var createSSB = require('./util')
+var createSSB = require('./util/create-ssb')
 
-module.exports = function (opts) {
-  var ssb = createSSB('test-ssb-feed', {})
-  var ssb2 = createSSB('test-ssb-feed2', {})
+function run (opts) {
+  var ssb = createSSB('test-ssb-add', {})
+  var ssb2 = createSSB('test-ssb-add2', {})
 
   tape('add invalid message', function (t) {
     ssb.add({}, function (err) {
@@ -81,5 +81,4 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
-
+run()
