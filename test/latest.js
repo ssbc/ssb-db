@@ -23,8 +23,8 @@ tape('empty', function (t) {
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 0)
+        t.end()
       }))
-    t.end()
   })
 })
 

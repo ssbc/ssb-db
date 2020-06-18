@@ -163,11 +163,11 @@ function run (opts) {
         }
       }, function (_err) {
         t.equal(_err, err)
-        t.end()
       }),
       pull.collect(function (err, ary) {
         t.equal(err.message, errMsg)
         t.equal(ary.length, 8)
+        t.end()
       })
     )
   })

@@ -5,6 +5,7 @@ const { promisify } = require('util')
 const createSsb = require('./util/create-ssb')
 
 tape('basic rebuild', async (t) => {
+  t.plan(3)
   const db = createSsb()
 
   const content = {
@@ -16,12 +17,13 @@ tape('basic rebuild', async (t) => {
   t.equal(msg.value.content, content, 'message is added correctly')
 
   await promisify(db.rebuild)()
+  t.pass('rebuilt')
 
-  db.close(t.end)
+  await promisify(db.close)()
+  t.pass('closed')
 })
-
 tape('basic rebuild (with an unboxer that requires init)', async (t) => {
-  t.plan(2)
+  t.plan(3)
   const db = createSsb()
 
   const unboxer = {
@@ -54,12 +56,14 @@ tape('basic rebuild (with an unboxer that requires init)', async (t) => {
   await promisify(db.publish)(content)
 
   await promisify(db.rebuild)()
-
-  t.ok(true, 'rebuild finishes')
-  db.close(t.end)
+  t.pass('rebuilt')
+  
+  await promisify(db.close)()
+  t.pass('closed')
 })
 
 tape('new unboxer rebuild', async (t) => {
+  t.plan(7)
   const db = createSsb()
   const myId = db.id
 
@@ -115,6 +119,7 @@ tape('new unboxer rebuild', async (t) => {
   })
 
   await promisify(db.rebuild)()
+  t.pass('rebuilt')
 
   const msgAfter = await promisify(db.get)({ id: boxed.key, meta: true, private: true });
 
@@ -134,5 +139,7 @@ tape('new unboxer rebuild', async (t) => {
   const unboxed = await promisify(latestByBoxStatus.get)('unboxed')
   t.ok(unboxed, 'indexes see the unboxed message')
 
-  db.close(t.end);
+  await promisify(db.close)()
+  t.pass('closed')
+
 })
