@@ -53,9 +53,6 @@ tape('basic rebuild (with an unboxer that requires init)', async (t) => {
     text: 'hello'
   }
 
-
-  // BUG: weird obv bug
-  console.log('about to publish')
   await promisify(db.publish)(content)
 
   await promisify(db.rebuild)()
