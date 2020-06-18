@@ -19,8 +19,8 @@ function errorCB (err) {
 }
 
 module.exports = function create (path, opts, keys) {
-  //_ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
-  if(!path) throw new Error('path must be provided')
+  // _ was legacy db. removed that, but for backwards compatibilty reasons do not change interface
+  if (!path) throw new Error('path must be provided')
 
   keys = keys || ssbKeys.generate()
 
@@ -29,44 +29,21 @@ module.exports = function create (path, opts, keys) {
   // UGLY HACK, but...
   // fairly sure that something up the stack expects ssb to be an event emitter.
   db.__proto__ = new EventEmitter() // eslint-disable-line
-
   db.opts = opts
-
   var _get = db.get
   var _del = db.del
 
-  const deleteFeed = (feed, cb) => {
-    pull(
-      db.createUserStream({ id: feed }),
-      pull.asyncMap((msg, cb) => {
-        const key = msg.key
-
-        deleteMessage(key, (err) => {
-          cb(err, key)
-        })
-      }),
-      pull.collect(cb)
-    )
-  }
-
-  const deleteMessage = (key, cb) => {
-    db.keys.get(key, (err, val, seq) => {
-      if (err) return cb(err)
-      if (seq == null) return cb(new Error('seq is null!'))
-
-      _del(seq, cb)
-    })
-  }
-
-  db.del = (target, cb) => {
-    if (ref.isMsg(target)) {
-      deleteMessage(target, cb)
-    } else if (ref.isFeed(target)) {
-      deleteFeed(target, cb)
-    } else {
-      cb(new Error('deletion target must be a message or feed'))
-    }
-  }
+  // pull in the features that are needed to pass the tests
+  // and that sbot, etc uses but are slow.
+  extras(db, opts, keys)
+  // - adds indexes: links, feed, time
+  // - adds methods:
+  //   - db.createLogStream
+  //   - db.createFeedStream
+  //   - db.creareUserStream
+  //   - db.latest
+  //   - db.latestSequence
+  //   - db.getLatest
 
   db.get = function (key, cb) {
     let isPrivate = false
@@ -141,18 +118,6 @@ module.exports = function create (path, opts, keys) {
     )
   }
 
-  // pull in the features that are needed to pass the tests
-  // and that sbot, etc uses but are slow.
-  extras(db, opts, keys)
-  // - adds indexes: links, feed, time
-  // - adds methods:
-  //   - db.createLogStream
-  //   - db.createFeedStream
-  //   - db.creareUserStream
-  //   - db.latest
-  //   - db.latestSequence
-  //   - db.getLatest
-
   // writeStream - used in (legacy) replication.
   db.createWriteStream = function (cb) {
     cb = cb || errorCB
@@ -172,8 +137,9 @@ module.exports = function create (path, opts, keys) {
     )
   }
 
-  // should be private
+  /* via clock index */
   db.createHistoryStream = db.clock.createHistoryStream
+  db.createUserStream = db.clock.createUserStream
 
   // called with [id, seq] or "<id>:<seq>"
   db.getAtSequence = function (seqid, cb) {
@@ -184,6 +150,7 @@ module.exports = function create (path, opts, keys) {
     })
   }
 
+  /* via last index */
   db.getVectorClock = function (_, cb) {
     if (!cb) cb = _
     db.last.get(function (err, h) {
@@ -192,6 +159,38 @@ module.exports = function create (path, opts, keys) {
       for (var k in h) { clock[k] = h[k].sequence }
       cb(null, clock)
     })
+  }
+
+  /* via clock + keys */
+  const deleteFeed = (feed, cb) => {
+    pull(
+      db.createUserStream({ id: feed }),
+      pull.asyncMap((msg, cb) => {
+        const key = msg.key
+
+        deleteMessage(key, (err) => {
+          cb(err, key)
+        })
+      }),
+      pull.collect(cb)
+    )
+  }
+  const deleteMessage = (key, cb) => {
+    db.keys.get(key, (err, val, seq) => {
+      if (err) return cb(err)
+      if (seq == null) return cb(new Error('seq is null!'))
+
+      _del(seq, cb)
+    })
+  }
+  db.del = (target, cb) => {
+    if (ref.isMsg(target)) {
+      deleteMessage(target, cb)
+    } else if (ref.isFeed(target)) {
+      deleteFeed(target, cb)
+    } else {
+      cb(new Error('deletion target must be a message or feed'))
+    }
   }
 
   return db

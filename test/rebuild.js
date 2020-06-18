@@ -1,30 +1,67 @@
-const tape = require("tape");
+const tape = require('tape')
 const FlumeviewLevel = require('flumeview-level')
-const { promisify } = require("util");
+const { promisify } = require('util')
 
-const createSsb = require("./util/create-ssb");
+const createSsb = require('./util/create-ssb')
 
-tape("basic rebuild", async (t) => {
-  const db = createSsb();
-  const feed = db.createFeed();
+tape('basic rebuild', async (t) => {
+  const db = createSsb()
 
   const content = {
-    type: "text",
-    text: "hello",
-  };
+    type: 'text',
+    text: 'hello'
+  }
 
-  const msg = await promisify(feed.add)(content);
-  t.equal(msg.value.content, content, "message is added correctly");
+  const msg = await promisify(db.publish)(content)
+  t.equal(msg.value.content, content, 'message is added correctly')
 
-  await promisify(db.rebuild)();
+  await promisify(db.rebuild)()
 
   db.close(t.end)
-});
+})
 
-tape("new unboxer rebuild", async (t) => {
-  const db = createSsb();
-  const feed = db.createFeed();
-  const myId = feed.keys.id;
+tape('basic rebuild (with an unboxer that requires init)', async (t) => {
+  t.plan(2)
+  const db = createSsb()
+
+  const unboxer = {
+    init: function (done) {
+      setTimeout(() => {
+        t.ok(true, 'calls init')
+        done()
+      }, 1e3)
+    },
+    key: function (ciphertext) {
+      if (!ciphertext.endsWith('.box.hah')) return
+
+      return '"the msgKey"'
+    },
+    value: function (ciphertext) {
+      const base64 = ciphertext.replace('.box.hah', '')
+      return JSON.parse(
+        Buffer.from(base64, 'base64').toString('utf8')
+      )
+    }
+  }
+
+  db.addUnboxer(unboxer)
+
+  const content = {
+    type: 'text',
+    text: 'hello'
+  }
+
+  await promisify(db.publish)(content)
+
+  await promisify(db.rebuild)()
+
+  t.ok(true, 'rebuild finishes')
+  db.close(t.end)
+})
+
+tape('new unboxer rebuild', async (t) => {
+  const db = createSsb()
+  const myId = db.id
 
   const latestByBoxStatus = db._flumeUse('latestByBoxStatus', FlumeviewLevel(1, (msg) => {
     console.log('GOT MSG', msg)
@@ -36,17 +73,17 @@ tape("new unboxer rebuild", async (t) => {
   }))
 
   db.addBoxer((content) => {
-    const base64 = Buffer.from(JSON.stringify(content)).toString("base64");
-    return `${base64}.box.base64json`;
-  });
+    const base64 = Buffer.from(JSON.stringify(content)).toString('base64')
+    return `${base64}.box.base64json`
+  })
 
   const content = {
-    type: "text",
-    text: "hello",
-    recps: [myId],
-  };
+    type: 'text',
+    text: 'hello',
+    recps: [myId]
+  }
 
-  await promisify(feed.add)(content);
+  await promisify(db.publish)(content)
 
   const boxed = await promisify(latestByBoxStatus.get)('boxed')
   t.ok(boxed, "indexes can't see the unboxed message, it remains boxed")
@@ -55,28 +92,28 @@ tape("new unboxer rebuild", async (t) => {
 
   t.equal(
     typeof msgBefore.value.content,
-    "string",
-    "content is an boxed string"
-  );
+    'string',
+    'content is an boxed string'
+  )
 
   db.addUnboxer({
     key: (x) => x,
     value: (content) => {
-      const suffix = content.indexOf(".box.base64json");
+      const suffix = content.indexOf('.box.base64json')
       if (suffix === -1) {
-        return null;
+        return null
       } else {
-        const base64 = content.slice(0, suffix);
-        const bytes = Buffer.from(base64, "base64");
+        const base64 = content.slice(0, suffix)
+        const bytes = Buffer.from(base64, 'base64')
         try {
-          const json = JSON.parse(bytes);
-          return json;
+          const json = JSON.parse(bytes)
+          return json
         } catch (_) {
-          return null;
+          return null
         }
       }
-    },
-  });
+    }
+  })
 
   await promisify(db.rebuild)()
 
@@ -86,11 +123,11 @@ tape("new unboxer rebuild", async (t) => {
   // runs `get(id)` under the hood.
   t.equal(
     typeof msgAfter.value.content,
-    "object",
-    "content is an unboxed object"
-  );
+    'object',
+    'content is an unboxed object'
+  )
 
-  t.equal(msgAfter.value.content.text, "hello", "content is unboxed correctly");
+  t.equal(msgAfter.value.content.text, 'hello', 'content is unboxed correctly')
 
   // Test seems to be failing because FlumeDB rebuilds aren't actually
   // rebuilding anything. I could've sworn that I've seen a rebuild before, but
@@ -99,4 +136,4 @@ tape("new unboxer rebuild", async (t) => {
   t.ok(unboxed, 'indexes see the unboxed message')
 
   db.close(t.end);
-});
+})

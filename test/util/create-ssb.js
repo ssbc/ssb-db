@@ -26,7 +26,5 @@ module.exports = function createSSB (name = randomName(), opts = {}) {
     opts.caps = { shs: opts.caps.shs || caps.shs, sign: opts.caps.sign || null }
   }
 
-  const app =  stack({ ...opts, path: dir })
-  console.log(app.config)
-  return app
+  return stack({ ...opts, path: dir })
 };

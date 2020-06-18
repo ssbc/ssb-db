@@ -170,6 +170,7 @@ exports.AsyncJobQueue = class AsyncJobQueue {
   add (fn) {
     if (typeof fn !== 'function') throw new Error('JobQueue#add expects a function')
     this.queue.push(fn)
+    return this
   }
 
   runAll (done = noop) {

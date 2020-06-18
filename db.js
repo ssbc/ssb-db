@@ -1,8 +1,6 @@
-var FlumeviewLevel = require('flumeview-level')
-
 module.exports = function db (dir, keys, opts) {
   const db = require('./minimal')(dir, keys, opts)
-    .use('keys', FlumeviewLevel(4, (msg) => [ msg.key ]))
+    .use('keys', require('./indexes/keys')())
     .use('clock', require('./indexes/clock')())
 
   db.progress = {}
@@ -24,12 +22,10 @@ module.exports = function db (dir, keys, opts) {
     // as well as the built ins.
     var current = 0
     var n = 0
-    for (var k in db) {
-      if (db[k] && typeof db[k].since === 'function') {
-        n++
-        var c = db[k].since.value
-        current += (Number.isInteger(c) ? c : -1)
-      }
+    for (var name in db.views) {
+      n++
+      var c = db.views[name].since.value
+      current += (Number.isInteger(c) ? c : -1)
     }
     prog.current = ~~(current / n)
     // if the progress bar is complete, move the starting point

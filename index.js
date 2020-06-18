@@ -87,16 +87,14 @@ module.exports = {
     function since () {
       var plugs = {}
       var sync = true
-      for(var k in ssb) {
-        if(ssb[k] && isObject(ssb[k]) && isFunction(ssb[k].since)) {
-          plugs[k] = ssb[k].since.value
-          sync = sync && (plugs[k] === ssb.since.value)
-        }
+      for (var name in ssb.views) {
+        plugs[name] = ssb.views[name].since.value
+        sync = sync && (plugs[name] === ssb.since.value)
       }
       return {
         since: ssb.since.value,
         plugins: plugs,
-        sync: sync,
+        sync: sync
       }
     }
     var self
