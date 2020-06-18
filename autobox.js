@@ -85,15 +85,33 @@ function unbox (msg, readKey, unboxers) {
  * This is a temporary easy solution to reduce some wasted CPU cycles
  * without having to change deep things about flumedb
  */
-const CACHE_SIZE = 256
+const CACHE_SIZE = 512
+// at max, this cache would be ~4MB (may be larger with meta opts attached)
+// but in reality many messages are much smaller than 8kB,
+// and this cache tracks messages it can't unbox as `false` which is useful
+// and takes up ~0kB
+
 function unboxWithCache (id) {
   var cache = HLRU(CACHE_SIZE)
   // console.log('instantiating unbox.withCache', id)
 
+  // var state = {
+  //   total: 0,
+  //   cachedUnbox: 0,
+  //   unbox: 0
+  // }
   function cachedUnbox (msg, readKey, unboxers) {
+    // state.total++
+    // if (state.total % 1000 === 0) {
+    //   const percent = Math.floor(state.cachedUnbox / (state.cachedUnbox + state.unbox) * 1e3) / 1e2
+    //   console.log(`cache saves: ${percent}% (${state.cachedUnbox} / ${state.cachedUnbox + state.unbox})`)
+    // }
     if (!msg || !isString(msg.value.content)) return msg
 
     const cached = cache.get(msg.key)
+    // if (cached !== undefined) state.cachedUnbox++
+    // else state.unbox++
+
     if (cached === false && !readKey) return msg
     else if (cached) return cached
 
