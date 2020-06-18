@@ -3,7 +3,6 @@ var tape = require('tape')
 var pull = require('pull-stream')
 var ssbKeys = require('ssb-keys')
 var createFeed = require('ssb-feed')
-var hexpp = require('hexpp')
 var codec = require('../codec')
 var createSSB = require('./util/create-ssb')
 
@@ -42,8 +41,6 @@ function run (opts = {}) {
 
   tape('Message', function (t) {
     var enc = codec.encode(msg)
-    console.log('**** Message ****')
-    console.log(hexpp(enc))
     var o = codec.decode(enc)
     t.deepEqual(o, msg)
     t.end()
@@ -51,8 +48,6 @@ function run (opts = {}) {
 
   tape('Signed', function (t) {
     var enc = codec.encode(signed)
-    console.log('**** Signed ****')
-    console.log(hexpp(enc))
     var o = codec.decode(enc)
     t.deepEqual(o, signed)
     t.end()
@@ -73,7 +68,6 @@ function run (opts = {}) {
         pull.collect(function (err, ary) {
           if (err) throw err
           t.equal(ary.length, 1)
-          console.log(ary)
           ssb.close(t.end)
         })
       )

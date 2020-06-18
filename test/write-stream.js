@@ -21,7 +21,6 @@ function run (opts = {}) {
       q.push(prev = create(keys, 'msg', { count: l }, prev))
     }
 
-    console.log(q)
 
     pull(
       pull.values(q),
@@ -52,7 +51,6 @@ function run (opts = {}) {
     q.push(q[3])
     q.push(q[4])
 
-    console.log(q)
 
     pull(
       pull.values(q),

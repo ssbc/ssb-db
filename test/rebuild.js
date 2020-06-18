@@ -64,7 +64,6 @@ tape('new unboxer rebuild', async (t) => {
   const myId = db.id
 
   const latestByBoxStatus = db._flumeUse('latestByBoxStatus', FlumeviewLevel(1, (msg) => {
-    console.log('GOT MSG', msg)
     if (typeof msg.value.content === 'string') {
       return ['boxed']
     } else {

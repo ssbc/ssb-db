@@ -48,7 +48,6 @@ tape('latest', function (t) {
           return v.id
         })
         t.deepEqual(n.sort(), [alice.id, bob.id, carol.id].sort())
-        console.log(ary)
         db.close(t.end)
       })
     )

@@ -25,7 +25,6 @@ function run (opts) {
   tape('add okay message', function (t) {
     ssb.publish({ type: 'okay' }, function (err, msg, key) {
       if (err) throw err
-      console.log(msg, key)
       ssb.get(msg.key, function (err, _msg) {
         if (err) throw err
 
@@ -35,7 +34,6 @@ function run (opts) {
 
           ssb.publish({ type: 'wtf' }, function (err, msg) {
             if (err) throw err
-            console.log(msg)
             ssb.get(msg.key, function (err, _msg) {
               if (err) throw err
               t.deepEqual(_msg, msg.value)
@@ -49,9 +47,7 @@ function run (opts) {
 
   tape('log', function (t) {
     pull(ssb.createLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
-      console.log(err, ary)
       if (err) throw err
-      console.log(ary)
       t.equal(ary.length, 2)
       t.end()
     }))
@@ -78,7 +74,6 @@ function run (opts) {
     var ssb = createSSB('test-ssb-sign-cap', opts)
     ssb.publish({ type: 'test', options: opts }, function (err, msg) {
       if (err) throw err
-      console.log(msg)
       t.deepEqual(msg.value.content.options, opts)
       ssb.close(t.end)
     })

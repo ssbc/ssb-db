@@ -15,7 +15,6 @@ tape('load', function (t) {
 
   ssb.publish(content, function (err, msg) {
     if (err) throw err
-    // console.log(msg)
 
     ssb.close(function (err) {
       t.error(err)

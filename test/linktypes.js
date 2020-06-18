@@ -64,14 +64,6 @@ function run (opts = {}) {
           if (err) throw err
           reply2 = toKV(reply2)
 
-          console.log('LINKS', {
-            dest: msg.key,
-            rel: 'reply',
-            meta: false,
-            keys: false,
-            values: true
-          })
-
           cont.series([
             function (cb) {
               all(ssb.links({
@@ -159,12 +151,6 @@ function run (opts = {}) {
         _carol: all(ssb.links({ dest: carol.id, source: 'feed' }))
       })(function (err, r) {
         t.error(err)
-
-        console.log({
-          alice: alice.id,
-          bob: bob.id,
-          carol: carol.id
-        })
 
         t.deepEqual(sort(r.alice), sort([
           { source: alice.id, rel: 'follow', dest: bob.id, key: f.ab },

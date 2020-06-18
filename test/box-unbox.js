@@ -60,8 +60,6 @@ function run () {
         ssb.messagesByType({ type: 'secret', private: true }),
         pull.collect(function (err, ary) {
           if (err) throw err
-          // console.log('ALICE', alice.id)
-          // console.log('SSB', ssb.id)
 
           var pmsg = ary[0]
           var ctxt = pmsg.value.meta.original.content
@@ -359,7 +357,6 @@ function run () {
         await assertBoxedAsync('getLatest', msg.value.author)
 
         const assertBoxedSourceOnce = (methodName, options) => new Promise((resolve) => {
-          console.log(methodName)
           pull(
             ssb[methodName](options),
             pull.collect((err, val) => {

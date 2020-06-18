@@ -24,7 +24,6 @@ function run (opts = {}) {
           t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          console.log(ary)
           ssb.close(t.end)
         })
       )
@@ -46,7 +45,6 @@ function run (opts = {}) {
           pull.collect(function (err, ary) {
             if (err) throw err
             t.equal(ary.length, 1)
-            console.log(ary)
             ssb.close(t.end)
           })
         )
@@ -66,7 +64,6 @@ function run (opts = {}) {
         pull.collect(function (err, ary) {
           if (err) throw err
           t.equal(ary.length, 1)
-          console.log(ary)
           ssb.close(t.end)
         })
       )
@@ -86,7 +83,6 @@ function run (opts = {}) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0], 'string')
-          console.log(ary)
           ssb.close(t.end)
         })
       )
@@ -106,7 +102,6 @@ function run (opts = {}) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0].content.type, 'string')
-          console.log(ary)
           ssb.close(t.end)
         })
       )
