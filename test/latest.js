@@ -23,8 +23,8 @@ tape('empty', function (t) {
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 0)
+        t.end()
       }))
-    t.end()
   })
 })
 
@@ -48,8 +48,7 @@ tape('latest', function (t) {
           return v.id
         })
         t.deepEqual(n.sort(), [alice.id, bob.id, carol.id].sort())
-        console.log(ary)
-        t.end()
+        db.close(t.end)
       })
     )
   })

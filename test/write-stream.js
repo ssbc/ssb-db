@@ -21,7 +21,6 @@ function run (opts = {}) {
       q.push(prev = create(keys, 'msg', { count: l }, prev))
     }
 
-    console.log(q)
 
     pull(
       pull.values(q),
@@ -31,7 +30,7 @@ function run (opts = {}) {
         }, ~~(Math.random() * 500))
       }),
       ssb.createWriteStream(function (err) {
-        if (err) throw err
+        t.error(err)
         t.end()
       })
     )
@@ -52,7 +51,6 @@ function run (opts = {}) {
     q.push(q[3])
     q.push(q[4])
 
-    console.log(q)
 
     pull(
       pull.values(q),
@@ -63,7 +61,7 @@ function run (opts = {}) {
       }),
       ssb.createWriteStream(function (err) {
         if (err) throw err
-        t.end()
+        ssb.close(t.end)
       })
     )
   })

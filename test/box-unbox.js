@@ -60,8 +60,6 @@ function run () {
         ssb.messagesByType({ type: 'secret', private: true }),
         pull.collect(function (err, ary) {
           if (err) throw err
-          // console.log('ALICE', alice.id)
-          // console.log('SSB', ssb.id)
 
           var pmsg = ary[0]
           var ctxt = pmsg.value.meta.original.content
@@ -397,9 +395,11 @@ function run () {
         await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
         await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true})
         await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true})
-        // createRawLogStream currently not exported as a method
 
-        t.end()
+        ssb.close((err) => {
+          t.error(err)
+          ssb2.close(t.end)
+        })
       })
     })
   })

@@ -64,14 +64,6 @@ function run (opts = {}) {
           if (err) throw err
           reply2 = toKV(reply2)
 
-          console.log('LINKS', {
-            dest: msg.key,
-            rel: 'reply',
-            meta: false,
-            keys: false,
-            values: true
-          })
-
           cont.series([
             function (cb) {
               all(ssb.links({
@@ -158,14 +150,7 @@ function run (opts = {}) {
         _alice: all(ssb.links({ dest: alice.id, source: '@' })),
         _carol: all(ssb.links({ dest: carol.id, source: 'feed' }))
       })(function (err, r) {
-        if (err) throw err
-
-        console.log({
-          alice: alice.id,
-          bob: bob.id,
-          carol: carol.id
-
-        })
+        t.error(err)
 
         t.deepEqual(sort(r.alice), sort([
           { source: alice.id, rel: 'follow', dest: bob.id, key: f.ab },
@@ -245,7 +230,7 @@ function run (opts = {}) {
           { type: 'follow', follow: bob.id },
           { type: 'poke', poke: bob.id }
         ])
-        t.end()
+        ssb.close(t.end)
       })
     })
   })

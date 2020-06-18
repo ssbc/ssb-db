@@ -14,7 +14,6 @@ function run (opts = {}) {
 
   tape('simple', function (t) {
     var keys = generate()
-    console.log('keys', keys)
     var prev
     var messages = [
       prev = create(keys, null, { type: 'init', public: keys.public }),
@@ -109,7 +108,6 @@ function run (opts = {}) {
     for (var i = 0; i < 808; i++) str += '1234567890'
     feed.add({ type: 'msg', value: str }, function (err, msg) {
       if (!err) throw new Error('too big was allowed')
-      console.log(err)
       feed.add({ type: 'msg', value: 'this ones cool tho' }, function (err) {
         if (err) throw err
         t.end()
@@ -158,7 +156,7 @@ function run (opts = {}) {
                     }
                   }, function () {
                     if (state.queue.length > 0) { t.pass('validate passes') }
-                    t.end()
+                    ssb.close(t.end)
                   })
                 )
               }

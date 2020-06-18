@@ -57,7 +57,6 @@ function run (opts) {
       pull.collect(function (err, ary) {
         t.notOk(err)
         t.deepEqual(ary, [{ source: alice.id, rel: 'yo', dest: alice.id }])
-        console.log(ary)
         t.end()
       })
     )
@@ -96,7 +95,6 @@ function run (opts) {
   })
 
   tape('realtime', function (t) {
-    console.log(fromAlice, alice.id)
     pull(
       db.links({ source: alice.id, old: true }),
       pull.collect(function (err, ary) {
@@ -121,7 +119,7 @@ function run (opts) {
           dest: bob.id,
           rel: 'foo'
         })
-        t.end()
+        db.close(t.end)
       })
     )
 

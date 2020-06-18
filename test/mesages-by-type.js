@@ -43,7 +43,6 @@ function run (opts = {}) {
             gt: since
           }), function (err, ary) {
             if (err) throw err
-            console.log(ary)
             t.equal(ary.length, 1)
             t.equal(typeof ary[0].key, 'string')
             t.deepEqual(ary[0].value.content, { type: 'foo', foo: 6 })
@@ -67,7 +66,7 @@ function run (opts = {}) {
 
                 t.equal(ary.length, 1)
                 t.equal(typeof ary[0], 'string')
-                t.end()
+                dbA.close(t.end)
               })
             })
           })

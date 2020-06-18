@@ -55,7 +55,6 @@ function run (opts) {
       pull(ssb.latest(), pull.collect(function (err, ary) {
         if (err) throw err
         delete ary[0].ts
-        console.log(ary)
         t.deepEqual(ary, [
           { id: keys.id, sequence: 8 }
         ])
@@ -99,7 +98,6 @@ function run (opts) {
       ssb.createHistoryStream({ id: id, seq: 1, keys: true }),
       pull.collect(function (err, ary) {
         if (err) throw err
-        console.log(ary)
         t.equal(ary.length, 8)
         t.ok(!!ary[0].key)
         t.ok(!!ary[1].key)
@@ -113,7 +111,6 @@ function run (opts) {
       ssb.createUserStream({ id: id, gt: 3, lte: 7, reverse: true }),
       pull.collect(function (err, ary) {
         if (err) throw err
-        console.log('UserStream', ary)
         t.equal(ary.length, 4)
         t.equal(ary[3].value.sequence, 4)
         t.equal(ary[2].value.sequence, 5)
@@ -128,7 +125,6 @@ function run (opts) {
       ssb.createHistoryStream({ id: id, values: false }),
       pull.collect(function (err, ary) {
         if (err) throw err
-        console.log(ary)
         t.equal(ary.length, 8)
         ary.forEach(function (v) { t.equal(typeof v, 'string') })
         t.end()
@@ -165,14 +161,13 @@ function run (opts) {
             abortable.abort(err)
           }, 100)
         }
-        console.log(data)
       }, function (_err) {
         t.equal(_err, err)
-        t.end()
       }),
       pull.collect(function (err, ary) {
         t.equal(err.message, errMsg)
         t.equal(ary.length, 8)
+        t.end()
       })
     )
   })
@@ -185,7 +180,7 @@ function run (opts) {
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 5)
-        t.end()
+        ssb.close(t.end)
       })
     )
   })

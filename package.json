@@ -41,10 +41,11 @@
     "explain-error": "^1.0.4",
     "hexpp": "^2.0.0",
     "pull-abortable": "^4.1.1",
+    "secret-stack": "^6.3.1",
     "ssb-feed": "^2.2.1",
     "ssb-private1": "^1.0.1",
     "tap-spec": "^5.0.0",
-    "tape": "^4.13.2",
+    "tape": "^5.0.0",
     "typewiselite": "^1.0.0"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",

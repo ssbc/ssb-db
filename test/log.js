@@ -24,8 +24,7 @@ function run (opts = {}) {
           t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })
@@ -46,8 +45,7 @@ function run (opts = {}) {
           pull.collect(function (err, ary) {
             if (err) throw err
             t.equal(ary.length, 1)
-            console.log(ary)
-            t.end()
+            ssb.close(t.end)
           })
         )
       })
@@ -66,8 +64,7 @@ function run (opts = {}) {
         pull.collect(function (err, ary) {
           if (err) throw err
           t.equal(ary.length, 1)
-          console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })
@@ -86,8 +83,7 @@ function run (opts = {}) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0], 'string')
-          console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })
@@ -106,8 +102,7 @@ function run (opts = {}) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0].content.type, 'string')
-          console.log(ary)
-          t.end()
+          ssb.close(t.end)
         })
       )
     })
@@ -129,7 +124,7 @@ function run (opts = {}) {
         if (op.sync) return t.ok(true)
         t.ok(op.timestamp > ts)
         t.equal(op.value.content.type, 'msg')
-        t.end()
+        ssb.close(t.end)
       })
     )
 
@@ -160,7 +155,7 @@ function run (opts = {}) {
               ssb.get(msg.key, (err) => {
                 t.ok(err)
                 t.equal(err.code, 'flumelog:deleted')
-                t.end()
+                ssb.close(t.end)
               })
             })
           )
@@ -189,7 +184,7 @@ function run (opts = {}) {
               ssb.get(msg.key, (err) => {
                 t.ok(err)
                 t.equal(err.code, 'flumelog:deleted')
-                t.end()
+                ssb.close(t.end)
               })
             })
           )
