@@ -593,7 +593,11 @@ db.since(fn(seq)) => Obv
 An [observable](https://github.com/dominictarr/obv) of the current log sequence. This is always a positive 
 integer that usually increases, except in the exceptional circumstance that the log is deleted or corrupted.
 
-### db.addBoxer(boxer)
+### db.addBoxer: sync
+
+```js
+db.addUnboxer({ value: boxer, init: initBoxer })
+```
 
 Add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
@@ -605,9 +609,11 @@ automatically box (encrypt) the message `content` if the appropriate
 - break (because it should know how to handle `recps`, but can't), and so throw an `Error`
 
 ## db.addUnboxer: sync
+
 ```js
 db.addUnboxer({ key: unboxKey, value: unboxValue, init: initBoxer })
 ```
+
 Add an unboxer object, any encrypted message is passed to the unboxer object to
 test if it can be unboxed (decrypted)
 

@@ -290,15 +290,27 @@ function run () {
   })
 
   tape('addUnboxer (with init)', function (t) {
-    var initDone = false
+    let unboxerInitDone = false
+    let boxerInitDone = false
+
+    const boxer = {
+      init: function (done) {
+        setTimeout(() => {
+          t.ok(true, 'calls boxer init')
+          boxerInitDone = true
+          done()
+        }, 500)
+      },
+      value: (x) => x
+    }
 
     const unboxer = {
       init: function (done) {
         setTimeout(() => {
-          t.ok(true, 'calls init')
-          initDone = true
+          t.ok(true, 'calls unboxer init')
+          unboxerInitDone = true
           done()
-        }, 500)
+        }, 1000)
       },
       key: function (ciphertext) {
         if (!ciphertext.endsWith('.box.hah')) return
@@ -312,8 +324,10 @@ function run () {
         )
       }
     }
+    ssb.addBoxer(boxer)
     ssb.addUnboxer(unboxer)
-    t.false(initDone)
+    t.false(boxerInitDone)
+    t.false(unboxerInitDone)
 
     const content = {
       type: 'poke',
@@ -324,12 +338,13 @@ function run () {
     const ciphertext = Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
 
     feed.publish(ciphertext, (_, msg) => {
-      t.true(initDone, 'unboxer completed initialisation before publish')
+      t.true(boxerInitDone, 'boxer completed initialisation before publish')
+      t.false(unboxerInitDone, 'unboxer did not completed initialisation before publish')
 
       ssb.get({ id: msg.key, private: true, meta: true }, async (err, msg) => {
         t.error(err)
 
-        t.true(initDone, 'unboxer completed initialisation before get')
+        t.true(unboxerInitDone, 'unboxer completed initialisation before get')
         t.deepEqual(msg.value.content, content, 'auto unboxing works')
 
         const assertBoxed = (methodName, message) => {
