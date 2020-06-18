@@ -6,23 +6,26 @@ var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv = require('obv')
+var mkdirp = require('mkdirp')
 var u = require('./util')
 var codec = require('./codec')
-var { box, unbox } = require('./autobox')
-const mkdirp = require('mkdirp')
+var { box, unbox: _unbox } = require('./autobox')
 
 module.exports = function (dirname, keys, opts) {
   var caps = (opts && opts.caps) || {}
   var hmacKey = caps.sign
-
-  var boxers = []
-  var unboxers = []
 
   mkdirp.sync(dirname)
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
   var state = V.initial()
   var flush = new u.AsyncJobQueue() // doesn't currenlty use async-done
+
+  var boxers = []
+  var unboxers = []
+  var unbox = _unbox.withCache()
+  // NOTE unbox.withCache needs to be instantiated *inside* this scope
+  // otherwise the cache is shared across instances!
 
   var ready = {
     unboxers: new u.AsyncJobQueue(),
@@ -170,6 +173,12 @@ module.exports = function (dirname, keys, opts) {
 
   db._unbox = function dbUnbox (msg, msgKey) {
     return unbox(msg, msgKey, unboxers)
+  }
+
+  const _rebuild = db.rebuild
+  db.rebuild = function (cb) {
+    unbox.resetCache()
+    _rebuild(cb)
   }
 
   /* initialise some state */

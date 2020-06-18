@@ -1,3 +1,4 @@
+const HLRU = require('hashlru')
 const { metaBackup } = require('./util')
 
 function isFunction (f) { return typeof f === 'function' }
@@ -76,6 +77,40 @@ function unbox (msg, readKey, unboxers) {
     }
   }
 }
+
+/* NOTE
+ * currently when flumedb passes messages to each view (index) it runs
+ * an unbox on encrypted messaged FOR EVERY VIEW
+ *
+ * This is a temporary easy solution to reduce some wasted CPU cycles
+ * without having to change deep things about flumedb
+ */
+const CACHE_SIZE = 256
+function unboxWithCache (id) {
+  var cache = HLRU(CACHE_SIZE)
+  // console.log('instantiating unbox.withCache', id)
+
+  function cachedUnbox (msg, readKey, unboxers) {
+    if (!msg || !isString(msg.value.content)) return msg
+
+    const cached = cache.get(msg.key)
+    if (cached === false && !readKey) return msg
+    else if (cached) return cached
+
+    const result = unbox(msg, readKey, unboxers)
+    if (isString(result.value.content)) cache.set(msg.key, false)
+    else cache.set(msg.key, result)
+
+    return result
+  }
+
+  cachedUnbox.resetCache = function () {
+    cache = HLRU(CACHE_SIZE)
+  }
+
+  return cachedUnbox
+}
+unbox.withCache = unboxWithCache
 
 module.exports = {
   box,
