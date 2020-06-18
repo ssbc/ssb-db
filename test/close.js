@@ -1,9 +1,10 @@
 'use strict'
 var tape = require('tape')
 var pull = require('pull-stream')
-
-var createSSB = require('./create-ssb')
 var keys = require('ssb-keys').generate()
+
+var createSSB = require('./util/create-ssb')
+
 var content = { type: 'whatever' }
 
 const name = `test-ssb-close-${Date.now()}`

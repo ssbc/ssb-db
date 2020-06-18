@@ -7,6 +7,12 @@
     "type": "git",
     "url": "git://github.com/ssbc/ssb-db.git"
   },
+  "scripts": {
+    "prepublishOnly": "npm ls && npm test",
+    "test": "tape test/*.js",
+    "test:classic": "set -e; for t in test/*.js; do node $t; done",
+    "test:pretty": "npm test | tap-spec"
+  },
   "dependencies": {
     "async-write": "^2.1.0",
     "flumedb": "^2.1.4",
@@ -40,11 +46,6 @@
     "tap-spec": "^5.0.0",
     "tape": "^4.13.2",
     "typewiselite": "^1.0.0"
-  },
-  "scripts": {
-    "prepublishOnly": "npm ls && npm test",
-    "test": "set -e; for t in test/*.js; do node $t; done",
-    "test:pretty": "npm test | tap-spec"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
   "license": "MIT",

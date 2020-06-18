@@ -3,7 +3,7 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 var cont = require('cont')
-var createSSB = require('./create-ssb')
+var createSSB = require('./util/create-ssb')
 
 function cmpstr (a, b) {
   return a < b ? -1 : a === b ? 0 : 1
@@ -14,8 +14,8 @@ function compare (a, b) {
 //  return a.key < b.key ? -1 : a.key === b.key ? 0 : -1
 }
 
-module.exports = function (opts) {
-  var db = createSSB('test-ssb-feed')
+function run (opts) {
+  var db = createSSB('test-ssb-links')
 
   var alice = db.createFeed()
   var bob = db.createFeed()
@@ -132,4 +132,4 @@ module.exports = function (opts) {
   })
 }
 
-if (!module.parent) { module.exports({}) }
+run()
