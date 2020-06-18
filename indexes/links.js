@@ -1,35 +1,35 @@
 var pull = require('pull-stream')
 var ltgt = require('ltgt')
 var ViewLevel = require('flumeview-level')
+var mlib = require('ssb-msgs')
 
 var u = require('../util')
 var Format = u.formatStream
-var mlib = require('ssb-msgs')
 
 function isString (s) {
   return typeof s === 'string'
 }
 
-module.exports = function () {
-  function indexMsg (localtime, id, msg) {
-    var content = msg.content
+function indexMsg (localtime, id, msg) {
+  var content = msg.content
 
-    // couldn't decrypt, this message wasn't for us
-    if (isString(content)) return []
+  // couldn't decrypt, this message wasn't for us
+  if (isString(content)) return []
 
-    var a = []
+  var a = []
 
-    if (isString(content.type)) {
-      a.push(['type', content.type.toString().substring(0, 32), localtime])
-    }
-    mlib.indexLinks(content, function (obj, rel) {
-      a.push(['link', msg.author, rel, obj.link, msg.sequence, id])
-      a.push(['_link', obj.link, rel, msg.author, msg.sequence, id])
-    })
-
-    return a
+  if (isString(content.type)) {
+    a.push(['type', content.type.toString().substring(0, 32), localtime])
   }
+  mlib.indexLinks(content, function (obj, rel) {
+    a.push(['link', msg.author, rel, obj.link, msg.sequence, id])
+    a.push(['_link', obj.link, rel, msg.author, msg.sequence, id])
+  })
 
+  return a
+}
+
+module.exports = function () {
   var createIndex = ViewLevel(3, function (data) {
     return indexMsg(data.timestamp, data.key, data.value)
   })

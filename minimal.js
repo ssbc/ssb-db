@@ -18,13 +18,31 @@ module.exports = function (dirname, keys, opts) {
   mkdirp.sync(dirname)
   var log = OffsetLog(path.join(dirname, 'log.offset'), { blockSize: 1024 * 16, codec })
 
+  var state = V.initial()
+  var flush = new u.AsyncJobQueue() // doesn't currenlty use async-done
+
   var boxers = []
   var unboxers = []
   var unbox = _unbox.withCache()
   // NOTE unbox.withCache needs to be instantiated *inside* this scope
   // otherwise the cache is shared across instances!
 
-  const unboxerMap = wait((msg, cb) => {
+  var setup = {
+    validators: new u.AsyncJobQueue(),
+    unboxers: new u.AsyncJobQueue()
+  }
+  function waitForValidators (fn) {
+    return function (...args) {
+      setup.validators.runAll(() => fn(...args))
+    }
+  }
+  function waitForUnboxers (fn) {
+    return function (...args) {
+      setup.unboxers.runAll(() => fn(...args))
+    }
+  }
+
+  const unboxerMap = waitForUnboxers((msg, cb) => {
     try {
       cb(null, unbox(msg, null, unboxers))
     } catch (err) {
@@ -54,23 +72,8 @@ module.exports = function (dirname, keys, opts) {
   // false says the database is not ready yet!
   var db = Flume(log, true, chainMaps)
     .use('last', require('./indexes/last')())
-
-  var state = V.initial()
-  var setup = new u.AsyncJobQueue()
-  var waiting = new u.AsyncJobQueue()
-  var flush = new u.AsyncJobQueue() // doesn't currenlty use async-done
-
-  function wait (fn) {
-    return function (value, cb) {
-      if (setup.isEmpty()) fn(value, cb)
-      else {
-        waiting.add(() => fn(value, cb))
-        setup.runAll(() => {
-          waiting.runAll()
-        })
-      }
-    }
-  }
+  // TODO flume may be starting streams before all the chainMap details are ready / initialised
+  // we should come back and check that / get it to for sure wait
 
   var append = db.rawAppend = db.append
   db.post = Obv()
@@ -97,7 +100,7 @@ module.exports = function (dirname, keys, opts) {
     }
   }
 
-  db.queue = wait(function dbQueue (msg, cb) {
+  db.queue = waitForValidators(function dbQueue (msg, cb) {
     queue(msg, function (err) {
       var data = state.queue[state.queue.length - 1]
       if (err) cb(err)
@@ -105,7 +108,7 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
-  db.append = wait(function dbAppend (opts, cb) {
+  db.append = waitForUnboxers(waitForValidators(function dbAppend (opts, cb) {
     try {
       const content = box(opts.content, boxers)
       var msg = V.create(
@@ -124,7 +127,7 @@ module.exports = function (dirname, keys, opts) {
       var data = state.queue[state.queue.length - 1]
       flush.add(() => cb(null, data))
     })
-  })
+  }))
 
   db.buffer = function buffer () {
     return queue.buffer
@@ -156,8 +159,8 @@ module.exports = function (dirname, keys, opts) {
         if (unboxer.init && typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
 
         if (unboxer.init) {
-          setup.add(unboxer.init)
-          setup.runAll()
+          setup.unboxers.add(unboxer.init)
+          setup.unboxers.runAll()
         }
         unboxers.push(unboxer)
 
@@ -178,7 +181,10 @@ module.exports = function (dirname, keys, opts) {
   }
 
   /* initialise some state */
-  setup.add(done => {
+  setup.validators.add(done => {
+    // TODO There's an impossible
+    // the unboxer doesn't start working till the indexing is finished
+    // but the unboxer is dependent on the indexing (for loading db.last)
     db.last.get((_, last) => {
       // copy to so we avoid weirdness, because this object
       // tracks the state coming in to the database.
@@ -193,7 +199,7 @@ module.exports = function (dirname, keys, opts) {
       done()
     })
   })
-  setup.runAll()
+  setup.validators.runAll()
 
   return db
 }
