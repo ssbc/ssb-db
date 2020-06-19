@@ -150,25 +150,15 @@ module.exports = function (dirname, keys, opts) {
   }
 
   db.addBoxer = function addBoxer (boxer) {
-    switch (typeof boxer) {
-      case 'function':
-        boxers.push(boxer)
-        break
+    if (typeof boxer === 'function') return db.addBoxer({ value: boxer })
+    if (typeof boxer.value !== 'function') throw new Error('invalid boxer')
 
-      case 'object':
-        if (typeof boxer.value !== 'function') throw new Error('invalid boxer')
-
-        if (boxer.init) {
-          setup.boxers.add(boxer.init)
-          setup.boxers.runAll()
-        }
-
-        boxers.push(boxer.value)
-
-        break
-
-      default: throw new Error('invalid boxer')
+    if (boxer.init) {
+      setup.boxers.add(boxer.init)
+      setup.boxers.runAll()
     }
+
+    boxers.push(boxer.value)
   }
 
   db.addUnboxer = function addUnboxer (unboxer) {

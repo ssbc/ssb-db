@@ -28,3 +28,8 @@ tape('partial index', async (t) => {
   await promisify(ssb2.close)()
   t.pass('closed again')
 })
+
+/* Note - this sequence of actions sets the database in a state which could get it in a locked state
+ * In particular ssb-private2 requires boxer and unboxer initialistion, and they can depened on one
+ * another, so if you're not careful.
+ */
