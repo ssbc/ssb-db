@@ -301,7 +301,7 @@ function run () {
           done()
         }, 500)
       },
-      value: (x) => x
+      value: (x) => Buffer.from(JSON.stringify(x)).toString('base64') + '.box.hah'
     }
 
     const unboxer = {
@@ -335,9 +335,7 @@ function run () {
       recps: [ '!test' ],
       myFriend: alice.id// Necessary to test links()
     }
-    const ciphertext = Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
-
-    feed.publish(ciphertext, (_, msg) => {
+    feed.publish(content, (_, msg) => {
       t.true(boxerInitDone, 'boxer completed initialisation before publish')
       t.false(unboxerInitDone, 'unboxer did not completed initialisation before publish')
 
