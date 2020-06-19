@@ -8,6 +8,19 @@ const { promisify } = require('util')
 var { originalValue } = require('../util')
 var createSSB = require('./util/create-ssb')
 
+function simpleBox (content) {
+  if (!content.recps.every(r => r === '!test')) return
+  return Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
+}
+function simpleUnbox (ciphertext) {
+  if (!ciphertext.endsWith('.box.hah')) return
+
+  const base64 = ciphertext.replace('.box.hah', '')
+  return JSON.parse(
+    Buffer.from(base64, 'base64').toString('utf8')
+  )
+}
+
 const originalTests = () => {
   var alice = ssbKeys.generate()
   var bob = ssbKeys.generate()
@@ -22,6 +35,10 @@ const originalTests = () => {
    *   DEPENDENCY - ssb-private1
    */
 
+  // TODO many these tests are using the same ssb + feed, and some rely on reading
+  // messages written in other tests ):
+  // It would be good to make these tests more unit-test like to avoid confusing state
+
   var ssb = createSSB('test-ssb', { keys: alice })
   ssb.addBoxer(box1(alice).boxer)
   ssb.addUnboxer(box1(alice).unboxer)
@@ -33,14 +50,14 @@ const originalTests = () => {
   var feed = ssb.createFeed(alice)
 
   tape('error when trying to encrypt without boxer', (t) => {
-    t.plan(2);
+    t.plan(2)
     const darlene = ssbKeys.generate()
     const darleneFeed = ssb.createFeed(darlene)
     darleneFeed.add(
-      { type: "error", recps: [alice, darlene] },
+      { type: 'error', recps: [alice, darlene] },
       (err, msg) => {
-        t.ok(err);
-        t.notOk(msg);
+        t.ok(err)
+        t.notOk(msg)
         t.end()
       })
   })
@@ -96,6 +113,7 @@ const originalTests = () => {
 
                   listener()
                   t.true(typeof postObserved.value.content === 'string', 'post obs messages should not be decrypted')
+                  ssb2.close()
                   t.end()
                 })
               })
@@ -173,17 +191,11 @@ const originalTests = () => {
   })
 
   tape('error on invalid recps', function (t) {
-    feed.add({
-      recps: true, type: 'invalid'
-    }, function (err) {
+    feed.add({ recps: true, type: 'invalid' }, function (err) {
       t.ok(err)
-      feed.add({
-        recps: [], type: 'invalid'
-      }, function (err) {
+      feed.add({ recps: [], type: 'invalid' }, function (err) {
         t.ok(err)
-        feed.add({
-          recps: [feed.id, true], type: 'invalid'
-        }, function (err) {
+        feed.add({ recps: [feed.id, true], type: 'invalid' }, function (err) {
           t.ok(err)
           t.end()
         })
@@ -233,149 +245,119 @@ const originalTests = () => {
     })
   })
 
-  tape('addBoxer + addUnboxer (with init)', function (t) {
-    let unboxerInitDone = false
-    let boxerInitDone = false
+  tape.onFinish(ssb.close)
+  // this is not great but works
+  // previously there was just an ssb.close in the end of the longest running test ...
+}
+originalTests()
 
-    const boxer = {
-      init: function (done) {
-        setTimeout(() => {
-          t.ok(true, 'calls boxer init')
-          boxerInitDone = true
-          done()
-        }, 500)
-      },
-      value: (x) => Buffer.from(JSON.stringify(x)).toString('base64') + '.box.hah'
+tape('methods which can unbox (security)', function (t) {
+  var alice = ssbKeys.generate()
+  var ssb = createSSB(undefined, { keys: alice })
+  var feed = ssb.createFeed(alice)
+
+  const boxer = {
+    init: (done) => setTimeout(() => done(), 10),
+    value: simpleBox
+  }
+
+  const unboxer = {
+    init: (done) => setTimeout(() => done(), 10),
+    key: function (ciphertext) {
+      if (!ciphertext.endsWith('.box.hah')) return
+      return '"the msgKey"'
+    },
+    value: function (ciphertext, _, readKey) {
+      if (readKey !== '"the msgKey"') throw new Error('what?')
+      return simpleUnbox(ciphertext)
     }
+  }
+  ssb.addBoxer(boxer)
+  ssb.addUnboxer(unboxer)
 
-    const unboxer = {
-      init: function (done) {
-        setTimeout(() => {
-          t.ok(true, 'calls unboxer init')
-          unboxerInitDone = true
-          done()
-        }, 1000)
-      },
-      key: function (ciphertext) {
-        if (!ciphertext.endsWith('.box.hah')) return
+  const content = {
+    type: 'poke',
+    reason: 'why not',
+    recps: [ '!test' ],
+    myFriend: alice.id// Necessary to test links()
+  }
+  feed.publish(content, (_, msg) => {
+    ssb.get({ id: msg.key, private: true, meta: true }, async (err, msg) => {
+      t.error(err)
 
-        return '"the msgKey"'
-      },
-      value: function (ciphertext) {
-        const base64 = ciphertext.replace('.box.hah', '')
-        return JSON.parse(
-          Buffer.from(base64, 'base64').toString('utf8')
-        )
+      t.deepEqual(msg.value.content, content, 'auto unboxing works')
+
+      const assertBoxed = (methodName, message) => {
+        if (typeof message.key === 'string') {
+          t.equal(message.key, msg.key, `${methodName}() returned correct message`)
+          t.equal(typeof message.value.content, 'string', `${methodName}() does not unbox by default`)
+        } else {
+          t.equal(typeof message.content, 'string', `${methodName}() does not unbox by default`)
+        }
       }
-    }
-    ssb.addBoxer(boxer)
-    ssb.addUnboxer(unboxer)
-    t.false(boxerInitDone)
-    t.false(unboxerInitDone)
 
-    const content = {
-      type: 'poke',
-      reason: 'why not',
-      recps: [ '!test' ],
-      myFriend: alice.id// Necessary to test links()
-    }
-    feed.publish(content, (_, msg) => {
-      t.true(boxerInitDone, 'boxer completed initialisation before publish')
-      t.false(unboxerInitDone, 'unboxer did not completed initialisation before publish')
-
-      ssb.get({ id: msg.key, private: true, meta: true }, async (err, msg) => {
-        t.error(err)
-
-        t.true(unboxerInitDone, 'unboxer completed initialisation before get')
-        t.deepEqual(msg.value.content, content, 'auto unboxing works')
-
-        const assertBoxed = (methodName, message) => {
-          if (typeof message.key === 'string') {
-            t.equal(message.key, msg.key, `${methodName}() returned correct message`)
-            t.equal(typeof message.value.content, 'string', `${methodName}() does not unbox by default`)
-          } else {
-            t.equal(typeof message.content, 'string', `${methodName}() does not unbox by default`)
-          }
+      const assertBoxedAsync = async (methodName, options) => {
+        assertBoxed(methodName, await promisify(ssb[methodName])(options))
+        if (typeof options === 'object' && Array.isArray(options) === false) {
+          assertBoxed(methodName, await promisify(ssb[methodName])({ ...options, private: false }))
         }
+      }
 
-        const assertBoxedAsync = async (methodName, options) => {
-          assertBoxed(methodName, await promisify(ssb[methodName])(options))
-          if (typeof options === 'object' && Array.isArray(options) === false) {
-            assertBoxed(methodName, await promisify(ssb[methodName])({ ...options, private: false } ))
-          }
-        }
+      // This tests the default behavior of `ssb.get()`, which should never
+      // decrypt messages by default. This is **very important**.
+      await assertBoxedAsync('get', msg.key)
+      await assertBoxedAsync('get', { id: msg.key })
+      await assertBoxedAsync('get', { id: msg.key, meta: true })
+      await assertBoxedAsync('getAtSequence', [msg.value.author, msg.value.sequence])
+      await assertBoxedAsync('getLatest', msg.value.author)
 
-        // This tests the default behavior of `ssb.get()`, which should never
-        // decrypt messages by default. This is **very important**.
-        await assertBoxedAsync('get', msg.key)
-        await assertBoxedAsync('get', { id: msg.key })
-        await assertBoxedAsync('get', { id: msg.key, meta: true })
-        await assertBoxedAsync('getAtSequence', [msg.value.author, msg.value.sequence])
-        await assertBoxedAsync('getLatest', msg.value.author)
-
-        const assertBoxedSourceOnce = (methodName, options) => new Promise((resolve) => {
-          pull(
-            ssb[methodName](options),
-            pull.collect((err, val) => {
-              t.error(err, `${methodName}() does not error`)
-              switch (methodName) {
-                case 'createRawLogStream':
+      const assertBoxedSourceOnce = (methodName, options) => new Promise((resolve) => {
+        pull(
+          ssb[methodName](options),
+          pull.collect((err, val) => {
+            t.error(err, `${methodName}() does not error`)
+            switch (methodName) {
+              case 'createRawLogStream':
+                assertBoxed(methodName, val[0].value)
+                break
+              case 'createFeedStream':
+              case 'createUserStream':
+              case 'messagesByType':
+                // Apparently some methods take `{ private: false }` to mean
+                // "don't return any private messages". :/
+                if (options.private === undefined) {
                   assertBoxed(methodName, val[0].value)
-                  break;
-                case 'createFeedStream':
-                case 'createUserStream':
-                case 'messagesByType':
-                  // Apparently some methods take `{ private: false }` to mean
-                  // "don't return any private messages". :/
-                  if (options.private === undefined) {
-                    assertBoxed(methodName, val[0].value)
-                  }
-                  break
-                default:
-                  assertBoxed(methodName, val[0])
-              }
-              resolve()
-            })
-          )
-        })
+                }
+                break
+              default:
+                assertBoxed(methodName, val[0])
+            }
+            resolve()
+          })
+        )
+      })
 
-        // Test the default **and** `{ private: false }`.
-        const assertBoxedSource = async (methodName, options) => {
-          await assertBoxedSourceOnce(methodName, options)
-          await assertBoxedSourceOnce(methodName, { ...options, private: false })
-        }
+      // Test the default **and** `{ private: false }`.
+      const assertBoxedSource = async (methodName, options) => {
+        await assertBoxedSourceOnce(methodName, options)
+        await assertBoxedSourceOnce(methodName, { ...options, private: false })
+      }
 
-        await assertBoxedSource('createLogStream', { limit: 1, reverse: true })
-        await assertBoxedSource('createHistoryStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
-        await assertBoxedSource('messagesByType', { type: 'poke', limit: 1, reverse: true })
-        await assertBoxedSource('createFeedStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
-        await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
-        await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true})
-        await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true})
+      await assertBoxedSource('createLogStream', { limit: 1, reverse: true })
+      await assertBoxedSource('createHistoryStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
+      await assertBoxedSource('messagesByType', { type: 'poke', limit: 1, reverse: true })
+      await assertBoxedSource('createFeedStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
+      await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
+      await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true })
+      await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true })
 
-        ssb.close((err) => {
-          t.error(err)
-          ssb2.close(t.end)
-        })
+      ssb.close((err) => {
+        t.error(err)
+        t.end()
       })
     })
   })
-}
-// originalTests()
-console.log('TODO enable originalTests')
-
-function simpleBox (content) {
-  if (!content.recps.every(r => r === '!test')) return
-  return Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
-}
-function simpleUnbox (ciphertext) {
-  if (!ciphertext.endsWith('.box.hah')) return
-
-  const base64 = ciphertext.replace('.box.hah', '')
-  return JSON.parse(
-    Buffer.from(base64, 'base64').toString('utf8')
-  )
-}
+})
 
 tape('addBoxer (simple / deprecated)', function (t) {
   var alice = ssbKeys.generate()
@@ -646,7 +628,8 @@ tape('addBoxer + addUnboxer (both with init)', function (t) {
         done()
       }, 500)
     },
-    value: (x) => Buffer.from(JSON.stringify(x)).toString('base64') + '.box.hah'
+    value: (x) => Buffer.from(JSON.stringify(x))
+      .toString('base64') + '.box.hah'
   }
 
   const unboxer = {

@@ -46,7 +46,7 @@ function run (opts) {
           }
         })
       }
-      var int = setInterval(addAgain, 300)
+      var int = setInterval(addAgain, 350)
       pull(
         ssb.createFeedStream({ live: true }),
         pull.drain(function (ary) {
