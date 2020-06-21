@@ -44,7 +44,7 @@ function run (opts = {}) {
   function toKV (data) {
     return { key: data.key, value: data.value }
   }
-  tape('reply to a message', function (t) {
+  tape('links/types (reply to a message)', function (t) {
     alice.add({ type: 'msg', value: 'hello world' }, function (err, msg) {
       if (err) throw err
       msg = toKV(msg)
@@ -128,7 +128,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('follow another user', function (t) {
+  tape('links/types (follow another user)', function (t) {
     function follow (a, b) {
       return function (cb) {
         a.add('follow', { follow: b.id }, function (err, msg) {
@@ -176,7 +176,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('check for 1:1 relationships', function (t) {
+  tape('links/types (check for 1:1 relationships)', function (t) {
     function follows (a, b) {
       return function (cb) {
         pull(
@@ -213,7 +213,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('scan links with unknown rel', function (t) {
+  tape('linktypes (scan links with unknown rel)', function (t) {
     alice.add({
       type: 'poke',
       poke: bob.id
@@ -237,4 +237,3 @@ function run (opts = {}) {
 }
 
 run()
-

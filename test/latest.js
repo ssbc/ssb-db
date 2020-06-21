@@ -14,7 +14,7 @@ var carol = db.createFeed()
 var start = Date.now()
 
 // LEGACY: uses feed.add as a continuable
-tape('empty', function (t) {
+tape('latest (empty)', function (t) {
   cont.para([
   ])(function (err) {
     if (err) throw err

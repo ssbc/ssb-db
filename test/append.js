@@ -17,7 +17,7 @@ var a
 var db = a = minimal(dirname)
 db.ready.set(true)
 var MSG
-tape('setup', function (t) {
+tape('append (setup)', function (t) {
   a.append({ keys: keys, content: { type: 'empty' } }, function (err, msg) {
     if (err) throw err
     MSG = msg
@@ -37,7 +37,7 @@ tape('setup', function (t) {
 var state = V.initial()
 var N = 10000
 
-tape('generate', function (t) {
+tape('append (generate)', function (t) {
   var start = Date.now()
   var l = N
   state = V.append(state, null, MSG.value)
@@ -60,7 +60,7 @@ tape('generate', function (t) {
   t.end()
 })
 
-tape('loads', function (t) {
+tape('append (loads)', function (t) {
   var start = Date.now()
   db.since(function (s) {
     k++
@@ -90,7 +90,7 @@ tape('loads', function (t) {
   })()
 })
 
-tape('read back', function (t) {
+tape('append (read back)', function (t) {
   var msgs = state.queue // [MSG.value].concat(state.queue)
   var _state = V.initial()
   var ts = 0

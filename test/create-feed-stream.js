@@ -1,11 +1,10 @@
 'use strict'
 var tape = require('tape')
 var pull = require('pull-stream')
-var ssbKeys = require('ssb-keys')
 var createSSB = require('./util/create-ssb')
 
 function run (opts) {
-  tape('simple', function (t) {
+  tape('createFeedStream (simple)', function (t) {
     var ssb = createSSB('test-ssb-feed')
 
     ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
@@ -26,7 +25,7 @@ function run (opts) {
     })
   })
 
-  tape('tail', function (t) {
+  tape('createFeedStream (live)', function (t) {
     var ssb = createSSB('test-ssb-feed2')
 
     var nDrains = 0
@@ -49,7 +48,7 @@ function run (opts) {
       }
       var int = setInterval(addAgain, 300)
       pull(
-        ssb.createFeedStream({ tail: true }),
+        ssb.createFeedStream({ live: true }),
         pull.drain(function (ary) {
           nDrains++
           console.log('drain', nDrains)
@@ -63,7 +62,7 @@ function run (opts) {
     })
   })
 
-  tape('tail, parallel add', function (t) {
+  tape('createFeedStream (live, parallel add)', function (t) {
     var ssb = createSSB('test-ssb-feed3')
 
     var nDrains = 0
@@ -88,7 +87,7 @@ function run (opts) {
       }
 
       pull(
-        ssb.createFeedStream({ tail: true }),
+        ssb.createFeedStream({ live: true }),
         pull.drain(function (ary) {
           nDrains++
           console.log('drain', nDrains)
@@ -101,7 +100,7 @@ function run (opts) {
       addAgain()
     })
   })
-  tape('keys only', function (t) {
+  tape('createFeedStream (keys only)', function (t) {
     const ssb = createSSB('test-ssb-feed4')
 
     ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
@@ -119,7 +118,7 @@ function run (opts) {
     })
   })
 
-  tape('values only', function (t) {
+  tape('createFeedStream (values only)', function (t) {
     var ssb = createSSB('test-ssb-feed5')
 
     ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
@@ -139,4 +138,3 @@ function run (opts) {
 }
 
 run()
-

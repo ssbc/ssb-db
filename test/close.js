@@ -9,7 +9,7 @@ var content = { type: 'whatever' }
 
 const name = `test-ssb-close-${Date.now()}`
 
-tape('load', function (t) {
+tape('close (loads and closes)', function (t) {
   t.plan(2)
   var ssb = createSSB(name, { keys, temp: false })
 
@@ -23,7 +23,7 @@ tape('load', function (t) {
   })
 })
 
-tape('reopen', function (t) {
+tape('close (reopen existing db)', function (t) {
   t.plan(2)
 
   // HACK: See readme section on 'known bugs'.

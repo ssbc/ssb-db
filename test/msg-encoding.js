@@ -39,21 +39,21 @@ function run (opts = {}) {
 
   signed.signature = Buffer.alloc(64).toString('base64')
 
-  tape('Message', function (t) {
+  tape('msg encoding (Message)', function (t) {
     var enc = codec.encode(msg)
     var o = codec.decode(enc)
     t.deepEqual(o, msg)
     t.end()
   })
 
-  tape('Signed', function (t) {
+  tape('msg encoding (Signed)', function (t) {
     var enc = codec.encode(signed)
     var o = codec.decode(enc)
     t.deepEqual(o, signed)
     t.end()
   })
 
-  tape('known error case 1', function (t) {
+  tape('msg encoding (known error case 1)', function (t) {
     var ssb = createSSB('test-ssb-encoding')
 
     var feed = createFeed(ssb, generate(), opts)

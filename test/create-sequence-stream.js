@@ -4,7 +4,7 @@ const test = require('tape')
 
 const ssb = require('../').init({}, { temp: true })
 
-test('initial sequence numbers', (t) => {
+test('createSequenceStream (initial sequence numbers)', (t) => {
   const since = obv()
 
   pull(
@@ -16,7 +16,7 @@ test('initial sequence numbers', (t) => {
     t.equal(val, -1, 'since has correct init value')
   })
 
-  ssb.publish({type: 'test'}, (err, publishedMessage) => {
+  ssb.publish({ type: 'test' }, (err, publishedMessage) => {
     t.error(err, 'publish() success')
 
     t.equal(since.value, 0, 'since is incremented')
@@ -24,7 +24,7 @@ test('initial sequence numbers', (t) => {
   })
 })
 
-test('resume sequence stream later', (t) => {
+test('createSequenceStream (resume sequence stream later)', (t) => {
   const since = obv()
 
   pull(
@@ -36,7 +36,7 @@ test('resume sequence stream later', (t) => {
     t.equal(val, 0, 'since has correct init value')
   })
 
-  ssb.publish({type: 'test'}, (err, publishedMessage) => {
+  ssb.publish({ type: 'test' }, (err, publishedMessage) => {
     t.error(err, 'publish() success')
 
     ssb.get(since.value, (err, foundMessage) => {

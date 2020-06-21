@@ -29,7 +29,7 @@ function run (opts) {
     pull.drain(fromAlice.push.bind(fromAlice))
   )
 
-  tape('initialize', function (t) {
+  tape('links (initialize)', function (t) {
     cont.para([
       alice.add({ type: 'yo!', yo: alice.id }),
       alice.add({ type: 'contact', follow: bob.id, okay: true }),
@@ -47,7 +47,7 @@ function run (opts) {
     })
   })
 
-  tape('query only rel type', function (t) {
+  tape('links (query only rel type)', function (t) {
     pull(
       db.links({ rel: 'yo' }),
       pull.through(function (data) {
@@ -78,7 +78,7 @@ function run (opts) {
     }
   }
 
-  tape('query by dest', function (t) {
+  tape('links (query by dest)', function (t) {
     var test = createTest(t)
     var mention = {
       source: bob.id,
@@ -94,7 +94,7 @@ function run (opts) {
       { dest: msgs[2].key, rel: 'mentions' }, [mention])
   })
 
-  tape('realtime', function (t) {
+  tape('linve (realtime)', function (t) {
     pull(
       db.links({ source: alice.id, old: true }),
       pull.collect(function (err, ary) {
@@ -107,7 +107,7 @@ function run (opts) {
     )
   })
 
-  tape('live link values', function (t) {
+  tape('links (live link values)', function (t) {
     var msg
     pull(
       db.links({ old: false, live: true, values: true }),
@@ -119,6 +119,7 @@ function run (opts) {
           dest: bob.id,
           rel: 'foo'
         })
+
         db.close(t.end)
       })
     )

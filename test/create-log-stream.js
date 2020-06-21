@@ -10,7 +10,7 @@ var createSSB = require('./util/create-ssb')
 var generate = ssbKeys.generate
 
 function run (opts = {}) {
-  tape('simple', function (t) {
+  tape('createLogStream (simple)', function (t) {
     var ssb = createSSB('test-ssb-log1')
 
     var feed = createFeed(ssb, generate(), opts)
@@ -30,7 +30,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('gt', function (t) {
+  tape('createLogStream (gt)', function (t) {
     var ssb = createSSB('test-ssb-log2')
 
     var feed = createFeed(ssb, generate(), opts)
@@ -52,7 +52,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('gt 0', function (t) {
+  tape('createLogStream (gt 0)', function (t) {
     var ssb = createSSB('test-ssb-log4')
 
     var feed = createFeed(ssb, generate(), opts)
@@ -70,7 +70,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('keys only', function (t) {
+  tape('createLogStream (keys only)', function (t) {
     var ssb = createSSB('test-ssb-log5')
 
     var feed = createFeed(ssb, generate(), opts)
@@ -89,7 +89,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('values only', function (t) {
+  tape('createLogStream (values only)', function (t) {
     var ssb = createSSB('test-ssb-log6')
 
     var feed = createFeed(ssb, generate(), opts)
@@ -108,7 +108,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('live', function (t) {
+  tape('createLogStream (live)', function (t) {
     t.plan(3)
 
     var ssb = createSSB('test-ssb-log7')
@@ -132,67 +132,6 @@ function run (opts = {}) {
       if (err) throw err
     })
   })
-
-  tape('delete message', (t) => {
-    var ssb = createSSB('test-ssb-log8')
-
-    var feed = createFeed(ssb, generate(), opts)
-    t.plan(4)
-
-    feed.add('msg', 'hello there!', function (err, msg) {
-      t.error(err)
-
-      pull(
-        ssb.createFeedStream(),
-        pull.drain(function (msg) {
-          ssb.del(msg.key, err => t.error(err))
-        }, () => {
-          pull(
-            ssb.createFeedStream(),
-            pull.drain(() => {
-              t.fail('no messages should be available')
-            }, () => {
-              ssb.get(msg.key, (err) => {
-                t.ok(err)
-                t.equal(err.code, 'flumelog:deleted')
-                ssb.close(t.end)
-              })
-            })
-          )
-        })
-      )
-    })
-  })
-
-  tape('delete feed', (t) => {
-    var ssb = createSSB('test-ssb-log9')
-    var feed = createFeed(ssb, generate(), opts)
-
-    t.plan(5)
-
-    feed.add('msg', 'hello there!', function (err) {
-      t.error(err)
-      feed.add('msg', 'hello again!', function (err, msg) {
-        t.error(err)
-        ssb.del(msg.value.author, err => {
-          t.error(err)
-          pull(
-            ssb.createFeedStream(),
-            pull.drain(() => {
-              t.fail('no messages should be available')
-            }, () => {
-              ssb.get(msg.key, (err) => {
-                t.ok(err)
-                t.equal(err.code, 'flumelog:deleted')
-                ssb.close(t.end)
-              })
-            })
-          )
-        })
-      })
-    })
-  })
 }
 
 run()
-

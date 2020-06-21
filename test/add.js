@@ -29,7 +29,7 @@ function run (opts) {
         if (err) throw err
 
         t.deepEqual(_msg, msg.value)
-        ssb.get({id:msg.key, meta: true}, function (err, _msg2) {
+        ssb.get({ id: msg.key, meta: true }, function (err, _msg2) {
           t.deepEqual(_msg2, msg)
 
           ssb.publish({ type: 'wtf' }, function (err, msg) {
@@ -45,7 +45,7 @@ function run (opts) {
     })
   })
 
-  tape('log', function (t) {
+  tape('createLogStream', function (t) {
     pull(ssb.createLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
       if (err) throw err
       t.equal(ary.length, 2)
@@ -53,7 +53,7 @@ function run (opts) {
     }))
   })
 
-  tape('log', function (t) {
+  tape('createLogStream (values only)', function (t) {
     pull(
       ssb.createLogStream({ keys: false, values: true }),
       ssb2.createWriteStream(function (err, ary) {
@@ -62,7 +62,7 @@ function run (opts) {
       })
     )
   })
-  tape('close', function (t) {
+  tape('createLogStream -- close', function (t) {
     ssb.close((err) => {
       t.error(err)
       ssb2.close(t.end)
