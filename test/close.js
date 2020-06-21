@@ -38,7 +38,6 @@ tape('close (reopen existing db)', function (t) {
         t.deepEqual(ary[0].value.content, content, 'reopen works fine')
         ssb.close((err) => {
           t.error(err)
-          t.end()
         })
       })
     )
