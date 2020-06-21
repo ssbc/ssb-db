@@ -33,14 +33,14 @@ function run () {
   var feed = ssb.createFeed(alice)
 
   tape('error when trying to encrypt without boxer', (t) => {
-    t.plan(2);
+    t.plan(2)
     const darlene = ssbKeys.generate()
     const darleneFeed = ssb.createFeed(darlene)
     darleneFeed.add(
-      { type: "error", recps: [alice, darlene] },
+      { type: 'error', recps: [alice, darlene] },
       (err, msg) => {
-        t.ok(err);
-        t.notOk(msg);
+        t.ok(err)
+        t.notOk(msg)
         t.end()
       })
   })
@@ -357,7 +357,7 @@ function run () {
         const assertBoxedAsync = async (methodName, options) => {
           assertBoxed(methodName, await promisify(ssb[methodName])(options))
           if (typeof options === 'object' && Array.isArray(options) === false) {
-            assertBoxed(methodName, await promisify(ssb[methodName])({ ...options, private: false } ))
+            assertBoxed(methodName, await promisify(ssb[methodName])({ ...options, private: false }))
           }
         }
 
@@ -377,7 +377,7 @@ function run () {
               switch (methodName) {
                 case 'createRawLogStream':
                   assertBoxed(methodName, val[0].value)
-                  break;
+                  break
                 case 'createFeedStream':
                 case 'createUserStream':
                 case 'messagesByType':
@@ -402,19 +402,23 @@ function run () {
         }
 
         await assertBoxedSource('createLogStream', { limit: 1, reverse: true })
-        await assertBoxedSource('createHistoryStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
+        await assertBoxedSource('createHistoryStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
         await assertBoxedSource('messagesByType', { type: 'poke', limit: 1, reverse: true })
-        await assertBoxedSource('createFeedStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
-        await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
-        await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true})
-        await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true})
+        await assertBoxedSource('createFeedStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
+        await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
+        await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true })
+        await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true })
 
-        ssb.close((err) => {
-          t.error(err)
-          ssb2.close(t.end)
-        })
+        t.end()
       })
     })
+  })
+
+  // not great, but since these servers are being shared acros tests
+  // at least this is clear
+  tape.onFinish(() => {
+    ssb.close()
+    ssb2.close()
   })
 }
 

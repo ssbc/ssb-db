@@ -10,7 +10,7 @@ function all (stream, cb) {
 }
 
 function run (opts = {}) {
-  tape('retrive messages by type', function (t) {
+  tape('messagesByType', function (t) {
     var dbA = createSSB('msg-by-type1')
     var alice = createFeed(dbA, ssbKeys.generate(), opts)
 
@@ -66,7 +66,10 @@ function run (opts = {}) {
 
                 t.equal(ary.length, 1)
                 t.equal(typeof ary[0], 'string')
-                dbA.close(t.end)
+                dbA.close(err => {
+                  t.error(err, 'ssb.close - messagesByType')
+                  t.end()
+                })
               })
             })
           })

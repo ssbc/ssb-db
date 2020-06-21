@@ -14,7 +14,7 @@ var carol = db.createFeed()
 var start = Date.now()
 
 // LEGACY: uses feed.add as a continuable
-tape('empty', function (t) {
+tape('latest (empty)', function (t) {
   cont.para([
   ])(function (err) {
     if (err) throw err
@@ -48,7 +48,10 @@ tape('latest', function (t) {
           return v.id
         })
         t.deepEqual(n.sort(), [alice.id, bob.id, carol.id].sort())
-        db.close(t.end)
+        db.close(err => {
+          t.error(err, 'ssb.close - latest')
+          t.end()
+        })
       })
     )
   })
