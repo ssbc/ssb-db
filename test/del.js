@@ -12,7 +12,7 @@ function run (opts = {}) {
     var ssb = createSSB('test-ssb-log8')
 
     var feed = createFeed(ssb, generate(), opts)
-    t.plan(4)
+    t.plan(5)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       t.error(err)
@@ -30,7 +30,10 @@ function run (opts = {}) {
               ssb.get(msg.key, (err) => {
                 t.ok(err)
                 t.equal(err.code, 'flumelog:deleted')
-                ssb.close(t.end)
+                ssb.close(err => {
+                  t.error(err, 'ssb.close - del (delete message)')
+                  t.end()
+                })
               })
             })
           )
@@ -43,7 +46,7 @@ function run (opts = {}) {
     var ssb = createSSB('test-ssb-log9')
     var feed = createFeed(ssb, generate(), opts)
 
-    t.plan(5)
+    t.plan(6)
 
     feed.add('msg', 'hello there!', function (err) {
       t.error(err)
@@ -59,7 +62,10 @@ function run (opts = {}) {
               ssb.get(msg.key, (err) => {
                 t.ok(err)
                 t.equal(err.code, 'flumelog:deleted')
-                ssb.close(t.end)
+                ssb.close(err => {
+                  t.error(err, 'ssb.close - del (delete feed)')
+                  t.end()
+                })
               })
             })
           )

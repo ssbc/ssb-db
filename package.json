@@ -1,7 +1,7 @@
 {
   "name": "ssb-db",
   "description": "a secure, replicatable database",
-  "version": "20.1.0",
+  "version": "20.2.0",
   "homepage": "https://github.com/ssbc/ssb-db",
   "repository": {
     "type": "git",
@@ -44,7 +44,7 @@
     "secret-stack": "^6.3.1",
     "ssb-feed": "^2.2.1",
     "ssb-private1": "^1.0.1",
-    "ssb-private2": "github:ssbc/ssb-private2#boxer-init",
+    "ssb-private2": "github:ssbc/ssb-private2#master",
     "tap-spec": "^5.0.0",
     "tape": "^5.0.0",
     "typewiselite": "^1.0.0"

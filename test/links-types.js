@@ -213,7 +213,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('linktypes (scan links with unknown rel)', function (t) {
+  tape('links/types (scan links with unknown rel)', function (t) {
     alice.add({
       type: 'poke',
       poke: bob.id
@@ -230,7 +230,10 @@ function run (opts = {}) {
           { type: 'follow', follow: bob.id },
           { type: 'poke', poke: bob.id }
         ])
-        ssb.close(t.end)
+        ssb.close(err => {
+          t.error(err, 'ssb.close - links/types')
+          t.end()
+        })
       })
     })
   })

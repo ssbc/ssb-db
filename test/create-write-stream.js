@@ -58,8 +58,12 @@ function run (opts = {}) {
         }, ~~(Math.random() * 500))
       }),
       ssb.createWriteStream(function (err) {
-        if (err) throw err
-        ssb.close(t.end)
+        t.error(err)
+
+        ssb.close(err => {
+          t.error(err, 'ssb.close - createWriteStream')
+          t.end()
+        })
       })
     )
   })

@@ -156,7 +156,10 @@ function run (opts = {}) {
                     }
                   }, function () {
                     if (state.queue.length > 0) { t.pass('validate passes') }
-                    ssb.close(t.end)
+                    ssb.close(err => {
+                      t.error(err, 'ssb.close - validation')
+                      t.end()
+                    })
                   })
                 )
               }

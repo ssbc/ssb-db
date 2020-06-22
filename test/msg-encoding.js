@@ -68,7 +68,10 @@ function run (opts = {}) {
         pull.collect(function (err, ary) {
           if (err) throw err
           t.equal(ary.length, 1)
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - msg encoding')
+            t.end()
+          })
         })
       )
     })

@@ -120,7 +120,10 @@ function run (opts) {
           rel: 'foo'
         })
 
-        db.close(t.end)
+        db.close(err => {
+          t.error(err, 'ssb.close - links')
+          t.end()
+        })
       })
     )
 

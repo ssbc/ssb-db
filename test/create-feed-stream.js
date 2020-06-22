@@ -19,7 +19,10 @@ function run (opts) {
           t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createFeedStream (simple)')
+            t.end()
+          })
         })
       )
     })
@@ -54,7 +57,10 @@ function run (opts) {
           console.log('drain', nDrains)
           if (nDrains === 5) {
             clearInterval(int)
-            ssb.close(t.end)
+            ssb.close(err => {
+              t.error(err, 'ssb.close - createFeedStream (live)')
+              t.end()
+            })
           }
         })
       )
@@ -93,7 +99,10 @@ function run (opts) {
           console.log('drain', nDrains)
           if (nDrains === 5) {
             t.assert(true)
-            ssb.close(t.end)
+            ssb.close(err => {
+              t.error(err, 'ssb.close - createFeedStream (live parallel add)')
+              t.end()
+            })
           }
         })
       )
@@ -112,7 +121,10 @@ function run (opts) {
           t.error(err)
           t.equal(ary.length, 1)
           t.ok(typeof ary[0] === 'string')
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createFeedStream (keys only)')
+            t.end()
+          })
         })
       )
     })
@@ -130,7 +142,10 @@ function run (opts) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.ok(typeof ary[0].content.type === 'string')
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createFeedStream (values only)')
+            t.end()
+          })
         })
       )
     })

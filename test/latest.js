@@ -48,7 +48,10 @@ tape('latest', function (t) {
           return v.id
         })
         t.deepEqual(n.sort(), [alice.id, bob.id, carol.id].sort())
-        db.close(t.end)
+        db.close(err => {
+          t.error(err, 'ssb.close - latest')
+          t.end()
+        })
       })
     )
   })

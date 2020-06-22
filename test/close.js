@@ -41,5 +41,5 @@ tape('close (reopen existing db)', function (t) {
         })
       })
     )
-  }, 100)
+  }, 500)
 })

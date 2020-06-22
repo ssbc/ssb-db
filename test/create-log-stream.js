@@ -24,7 +24,10 @@ function run (opts = {}) {
           t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createLogStream (simple)')
+            t.end()
+          })
         })
       )
     })
@@ -45,7 +48,10 @@ function run (opts = {}) {
           pull.collect(function (err, ary) {
             if (err) throw err
             t.equal(ary.length, 1)
-            ssb.close(t.end)
+            ssb.close(err => {
+              t.error(err, 'ssb.close - createLogStream (gt)')
+              t.end()
+            })
           })
         )
       })
@@ -64,7 +70,10 @@ function run (opts = {}) {
         pull.collect(function (err, ary) {
           if (err) throw err
           t.equal(ary.length, 1)
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createLogStream (gt 0)')
+            t.end()
+          })
         })
       )
     })
@@ -83,7 +92,10 @@ function run (opts = {}) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0], 'string')
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createLogStream (gt)')
+            t.end()
+          })
         })
       )
     })
@@ -102,14 +114,17 @@ function run (opts = {}) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.equal(typeof ary[0].content.type, 'string')
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createLogStream (values only)')
+            t.end()
+          })
         })
       )
     })
   })
 
   tape('createLogStream (live)', function (t) {
-    t.plan(3)
+    t.plan(4)
 
     var ssb = createSSB('test-ssb-log7')
 
@@ -124,7 +139,10 @@ function run (opts = {}) {
         if (op.sync) return t.ok(true)
         t.ok(op.timestamp > ts)
         t.equal(op.value.content.type, 'msg')
-        ssb.close(t.end)
+        ssb.close(err => {
+          t.error(err, 'ssb.close - createLogStream (live)')
+          t.end()
+        })
       })
     )
 
