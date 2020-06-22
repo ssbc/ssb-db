@@ -1,11 +1,10 @@
 'use strict'
 var tape = require('tape')
 var pull = require('pull-stream')
-var ssbKeys = require('ssb-keys')
 var createSSB = require('./util/create-ssb')
 
 function run (opts) {
-  tape('simple', function (t) {
+  tape('createFeedStream (simple)', function (t) {
     var ssb = createSSB('test-ssb-feed')
 
     ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
@@ -20,13 +19,16 @@ function run (opts) {
           t.equal(ary.length, 1)
           t.assert(!!ary[0].key)
           t.assert(!!ary[0].value)
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createFeedStream (simple)')
+            t.end()
+          })
         })
       )
     })
   })
 
-  tape('tail', function (t) {
+  tape('createFeedStream (live)', function (t) {
     var ssb = createSSB('test-ssb-feed2')
 
     var nDrains = 0
@@ -49,13 +51,16 @@ function run (opts) {
       }
       var int = setInterval(addAgain, 300)
       pull(
-        ssb.createFeedStream({ tail: true }),
+        ssb.createFeedStream({ live: true }),
         pull.drain(function (ary) {
           nDrains++
           console.log('drain', nDrains)
           if (nDrains === 5) {
             clearInterval(int)
-            ssb.close(t.end)
+            ssb.close(err => {
+              t.error(err, 'ssb.close - createFeedStream (live)')
+              t.end()
+            })
           }
         })
       )
@@ -63,7 +68,7 @@ function run (opts) {
     })
   })
 
-  tape('tail, parallel add', function (t) {
+  tape('createFeedStream (live, parallel add)', function (t) {
     var ssb = createSSB('test-ssb-feed3')
 
     var nDrains = 0
@@ -88,20 +93,23 @@ function run (opts) {
       }
 
       pull(
-        ssb.createFeedStream({ tail: true }),
+        ssb.createFeedStream({ live: true }),
         pull.drain(function (ary) {
           nDrains++
           console.log('drain', nDrains)
           if (nDrains === 5) {
             t.assert(true)
-            ssb.close(t.end)
+            ssb.close(err => {
+              t.error(err, 'ssb.close - createFeedStream (live parallel add)')
+              t.end()
+            })
           }
         })
       )
       addAgain()
     })
   })
-  tape('keys only', function (t) {
+  tape('createFeedStream (keys only)', function (t) {
     const ssb = createSSB('test-ssb-feed4')
 
     ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
@@ -113,13 +121,16 @@ function run (opts) {
           t.error(err)
           t.equal(ary.length, 1)
           t.ok(typeof ary[0] === 'string')
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createFeedStream (keys only)')
+            t.end()
+          })
         })
       )
     })
   })
 
-  tape('values only', function (t) {
+  tape('createFeedStream (values only)', function (t) {
     var ssb = createSSB('test-ssb-feed5')
 
     ssb.publish({ type: 'msg', value: 'hello there!' }, function (err, msg) {
@@ -131,7 +142,10 @@ function run (opts) {
           if (err) throw err
           t.equal(ary.length, 1)
           t.ok(typeof ary[0].content.type === 'string')
-          ssb.close(t.end)
+          ssb.close(err => {
+            t.error(err, 'ssb.close - createFeedStream (values only)')
+            t.end()
+          })
         })
       )
     })
@@ -139,4 +153,3 @@ function run (opts) {
 }
 
 run()
-

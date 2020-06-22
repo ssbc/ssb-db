@@ -49,7 +49,12 @@ function run (opts) {
   var id
   var keys2
 
-  tape('history', function (t) {
+  // NOTE these tests could be out of place / poorly named? (or could be just write)
+  // - createUserStream + latest being tested, why?
+  // - these tests are assumed to run **in serial** and each test adds more context, which makes moving them dangerous
+
+  // ODD ONE
+  tape('latest (history)', function (t) {
     keys = init(ssb, 7, function (err) {
       if (err) throw err
       pull(ssb.latest(), pull.collect(function (err, ary) {
@@ -65,7 +70,7 @@ function run (opts) {
     id = keys.id // opts.hash(keys.public)
   })
 
-  tape('since', function (t) {
+  tape('createHistoryStream (since seq)', function (t) {
     pull(
       ssb.createHistoryStream({ id: id, seq: 1 }),
       pull.collect(function (err, ary) {
@@ -76,7 +81,8 @@ function run (opts) {
     )
   })
 
-  tape('two keys', function (t) {
+  // ODD ONE
+  tape('latest (two keys)', function (t) {
     keys2 = init(ssb, 4, function (err) {
       if (err) throw err
       pull(ssb.latest(), pull.collect(function (err, ary) {
@@ -93,7 +99,7 @@ function run (opts) {
     })
   })
 
-  tape('keys & since', function (t) {
+  tape('createHistoryStram (keys & since)', function (t) {
     pull(
       ssb.createHistoryStream({ id: id, seq: 1, keys: true }),
       pull.collect(function (err, ary) {
@@ -106,7 +112,8 @@ function run (opts) {
     )
   })
 
-  tape('user stream', function (t) {
+  // ODD ONE
+  tape('createUserStream', function (t) {
     pull(
       ssb.createUserStream({ id: id, gt: 3, lte: 7, reverse: true }),
       pull.collect(function (err, ary) {
@@ -120,7 +127,7 @@ function run (opts) {
       })
     )
   })
-  tape('keys only', function (t) {
+  tape('createHistoryStream (keys only)', function (t) {
     pull(
       ssb.createHistoryStream({ id: id, values: false }),
       pull.collect(function (err, ary) {
@@ -132,7 +139,7 @@ function run (opts) {
     )
   })
 
-  tape('values only', function (t) {
+  tape('createHistoryStream (values only)', function (t) {
     pull(
       ssb.createHistoryStream({ id: id, keys: false }),
       pull.collect(function (err, ary) {
@@ -144,7 +151,7 @@ function run (opts) {
     )
   })
 
-  tape('abort live stream', function (t) {
+  tape('createHistoryStream (abort live stream)', function (t) {
     var abortable = Abortable()
     var errMsg = 'intentional'
     var err = new Error(errMsg)
@@ -172,7 +179,7 @@ function run (opts) {
     )
   })
 
-  tape('createHistoryStream with limit', function (t) {
+  tape('createHistoryStream (with limit)', function (t) {
     pull(
       ssb.createHistoryStream({
         id: id, keys: false, limit: 5
@@ -180,11 +187,18 @@ function run (opts) {
       pull.collect(function (err, ary) {
         if (err) throw err
         t.equal(ary.length, 5)
-        ssb.close(t.end)
+
+        // assumes this is last test run
+        ssb.close(() => {
+          if (err) console.error(err)
+          t.end()
+        })
       })
     )
   })
+
+  // NOTE we might have to do this
+  // tape.onFinish(ssb.close)
 }
 
 run()
-

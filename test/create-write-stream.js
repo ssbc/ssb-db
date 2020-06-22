@@ -9,7 +9,7 @@ function run (opts = {}) {
   var ssb = createSSB('test-ssb-write-stream')
   var create = require('ssb-feed/util').create
 
-  tape('write-stream', function (t) {
+  tape('createWriteStream', function (t) {
     var keys = ssbKeys.generate()
 
     var prev
@@ -20,7 +20,6 @@ function run (opts = {}) {
     while (l--) {
       q.push(prev = create(keys, 'msg', { count: l }, prev))
     }
-
 
     pull(
       pull.values(q),
@@ -36,7 +35,7 @@ function run (opts = {}) {
     )
   })
 
-  tape('write-stream, overwrite', function (t) {
+  tape('createWriteStream (overwrite)', function (t) {
     var keys = ssbKeys.generate()
 
     var prev
@@ -51,7 +50,6 @@ function run (opts = {}) {
     q.push(q[3])
     q.push(q[4])
 
-
     pull(
       pull.values(q),
       pull.asyncMap(function (data, cb) {
@@ -60,8 +58,12 @@ function run (opts = {}) {
         }, ~~(Math.random() * 500))
       }),
       ssb.createWriteStream(function (err) {
-        if (err) throw err
-        ssb.close(t.end)
+        t.error(err)
+
+        ssb.close(err => {
+          t.error(err, 'ssb.close - createWriteStream')
+          t.end()
+        })
       })
     )
   })

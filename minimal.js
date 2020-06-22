@@ -29,7 +29,8 @@ module.exports = function (dirname, keys, opts) {
 
   var setup = {
     validators: new u.AsyncJobQueue(),
-    unboxers: new u.AsyncJobQueue()
+    unboxers: new u.AsyncJobQueue(),
+    boxers: new u.AsyncJobQueue()
   }
   function waitForValidators (fn) {
     return function (...args) {
@@ -39,6 +40,11 @@ module.exports = function (dirname, keys, opts) {
   function waitForUnboxers (fn) {
     return function (...args) {
       setup.unboxers.runAll(() => fn(...args))
+    }
+  }
+  function waitForBoxers (fn) {
+    return function (...args) {
+      setup.boxers.runAll(() => fn(...args))
     }
   }
 
@@ -108,7 +114,7 @@ module.exports = function (dirname, keys, opts) {
     })
   })
 
-  db.append = waitForUnboxers(waitForValidators(function dbAppend (opts, cb) {
+  db.append = waitForBoxers(waitForValidators(function dbAppend (opts, cb) {
     try {
       const content = box(opts.content, boxers)
       var msg = V.create(
@@ -144,7 +150,15 @@ module.exports = function (dirname, keys, opts) {
   }
 
   db.addBoxer = function addBoxer (boxer) {
-    boxers.push(boxer)
+    if (typeof boxer === 'function') return db.addBoxer({ value: boxer })
+    if (typeof boxer.value !== 'function') throw new Error('invalid boxer')
+
+    if (boxer.init) {
+      setup.boxers.add(boxer.init)
+      setup.boxers.runAll()
+    }
+
+    boxers.push(boxer.value)
   }
 
   db.addUnboxer = function addUnboxer (unboxer) {

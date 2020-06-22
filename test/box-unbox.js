@@ -33,14 +33,14 @@ function run () {
   var feed = ssb.createFeed(alice)
 
   tape('error when trying to encrypt without boxer', (t) => {
-    t.plan(2);
+    t.plan(2)
     const darlene = ssbKeys.generate()
     const darleneFeed = ssb.createFeed(darlene)
     darleneFeed.add(
-      { type: "error", recps: [alice, darlene] },
+      { type: 'error', recps: [alice, darlene] },
       (err, msg) => {
-        t.ok(err);
-        t.notOk(msg);
+        t.ok(err)
+        t.notOk(msg)
         t.end()
       })
   })
@@ -290,15 +290,27 @@ function run () {
   })
 
   tape('addUnboxer (with init)', function (t) {
-    var initDone = false
+    let unboxerInitDone = false
+    let boxerInitDone = false
+
+    const boxer = {
+      init: function (done) {
+        setTimeout(() => {
+          t.ok(true, 'calls boxer init')
+          boxerInitDone = true
+          done()
+        }, 500)
+      },
+      value: (x) => Buffer.from(JSON.stringify(x)).toString('base64') + '.box.hah'
+    }
 
     const unboxer = {
       init: function (done) {
         setTimeout(() => {
-          t.ok(true, 'calls init')
-          initDone = true
+          t.ok(true, 'calls unboxer init')
+          unboxerInitDone = true
           done()
-        }, 500)
+        }, 1000)
       },
       key: function (ciphertext) {
         if (!ciphertext.endsWith('.box.hah')) return
@@ -312,8 +324,10 @@ function run () {
         )
       }
     }
+    ssb.addBoxer(boxer)
     ssb.addUnboxer(unboxer)
-    t.false(initDone)
+    t.false(boxerInitDone)
+    t.false(unboxerInitDone)
 
     const content = {
       type: 'poke',
@@ -321,15 +335,14 @@ function run () {
       recps: [ '!test' ],
       myFriend: alice.id// Necessary to test links()
     }
-    const ciphertext = Buffer.from(JSON.stringify(content)).toString('base64') + '.box.hah'
-
-    feed.publish(ciphertext, (_, msg) => {
-      t.true(initDone, 'unboxer completed initialisation before publish')
+    feed.publish(content, (_, msg) => {
+      t.true(boxerInitDone, 'boxer completed initialisation before publish')
+      t.false(unboxerInitDone, 'unboxer did not completed initialisation before publish')
 
       ssb.get({ id: msg.key, private: true, meta: true }, async (err, msg) => {
         t.error(err)
 
-        t.true(initDone, 'unboxer completed initialisation before get')
+        t.true(unboxerInitDone, 'unboxer completed initialisation before get')
         t.deepEqual(msg.value.content, content, 'auto unboxing works')
 
         const assertBoxed = (methodName, message) => {
@@ -344,7 +357,7 @@ function run () {
         const assertBoxedAsync = async (methodName, options) => {
           assertBoxed(methodName, await promisify(ssb[methodName])(options))
           if (typeof options === 'object' && Array.isArray(options) === false) {
-            assertBoxed(methodName, await promisify(ssb[methodName])({ ...options, private: false } ))
+            assertBoxed(methodName, await promisify(ssb[methodName])({ ...options, private: false }))
           }
         }
 
@@ -364,7 +377,7 @@ function run () {
               switch (methodName) {
                 case 'createRawLogStream':
                   assertBoxed(methodName, val[0].value)
-                  break;
+                  break
                 case 'createFeedStream':
                 case 'createUserStream':
                 case 'messagesByType':
@@ -389,19 +402,23 @@ function run () {
         }
 
         await assertBoxedSource('createLogStream', { limit: 1, reverse: true })
-        await assertBoxedSource('createHistoryStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
+        await assertBoxedSource('createHistoryStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
         await assertBoxedSource('messagesByType', { type: 'poke', limit: 1, reverse: true })
-        await assertBoxedSource('createFeedStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
-        await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true})
-        await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true})
-        await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true})
+        await assertBoxedSource('createFeedStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
+        await assertBoxedSource('createUserStream', { id: msg.value.author, seq: msg.value.sequence, reverse: true })
+        await assertBoxedSource('links', { source: msg.value.author, limit: 1, values: true })
+        await assertBoxedSource('createRawLogStream', { source: msg.value.author, limit: 1, reverse: true, values: true })
 
-        ssb.close((err) => {
-          t.error(err)
-          ssb2.close(t.end)
-        })
+        t.end()
       })
     })
+  })
+
+  // not great, but since these servers are being shared acros tests
+  // at least this is clear
+  tape.onFinish(() => {
+    ssb.close()
+    ssb2.close()
   })
 }
 

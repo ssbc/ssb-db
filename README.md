@@ -593,21 +593,31 @@ db.since(fn(seq)) => Obv
 An [observable](https://github.com/dominictarr/obv) of the current log sequence. This is always a positive 
 integer that usually increases, except in the exceptional circumstance that the log is deleted or corrupted.
 
-### db.addBoxer(boxer)
+### db.addBoxer: sync
+
+```js
+db.addUnboxer({ value: boxer, init: initUnboxer })
+```
 
 Add a `boxer`, which will be added to the list of boxers which will try to
 automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
-`boxer` is a function of signature `boxer(msg.value.content) => ciphertext` which is expected to:
-- successfully box the content (based on `content.recps`), returning a `ciphertext` String
-- not know how to box this content (because recps are outside it's understanding), and `undefined` (or `null`)
-- break (because it should know how to handle `recps`, but can't), and so throw an `Error`
+Where:
+- `boxer (msg.value.content) => ciphertext` which is expected to either:
+    - successfully box the content (based on `content.recps`), returning a `ciphertext` String
+    - not know how to box this content (because recps are outside it's understanding), and `undefined` (or `null`)
+    - break (because it should know how to handle `recps`, but can't), and so throw an `Error`
+- `initUnboxer (done) => null` (optional)
+    - is a functional which allows you set up your unboxer
+    - you're expected to call `done()` once all your initialisation is complete
 
 ## db.addUnboxer: sync
+
 ```js
 db.addUnboxer({ key: unboxKey, value: unboxValue, init: initBoxer })
 ```
+
 Add an unboxer object, any encrypted message is passed to the unboxer object to
 test if it can be unboxed (decrypted)
 
@@ -615,12 +625,11 @@ Where:
 - `unboxKey(msg.value.content, msg.value) => readKey`
     - Is a function which tries to extract the message key from the encrypted content (`ciphertext`).
     - Is expected to return `readKey` which is the read capability for the message
-    - `unboxValue(msg.value.content, msg.value, readKey) => plainContent`
-    - Is a function which takes a `readKey` and uses it to try to extract the `plainContent` from the `ciphertext- `initBoxer(done)`
-    - Is an optional initialisation function (useful for asynchronously setting up state for unboxer)
-    - It's pased a `done` callback which you need to call once everything is ready to go
-
-NOTE: There's an alternative way to use `addUnboxer` but read the source to understand that.
+- `unboxValue(msg.value.content, msg.value, readKey) => plainContent`
+    - Is a function which takes a `readKey` and uses it to try to extract the `plainContent` from the `ciphertext
+- `initBoxer (done) => null` (optional)
+    - is a functional which allows you set up your boxer
+    - you're expected to call `done()` once all your initialisation is complete
 
 ## db.box(content, recps, cb)
 

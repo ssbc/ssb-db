@@ -11,10 +11,14 @@ const caps = { shs: crypto.randomBytes(32).toString('base64') }
 
 const randomName = () => crypto.randomBytes(16).toString("hex");
 
-module.exports = function createSSB (name = randomName(), opts = {}) {
+module.exports = function createSSB (name = randomName(), opts = {}, plugins) {
   const ssbDb = require('../../');
   const stack = secretStack({ caps }).use(ssbDb)
   const dir = path.join(os.tmpdir(), name);
+  
+  if (plugins) {
+    plugins.forEach((plugin) => stack.use(plugin))
+  }
 
   if (opts.temp !== false) {
     rimraf.sync(dir);

@@ -12,7 +12,7 @@ function run (opts = {}) {
   var create = require('ssb-feed/util').create
   var ssb = createSSB('test-ssb-validate')
 
-  tape('simple', function (t) {
+  tape('validation (simple)', function (t) {
     var keys = generate()
     var prev
     var messages = [
@@ -27,7 +27,7 @@ function run (opts = {}) {
     })
   })
 
-  tape('add & validate', function (t) {
+  tape('validation (add & validate)', function (t) {
     var keys = generate()
     var prev
     ssb.add(
@@ -60,7 +60,7 @@ function run (opts = {}) {
     )
   })
 
-  tape('race: should queue', function (t) {
+  tape('validation (race: should queue)', function (t) {
     var keys = generate()
     var prev
     var calls = 0
@@ -101,7 +101,7 @@ function run (opts = {}) {
   // when an add fails, you should still be able to add another
   // message if you wait until it has returned.
 
-  tape('too big', function (t) {
+  tape('validation (too big)', function (t) {
     var keys = generate()
     var feed = ssb.createFeed(keys)
     var str = ''
@@ -116,7 +116,7 @@ function run (opts = {}) {
   })
 
   // git-ssb is known to change the order of the message
-  tape('dict order', function (t) {
+  tape('validation (dict order)', function (t) {
     var keys = generate()
     var prev
     ssb.add(
@@ -156,7 +156,10 @@ function run (opts = {}) {
                     }
                   }, function () {
                     if (state.queue.length > 0) { t.pass('validate passes') }
-                    ssb.close(t.end)
+                    ssb.close(err => {
+                      t.error(err, 'ssb.close - validation')
+                      t.end()
+                    })
                   })
                 )
               }
@@ -169,4 +172,3 @@ function run (opts = {}) {
 }
 
 run()
-

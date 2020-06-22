@@ -4,7 +4,7 @@ const { promisify } = require('util')
 
 const createSsb = require('./util/create-ssb')
 
-tape('basic rebuild', async (t) => {
+tape('rebuild (basic)', async (t) => {
   t.plan(3)
   const db = createSsb()
 
@@ -22,7 +22,8 @@ tape('basic rebuild', async (t) => {
   await promisify(db.close)()
   t.pass('closed')
 })
-tape('basic rebuild (with an unboxer that requires init)', async (t) => {
+
+tape('rebuild (with an unboxer that requires init)', async (t) => {
   t.plan(3)
   const db = createSsb()
 
@@ -57,12 +58,12 @@ tape('basic rebuild (with an unboxer that requires init)', async (t) => {
 
   await promisify(db.rebuild)()
   t.pass('rebuilt')
-  
+
   await promisify(db.close)()
   t.pass('closed')
 })
 
-tape('new unboxer rebuild', async (t) => {
+tape('rebuild (after new unboxer)', async (t) => {
   t.plan(7)
   const db = createSsb()
   const myId = db.id
@@ -91,7 +92,7 @@ tape('new unboxer rebuild', async (t) => {
   const boxed = await promisify(latestByBoxStatus.get)('boxed')
   t.ok(boxed, "indexes can't see the unboxed message, it remains boxed")
 
-  const msgBefore = await promisify(db.get)({ id: boxed.key, meta: true, private: true });
+  const msgBefore = await promisify(db.get)({ id: boxed.key, meta: true, private: true })
 
   t.equal(
     typeof msgBefore.value.content,
@@ -121,7 +122,7 @@ tape('new unboxer rebuild', async (t) => {
   await promisify(db.rebuild)()
   t.pass('rebuilt')
 
-  const msgAfter = await promisify(db.get)({ id: boxed.key, meta: true, private: true });
+  const msgAfter = await promisify(db.get)({ id: boxed.key, meta: true, private: true })
 
   // NOTE: Flumeview-Level doesn't actually unbox the message, since it only
   // runs `get(id)` under the hood.
@@ -141,5 +142,36 @@ tape('new unboxer rebuild', async (t) => {
 
   await promisify(db.close)()
   t.pass('closed')
+})
 
+/* Note - this sequence of actions sets the database in a state which could get it in a locked state
+ * In particular ssb-private2 requires boxer and unboxer initialistion, and they can depened on one
+ * another, so if you're not careful.
+ */
+
+tape('rebuild (partial index, complex boxer/unboxer)', async (t) => {
+  const name = `test-ssb-partial-index-${Date.now()}`
+
+  t.plan(6)
+
+  const ssb = createSsb(name, { temp: false })
+  const { key } = await promisify(ssb.publish)({ type: 'test' })
+  t.pass('published')
+
+  await promisify(ssb.rebuild)()
+  t.pass('rebuilt')
+
+  await promisify(ssb.close)()
+  t.pass('closed')
+
+  const ssb2 = createSsb(name, { temp: false }, [require('ssb-private2')])
+
+  const result = await promisify(ssb2.get)(key)
+  t.ok(result)
+
+  await promisify(ssb2.publish)({ type: 'test' })
+  t.pass('published again')
+
+  await promisify(ssb2.close)()
+  t.pass('closed again')
 })
