@@ -162,26 +162,20 @@ module.exports = function (dirname, keys, opts) {
   }
 
   db.addUnboxer = function addUnboxer (unboxer) {
-    switch (typeof unboxer) {
-      case 'function':
-        unboxers.push(unboxer)
-        break
-
-      case 'object':
-        if (typeof unboxer.key !== 'function') throw new Error('invalid unboxer')
-        if (typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
-        if (unboxer.init && typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
-
-        if (unboxer.init) {
-          setup.unboxers.add(unboxer.init)
-          setup.unboxers.runAll()
-        }
-        unboxers.push(unboxer)
-
-        break
-
-      default: throw new Error('invalid unboxer')
+    if (typeof unboxer === 'function') {
+      unboxers.push(unboxer)
+      return
     }
+
+    if (typeof unboxer.key !== 'function') throw new Error('invalid unboxer')
+    if (typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
+    if (unboxer.init && typeof unboxer.value !== 'function') throw new Error('invalid unboxer')
+
+    if (unboxer.init) {
+      setup.unboxers.add(unboxer.init)
+      setup.unboxers.runAll()
+    }
+    unboxers.push(unboxer)
   }
 
   db._unbox = function dbUnbox (msg, msgKey) {

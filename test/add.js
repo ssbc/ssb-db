@@ -45,7 +45,7 @@ function run (opts) {
     })
   })
 
-  tape('add (createLogStream)', function (t) {
+  tape('add, createLogStream (createLogStream)', function (t) {
     pull(ssb.createLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
       if (err) throw err
       t.equal(ary.length, 2)
@@ -53,7 +53,7 @@ function run (opts) {
     }))
   })
 
-  tape('add (createLogStream)', function (t) {
+  tape('add, createLogStream (values only)', function (t) {
     pull(
       ssb.createLogStream({ keys: false, values: true }),
       ssb2.createWriteStream(function (err, ary) {
