@@ -1,5 +1,6 @@
 const HLRU = require('hashlru')
 const { metaBackup } = require('./util')
+const { cloneDeep } = require('lodash')
 
 function isFunction (f) { return typeof f === 'function' }
 function isString (s) { return typeof s === 'string' }
@@ -117,7 +118,7 @@ function unboxWithCache (id) {
 
     const result = unbox(msg, readKey, unboxers)
     if (isString(result.value.content)) cache.set(msg.key, false)
-    else cache.set(msg.key, result)
+    else cache.set(msg.key, cloneDeep(result))
 
     return result
   }
