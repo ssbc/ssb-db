@@ -9,7 +9,7 @@ var Obv = require('obv')
 var mkdirp = require('mkdirp')
 var u = require('./util')
 var codec = require('./codec')
-var { box, unbox: _unbox } = require('./autobox')
+var { box, unbox } = require('./autobox')
 
 module.exports = function (dirname, keys, opts) {
   var caps = (opts && opts.caps) || {}
@@ -23,9 +23,6 @@ module.exports = function (dirname, keys, opts) {
 
   var boxers = []
   var unboxers = []
-  var unbox = _unbox.withCache()
-  // NOTE unbox.withCache needs to be instantiated *inside* this scope
-  // otherwise the cache is shared across instances!
 
   var setup = {
     validators: new u.AsyncJobQueue(),
@@ -184,7 +181,6 @@ module.exports = function (dirname, keys, opts) {
 
   const _rebuild = db.rebuild
   db.rebuild = function (cb) {
-    unbox.resetCache()
     _rebuild(cb)
   }
 

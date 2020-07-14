@@ -523,7 +523,7 @@ tape('addUnboxer (simple / depricated)', function (t) {
 })
 
 tape('addUnboxer { key, value }', function (t) {
-  t.plan(6)
+  t.plan(36)
   var alice = ssbKeys.generate()
   var ssb = createSSB(undefined, { keys: alice })
   var feed = ssb.createFeed(alice)
@@ -550,6 +550,7 @@ tape('addUnboxer { key, value }', function (t) {
       return 'the_read_key'
     },
     value: (_ciphertext, _val, _readKey) => {
+      console.log(_val)
       t.equal(_ciphertext, ciphertext, 'unboxValue gets passed ciphertext')
       t.true(isMsgVal(_val), 'unboxKey gets passed msgVal')
       t.deepEqual(_readKey, 'the_read_key', 'unboxKey gets passed the readyKey')
