@@ -51,7 +51,7 @@ exports.wait = function () {
  * `originalData()` and `originalValue()` make copies of the object, since the
  * `originalData()` function used to pass directly to `originalValue()`. 
  *
- * @param {object} copy - a copy of your 'value', not the original
+ * @param {object} value - a copy of your 'value', not the original
  *
  * @returns {object} the original message value
  */
