@@ -13,6 +13,7 @@ const plugins = [
   require('ssb-tribes')
 ]
 const createSsb = require('./util/create-ssb')
+const cloneDeep = require('lodash.clonedeep')
 
 // This test uses get() from SSB-DB to unbox the published message.
 // It seems to work fine, and `msg.value.content` is always an object.
@@ -84,5 +85,33 @@ tape('unbox.withCache - source', (t) => {
         })
       })
     })
+  })
+})
+
+// This test ensures that one query doesn't mutate the results of another
+// query. This was written to illustrate a problem where `unboxValue()` would
+// **mutate the results of other queries** and re-box messages that were meant
+// to be private.
+tape('shared mutable state (source)', (t) => {
+  const ssb = createSsb(`shared-mutable-state-${Date.now}`, {}, [require('ssb-private1')])
+
+  ssb.publish({ type: 'test', recps: [ssb.id]}, (err) => {
+    t.error(err)
+
+    pull(
+      ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1, private: true }),
+      pull.collect((err, privateMessages) => {
+        t.error(err)
+        const copy = cloneDeep(privateMessages)
+        pull(
+          ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1 }),
+          pull.collect((err) => {
+            t.error(err)
+            t.deepEqual(privateMessages, copy, 'unrelated query should not mutate original results')
+            ssb.close(t.end)
+          })
+        )
+      })
+    )
   })
 })

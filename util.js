@@ -1,4 +1,5 @@
 var Map = require('pull-stream/throughs/map')
+const cloneDeep = require('lodash.clonedeep')
 
 // opts standardized to work like levelup api
 function stdopts (opts) {
@@ -41,17 +42,20 @@ exports.wait = function () {
 }
 
 /**
- * Remove metadata from a message value and replace it with the original
- * content (if any) found in `value.meta.original`. This also deletes the
- * deprecated `value.private` and such, which still exists for backward-compat.
+ * The magic behind `originalData()` and `originalValue()`, this function
+ * mutates the actual data and **will cause problems** unless you pass a copy
+ * of your message to this function. Anything you pass to this function will be
+ * mutated. Do not reuse the message after passing it here!
  *
- * @param {object} data - `value` property from message object
+ * This method exists because it would have been wasteful to have both
+ * `originalData()` and `originalValue()` make copies of the object, since the
+ * `originalData()` function used to pass directly to `originalValue()`. 
  *
- * @todo Delete unboxer metadata, which exists for backward-compatibility.
+ * @param {object} copy - a copy of your 'value', not the original
  *
- * @returns {object} the original message value, extracted from `value.meta.original`
+ * @returns {object} the original message value
  */
-const originalValue = exports.originalValue = function (value) {
+const mutateValue = function (value) {
   var copy = {}
 
   for (let key in value) {
@@ -70,6 +74,21 @@ const originalValue = exports.originalValue = function (value) {
 }
 
 /**
+ * Remove metadata from a message value and replace it with the original
+ * content (if any) found in `value.meta.original`. This also deletes the
+ * deprecated `value.private` and such, which still exists for backward-compat.
+ *
+ * @param {object} data - `value` property from message object
+ *
+ * @todo Delete unboxer metadata, which exists for backward-compatibility.
+ *
+ * @returns {object} the original message value, extracted from `value.meta.original`
+ */
+const originalValue = exports.originalValue = function (value) {
+  return mutateValue(cloneDeep(value))
+}
+
+/**
  * Remove metadata from messages and return *only* the original message, ready
  * for replication or cryptographic verification.
  *
@@ -78,8 +97,9 @@ const originalValue = exports.originalValue = function (value) {
  * @returns {object} the original data, extracted from `data.value.meta.original`
  */
 var originalData = exports.originalData = function (data) {
-  data.value = originalValue(data.value)
-  return data
+  const clone = cloneDeep(data)
+  clone.value = mutateValue(clone.value)
+  return clone
 }
 
 /**
