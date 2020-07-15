@@ -4,7 +4,7 @@
   The bug was tracked down to the unbox cache in autobox.js, which was storing
   a reference to a state which was being mutated elsewhere.
   These tests are left to guard against this bug recurring
-*/
+  */
 
 const tape = require('tape')
 const pull = require('pull-stream')
@@ -33,14 +33,12 @@ tape('unbox.withCache - async', (t) => {
         t.equal(typeof msg.value.content, 'object')
         a.close((err) => {
           t.error(err)
-          setTimeout(() => {
-            const b = createSsb(name, { temp: false, keys: a.keys }, plugins)
-            asyncGet(b, key, (err, msg) => {
-              t.error(err)
-              t.equal(typeof msg.value.content, 'object')
-              b.close(t.end)
-            })
-          }, 100)
+          const b = createSsb(name, { temp: false, keys: a.keys }, plugins)
+          asyncGet(b, key, (err, msg) => {
+            t.error(err)
+            t.equal(typeof msg.value.content, 'object')
+            b.close(t.end)
+          })
         })
       })
     })
@@ -74,14 +72,12 @@ tape('unbox.withCache - source', (t) => {
         t.equal(typeof msg.value.content, 'object')
         a.close((err) => {
           t.error(err)
-          setTimeout(() => {
-            const b = createSsb(name, { temp: false, keys: a.keys }, plugins)
-            streamGet(b, key, (err, msg) => {
-              t.error(err)
-              t.equal(typeof msg.value.content, 'object')
-              b.close(t.end)
-            })
-          }, 100)
+          const b = createSsb(name, { temp: false, keys: a.keys }, plugins)
+          streamGet(b, key, (err, msg) => {
+            t.error(err)
+            t.equal(typeof msg.value.content, 'object')
+            b.close(t.end)
+          })
         })
       })
     })

@@ -79,7 +79,14 @@ module.exports = {
         // override to close the SSB database
         ssb.close(function (err) {
           if (err) return cb(err)
-          _close(cb) //multiserver doesn't take a callback on close.
+          //multiserver doesn't take a callback on close.
+          _close((err) => {
+            setImmediate(() => {
+              if (typeof cb === 'function') {
+                cb(err)
+              }
+            })
+          })
         })
       })
     }

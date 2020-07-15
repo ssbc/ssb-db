@@ -25,21 +25,17 @@ tape('close (loads and closes)', function (t) {
 
 tape('close (reopen existing db)', function (t) {
   t.plan(2)
-  // HACK: See readme section on 'known bugs'.
+  var ssb = createSSB(name, { keys, temp: false })
 
-  setTimeout(() => {
-    var ssb = createSSB(name, { keys, temp: false })
+  pull(
+    ssb.createLogStream(),
+    pull.collect(function (err, ary) {
+      if (err) throw err
 
-    pull(
-      ssb.createLogStream(),
-      pull.collect(function (err, ary) {
-        if (err) throw err
-
-        t.deepEqual(ary[0].value.content, content, 'reopen works fine')
-        ssb.close((err) => {
-          t.error(err)
-        })
+      t.deepEqual(ary[0].value.content, content, 'reopen works fine')
+      ssb.close((err) => {
+        t.error(err)
       })
-    )
-  }, 500)
+    })
+  )
 })
