@@ -88,7 +88,7 @@ tape('unbox.withCache - source', (t) => {
 // query. This was written to illustrate a problem where `unboxValue()` would
 // **mutate the results of other queries** and re-box messages that were meant
 // to be private.
-tape('shared mutable state (source)', (t) => {
+tape('shared mutable state (passive)', (t) => {
   const ssb = createSsb(`shared-mutable-state-${Date.now}`, {}, [require('ssb-private1')])
 
   ssb.publish({ type: 'test', recps: [ssb.id]}, (err) => {
@@ -104,6 +104,30 @@ tape('shared mutable state (source)', (t) => {
           pull.collect((err) => {
             t.error(err)
             t.deepEqual(privateMessages, copy, 'unrelated query should not mutate original results')
+            ssb.close(t.end)
+          })
+        )
+      })
+    )
+  })
+})
+
+tape('shared mutable state (active)', (t) => {
+  const ssb = createSsb(`shared-mutable-state-${Date.now}`, {}, [require('ssb-private1')])
+
+  ssb.publish({ type: 'test', recps: [ssb.id]}, (err) => {
+    t.error(err)
+
+    pull(
+      ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1, private: true }),
+      pull.collect((err, [privateMessageA]) => {
+        t.error(err)
+        const copy = cloneDeep(privateMessageA)
+        pull(
+          ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1, private: true }),
+          pull.collect((err, [privateMessageB]) => {
+            privateMessageA.value = 'this should not effect privateMessageB'
+            t.deepEqual(copy, privateMessageB, 'active tampering should not mutate variables')
             ssb.close(t.end)
           })
         )
