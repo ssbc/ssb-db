@@ -93,24 +93,11 @@ const CACHE_SIZE = 512
 
 function unboxWithCache (id) {
   var cache = HLRU(CACHE_SIZE)
-  // console.log('instantiating unbox.withCache', id)
 
-  // var state = {
-  //   total: 0,
-  //   cachedUnbox: 0,
-  //   unbox: 0
-  // }
   function cachedUnbox (msg, readKey, unboxers) {
-    // state.total++
-    // if (state.total % 1000 === 0) {
-    //   const percent = Math.floor(state.cachedUnbox / (state.cachedUnbox + state.unbox) * 1e3) / 1e2
-    //   console.log(`cache saves: ${percent}% (${state.cachedUnbox} / ${state.cachedUnbox + state.unbox})`)
-    // }
     if (!msg || !isString(msg.value.content)) return msg
 
     const cached = cache.get(msg.key)
-    // if (cached !== undefined) state.cachedUnbox++
-    // else state.unbox++
 
     if (cached === false && !readKey) return msg
     else if (cached) return cached

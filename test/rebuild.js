@@ -164,7 +164,7 @@ tape('rebuild (partial index, complex boxer/unboxer)', async (t) => {
   await promisify(ssb.close)()
   t.pass('closed')
 
-  const ssb2 = createSsb(name, { temp: false }, [require('ssb-private2')])
+  const ssb2 = createSsb(name, { temp: false }, [require('ssb-tribes')])
 
   const result = await promisify(ssb2.get)(key)
   t.ok(result)
