@@ -87,23 +87,50 @@ tape('unbox.withCache - source', (t) => {
 // This test ensures that one query doesn't mutate the results of another
 // query. This was written to illustrate a problem where `unboxValue()` would
 // **mutate the results of other queries** and re-box messages that were meant
-// to be private.
-tape('shared mutable state (source)', (t) => {
+// to be private (in the cache).
+tape('unboxWithCache - no shared mutable state (passive)', (t) => {
   const ssb = createSsb(`shared-mutable-state-${Date.now()}`, {}, [require('ssb-private1')])
 
-  ssb.publish({ type: 'test', recps: [ssb.id]}, (err) => {
+  ssb.publish({ type: 'boop', recps: [ssb.id] }, (err) => {
     t.error(err)
 
+    const query = { id: ssb.id, reverse: true, limit: 1, private: true }
     pull(
-      ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1, private: true }),
+      ssb.createUserStream(query),
       pull.collect((err, privateMessages) => {
         t.error(err)
         const copy = cloneDeep(privateMessages)
         pull(
-          ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1 }),
+          ssb.createUserStream(Object.assign(query, { private: false })),
           pull.collect((err) => {
+            // we don't care about the results of this query, we want to see that the last results
+            // were not mutated by performing it
             t.error(err)
             t.deepEqual(privateMessages, copy, 'unrelated query should not mutate original results')
+            ssb.close(t.end)
+          })
+        )
+      })
+    )
+  })
+})
+
+tape('unbox.withCache - no shared mutable state (active)', (t) => {
+  const ssb = createSsb(`shared-mutable-state-${Date.now}`, {}, [require('ssb-private1')])
+
+  ssb.publish({ type: 'boop', recps: [ssb.id] }, (err) => {
+    t.error(err)
+
+    pull(
+      ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1, private: true }),
+      pull.collect((err, [privateMessageA]) => {
+        t.error(err)
+        const copy = cloneDeep(privateMessageA)
+        pull(
+          ssb.createUserStream({ id: ssb.id, reverse: true, limit: 1, private: true }),
+          pull.collect((_, [privateMessageB]) => {
+            privateMessageA.value = 'this should not effect privateMessageB'
+            t.deepEqual(copy, privateMessageB, 'active tampering should not mutate variables')
             ssb.close(t.end)
           })
         )

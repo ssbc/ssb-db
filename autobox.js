@@ -1,5 +1,6 @@
 const HLRU = require('hashlru')
 const { metaBackup } = require('./util')
+const cloneDeep = require('lodash.clonedeep')
 
 function isFunction (f) { return typeof f === 'function' }
 function isString (s) { return typeof s === 'string' }
@@ -100,7 +101,7 @@ function unboxWithCache (id) {
     const cached = cache.get(msg.key)
 
     if (cached === false && !readKey) return msg
-    else if (cached) return cached
+    else if (cached) return cloneDeep(cached)
 
     const result = unbox(msg, readKey, unboxers)
     if (isString(result.value.content)) cache.set(msg.key, false)

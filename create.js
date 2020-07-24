@@ -40,7 +40,6 @@ module.exports = function create (path, opts, keys) {
   // - adds methods:
   //   - db.createLogStream
   //   - db.createFeedStream
-  //   - db.creareUserStream
   //   - db.latest
   //   - db.latestSequence
   //   - db.getLatest
