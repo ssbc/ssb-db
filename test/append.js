@@ -1,9 +1,11 @@
 var V = require('ssb-validate')
-var tape = require('tape')
+const tape = require('tape')
 var ssbKeys = require('ssb-keys')
 var pull = require('pull-stream')
 var explain = require('explain-error')
 var timestamp = require('monotonic-timestamp')
+const createSsb = require('./util/create-ssb')
+const { promisify } = require('util')
 
 var minimal = require('../minimal')
 
@@ -111,3 +113,31 @@ tape('append (read back)', function (t) {
     })
   )
 })
+
+// If you write faster than the database can save messages, it adds them to
+// some kind of queue, which eventually gets 'flushed'. In the past there was a
+// bug where publishing more than 1000 messages very quickly would cause a
+// problem where some messages would come back as `undefiend` rather than the
+// usual `{ key, value }`. This test adds a bunch of messages very quickly and
+// ensures that the callback contains the correct data.
+tape('append (bulk)', (t) => {
+  const ssb = createSsb();
+
+  // We write 7919 messages, which should be bigger than any cache. It's also a
+  // prime number and shouldn't line up perfectly with any batch sizes.
+  const messages = 7919
+
+  const assertsPerMessage = 4;
+  t.plan(messages * assertsPerMessage);
+
+  Promise.all([...new Array(messages)].map(async (_, i) => {
+     const entry = await promisify(ssb.publish)({ type: 'test' })
+    t.equal(typeof entry, 'object')
+    t.equal(typeof entry.key, 'string')
+    t.equal(typeof entry.value, 'object')
+    t.equal(entry.value.sequence, i + 1)
+  })).then(() => {
+    ssb.close(t.end)
+  })
+})
+
