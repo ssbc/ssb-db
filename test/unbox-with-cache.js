@@ -89,7 +89,7 @@ tape('unbox.withCache - source', (t) => {
 // **mutate the results of other queries** and re-box messages that were meant
 // to be private.
 tape('shared mutable state (source)', (t) => {
-  const ssb = createSsb(`shared-mutable-state-${Date.now}`, {}, [require('ssb-private1')])
+  const ssb = createSsb(`shared-mutable-state-${Date.now()}`, {}, [require('ssb-private1')])
 
   ssb.publish({ type: 'test', recps: [ssb.id]}, (err) => {
     t.error(err)
