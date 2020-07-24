@@ -4,6 +4,7 @@ var pull = require('pull-stream')
 var createSSB = require('./util/create-ssb')
 var createFeed = require('ssb-feed')
 var ssbKeys = require('ssb-keys')
+const { promisify } = require('util')
 
 var generate = ssbKeys.generate
 
@@ -19,23 +20,25 @@ function run (opts = {}) {
 
       pull(
         ssb.createFeedStream(),
-        pull.drain(function (msg) {
-          ssb.del(msg.key, err => t.error(err))
-        }, () => {
-          pull(
-            ssb.createFeedStream(),
-            pull.drain(() => {
-              t.fail('no messages should be available')
-            }, () => {
-              ssb.get(msg.key, (err) => {
-                t.ok(err)
-                t.equal(err.code, 'flumelog:deleted')
-                ssb.close(err => {
-                  t.error(err, 'ssb.close - del (delete message)')
-                  t.end()
+        pull.collect(function (err, ary) {
+          t.error(err)
+
+          Promise.all(ary.map(({ key }) => promisify(ssb.del)(key))).then(() => 
+            pull(
+              ssb.createFeedStream(),
+              pull.drain(() => {
+                t.fail('no messages should be available')
+              }, () => {
+                ssb.get(msg.key, (err) => {
+                  t.ok(err)
+                  t.equal(err.code, 'flumelog:deleted')
+                  ssb.close(err => {
+                    t.error(err, 'ssb.close - del (delete message)')
+                    t.end()
+                  })
                 })
               })
-            })
+            )
           )
         })
       )
