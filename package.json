@@ -14,7 +14,6 @@
     "test:pretty": "npm test | tap-spec"
   },
   "dependencies": {
-    "async-write": "^2.1.0",
     "flumedb": "^2.1.8",
     "flumelog-offset": "^3.4.2",
     "flumeview-level": "^4.0.4",
@@ -46,7 +45,7 @@
     "ssb-backlinks": "^2.0.1",
     "ssb-feed": "^2.2.1",
     "ssb-private1": "^1.0.1",
-    "ssb-tribes": "^0.1.1",
+    "ssb-tribes": "^0.1.2",
     "tap-spec": "^5.0.0",
     "tape": "^5.0.0",
     "typewiselite": "^1.0.0"
