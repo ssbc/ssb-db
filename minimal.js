@@ -141,17 +141,9 @@ module.exports = function (dirname, keys, opts) {
       return cb(err)
     }
 
-    queue(msg, function (err, out) {
-      if (out == null) {
-        throw new Error('wtf')
-      }
+    queue(msg, function (err, message) {
       if (err) return cb(err)
-      flush.add(() => {
-        if (out == null) {
-          throw new Error('wtf')
-        }
-        cb(null, out)
-      })
+      flush.add(() => cb(null, message))
     })
   }))
 
