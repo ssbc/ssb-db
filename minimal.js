@@ -2,7 +2,6 @@
 var path = require('path')
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-var AsyncWrite = require('async-write')
 var V = require('ssb-validate')
 var timestamp = require('monotonic-timestamp')
 var Obv = require('obv')
@@ -83,36 +82,50 @@ module.exports = function (dirname, keys, opts) {
 
   var append = db.rawAppend = db.append
   db.post = Obv()
-  var queue = AsyncWrite(function (_, cb) {
-    var batch = state.queue
-    state.queue = []
-    append(batch, function (err, v) {
+
+  let writing = false
+
+  const write = () => {
+    writing = true
+    // Very defensive: Is this necessary? I don't know whether it's possible
+    // for another function to `state.queue.push()` between these two lines.
+    const batch = state.queue.slice()
+    state.queue = state.queue.slice(batch.length)
+
+    append(batch, function (err) {
+      // Previously this error wasn't being caught anywhere. :(
+      // New behavior: if a write fails, crash loudly and throw an error.
+      if (err) throw err
+
+      // If we have new messages in the queue, write them!
+      // Otherwise, run all callbacks added via `flush.add()`
+      if (state.queue.length) {
+        write()
+      } else {
+        writing = false
+        flush.runAll()
+      }
+
+      // Update the observable
       batch.forEach(function (data) {
         db.post.set(u.originalData(data))
       })
-      cb(err, v)
     })
-  }, function reduce (_, msg) {
-    return V.append(state, hmacKey, msg)
-  }, function (_state) {
-    return state.queue.length > 1000
-  }, function isEmpty (_state) {
-    return !state.queue.length
-  }, 100)
+  }
 
-  queue.onDrain = function onDrain () {
-    if (state.queue.length === 0) {
-      flush.runAll()
+  const queue = (message, cb) => {
+    try {
+      V.append(state, hmacKey, message)
+      cb(null, state.queue[state.queue.length - 1])
+      if (writing === false) {
+        write()
+      }
+    } catch (e) {
+      cb(e)
     }
   }
 
-  db.queue = waitForValidators(function dbQueue (msg, cb) {
-    queue(msg, function (err) {
-      var data = state.queue[state.queue.length - 1]
-      if (err) cb(err)
-      else cb(null, data)
-    })
-  })
+  db.queue = waitForValidators(queue)
 
   db.append = waitForBoxers(waitForValidators(function dbAppend (opts, cb) {
     try {
@@ -128,20 +141,14 @@ module.exports = function (dirname, keys, opts) {
       return cb(err)
     }
 
-    queue(msg, function (err) {
+    queue(msg, function (err, message) {
       if (err) return cb(err)
-      var data = state.queue[state.queue.length - 1]
-      flush.add(() => cb(null, data))
+      flush.add(() => cb(null, message))
     })
   }))
 
-  db.buffer = function buffer () {
-    return queue.buffer
-  }
-
   db.flush = function dbFlush (cb) {
-    // maybe need to check if there is anything currently writing?
-    if (!queue.buffer || !queue.buffer.queue.length && !queue.writing) cb()
+    if (state.queue.length === 0 && writing === false) cb()
     else flush.add(() => cb())
   }
 
