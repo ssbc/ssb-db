@@ -82,6 +82,7 @@ module.exports = function (dirname, keys, opts) {
 
   var append = db.rawAppend = db.append
   db.post = Obv()
+  db.previous = Obv()
 
   let writing = false
 
@@ -117,6 +118,8 @@ module.exports = function (dirname, keys, opts) {
     try {
       // SSB-Validate mutates `state` internally.
       V.append(state, hmacKey, message)
+      const previous = state.feeds[keys.id] ? state.feeds[keys.id].id : null
+      db.previous.set(previous)
       cb(null, state.queue[state.queue.length - 1])
       if (writing === false) {
         write()

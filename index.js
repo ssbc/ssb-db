@@ -145,6 +145,7 @@ module.exports = {
       get                      : valid.async(ssb.get, 'msgLink|number|object'),
 
       post                     : ssb.post,
+      previous                 : ssb.previous,
       addMap                   : ssb.addMap,
 
       since                    : since,
