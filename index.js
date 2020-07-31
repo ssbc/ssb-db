@@ -31,6 +31,7 @@ var manifest = {
   getVectorClock: 'async',
   help: 'sync',
   latest: 'source',
+  getFeedState: 'async',
   latestSequence: 'async',
   links: 'source',
   messagesByType: 'source',
@@ -154,6 +155,7 @@ module.exports = {
       since                    : since,
 
       latest                   : ssb.latest,
+      getFeedState             : valid.async(ssb.getFeedState, 'feedId'),
       getLatest                : valid.async(ssb.getLatest, 'feedId'),
       latestSequence           : valid.async(ssb.latestSequence, 'feedId'),
       createFeed               : ssb.createFeed,

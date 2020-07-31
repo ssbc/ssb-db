@@ -16,7 +16,7 @@ var K = [keys]
 for (var i = 0; i < 100; i++) K.push(ssbKeys.generate())
 
 var a
-var db = a = minimal(dirname)
+var db = a = minimal(dirname, keys)
 db.ready.set(true)
 var MSG
 tape('append (setup)', function (t) {
@@ -121,23 +121,36 @@ tape('append (read back)', function (t) {
 // usual `{ key, value }`. This test adds a bunch of messages very quickly and
 // ensures that the callback contains the correct data.
 tape('append (bulk)', (t) => {
-  const ssb = createSsb();
+  const ssb = createSsb()
 
   // We write 7919 messages, which should be bigger than any cache. It's also a
   // prime number and shouldn't line up perfectly with any batch sizes.
   const messages = 7919
 
-  const assertsPerMessage = 4;
-  t.plan(messages * assertsPerMessage);
+  const assertsPerMessage = 4
+  const plan = messages * assertsPerMessage
+  var pass = 0
+
+  function testEqual (a, b) {
+    if (a !== b) {
+      process.stdout.write('\n')
+      t.equal(a, b)
+      return
+    }
+    pass += 1
+  }
 
   Promise.all([...new Array(messages)].map(async (_, i) => {
-     const entry = await promisify(ssb.publish)({ type: 'test' })
-    t.equal(typeof entry, 'object')
-    t.equal(typeof entry.key, 'string')
-    t.equal(typeof entry.value, 'object')
-    t.equal(entry.value.sequence, i + 1)
+    const entry = await promisify(ssb.publish)({ type: 'test' })
+    process.stdout.write('.')
+
+    testEqual(typeof entry, 'object')
+    testEqual(typeof entry.key, 'string')
+    testEqual(typeof entry.value, 'object')
+    testEqual(entry.value.sequence, i + 1)
   })).then(() => {
+    process.stdout.write('\n')
+    t.equal(pass, plan, 'passed all tests')
     ssb.close(t.end)
   })
 })
-

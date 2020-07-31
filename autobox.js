@@ -5,7 +5,7 @@ const cloneDeep = require('lodash.clonedeep')
 function isFunction (f) { return typeof f === 'function' }
 function isString (s) { return typeof s === 'string' }
 
-function box (content, boxers) {
+function box (content, boxers, feedState) {
   if (!content.recps) return content
 
   if (typeof content.recps === 'string') content.recps = [content.recps]
@@ -15,7 +15,7 @@ function box (content, boxers) {
   var ciphertext
   for (var i = 0; i < boxers.length; i++) {
     const boxer = boxers[i]
-    ciphertext = boxer(content)
+    ciphertext = boxer(content, feedState)
 
     if (ciphertext) break
   }

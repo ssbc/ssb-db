@@ -128,9 +128,25 @@ module.exports = function (dirname, keys, opts) {
 
   db.queue = waitForValidators(queue)
 
+  const getFeedState = (feedId) => {
+    const feedState = state.feeds[feedId]
+    if (!feedState) return { id: null, sequence: 0 }
+    // NOTE this covers the case where you have a brand new feed (or new createFeed)
+
+    // Remove vestigial properties like 'timestamp'
+    return {
+      id: feedState.id,
+      sequence: feedState.sequence
+    }
+  }
+  db.getFeedState = waitForValidators((feedId, cb) => {
+    cb(null, getFeedState(feedId))
+  })
+
   db.append = waitForBoxers(waitForValidators(function dbAppend (opts, cb) {
     try {
-      const content = box(opts.content, boxers)
+      const feedState = getFeedState(opts.keys.id)
+      const content = box(opts.content, boxers, feedState)
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys,
