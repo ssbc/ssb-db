@@ -579,11 +579,24 @@ Callback when all queued writes are actually definitely written to the disk.
 
 ## db.post: Observable
 ```js
-db.post(fn({key, value: msg, timestamp})) => Ovb
+db.post(fn({key, value: msg, timestamp})) => Obv
 ```
 
-[Observable](https://github.com/dominictarr/obv) that calls `fn` whenever a message is appended (with that 
-message). __This method is not exposed over RPC.__
+[Observable](https://github.com/dominictarr/obv) that calls `fn` whenever a message is appended
+(with that message).
+
+__This method is not exposed over RPC.__
+
+## db.previous: Observable
+```js
+db.previous(fn(MsgId)) => Obv
+```
+
+[Observable](https://github.com/dominictarr/obv) that calls `fn` whenever **a message is validated and queued for append**
+NOTE this happens earlier than `db.post`, as that observeable updates on successful append, whereas this updates.
+This is needed for the case where we are boxing messages based on the message before it in the queue.
+
+__This method is not exposed over RPC.__
 
 ## db.since: Observable
 ```js
