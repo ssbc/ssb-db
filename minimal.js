@@ -116,7 +116,7 @@ module.exports = function (dirname, keys, opts) {
 
   db.append = waitForBoxers(waitForValidators(function dbAppend (opts, cb) {
     try {
-      const content = box(opts.content, boxers)
+      const content = box(opts.content, boxers, state.feeds[opts.keys.id])
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys,
