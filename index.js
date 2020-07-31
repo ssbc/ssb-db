@@ -27,6 +27,7 @@ var manifest = {
   createWriteStream: 'sink',
   del: 'async',
   get: 'async',
+  getFeedState: 'async',
   getLatest: 'async',
   getVectorClock: 'async',
   help: 'sync',
@@ -154,6 +155,7 @@ module.exports = {
       since                    : since,
 
       latest                   : ssb.latest,
+      getFeedState             : valid.async(ssb.getFeedState, 'feedId'),
       getLatest                : valid.async(ssb.getLatest, 'feedId'),
       latestSequence           : valid.async(ssb.latestSequence, 'feedId'),
       createFeed               : ssb.createFeed,

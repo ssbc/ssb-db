@@ -127,9 +127,26 @@ module.exports = function (dirname, keys, opts) {
 
   db.queue = waitForValidators(queue)
 
+  const formatFeedState = (feedState) => {
+    if (feedState) {
+      // Remove vestigial properties like 'timestamp'
+      return {
+        id: feedState.id,
+        sequence: feedState.sequence
+      }
+    } else {
+      // Never pass `undefined`, give the state of an empty feed.
+      return {
+        id: null,
+        sequence: 0,
+      }
+    }
+  }
+
   db.append = waitForBoxers(waitForValidators(function dbAppend (opts, cb) {
     try {
-      const content = box(opts.content, boxers)
+      const feedState = formatFeedState(state.feeds[opts.keys.id])
+      const content = box(opts.content, boxers, feedState)
       var msg = V.create(
         state.feeds[opts.keys.id],
         opts.keys,
@@ -146,6 +163,11 @@ module.exports = function (dirname, keys, opts) {
       flush.add(() => cb(null, message))
     })
   }))
+
+  db.getFeedState = waitForValidators((feedId, cb) => {
+    cb(null, formatFeedState(state.feeds[feedId]))
+  })
+
 
   db.flush = function dbFlush (cb) {
     if (state.queue.length === 0 && writing === false) cb()

@@ -1,6 +1,6 @@
 # ssb-db
 
-[secret-stack](https://github.com/ssbc/secret-stack) plugin which provides storing of valid secure-scuttlebutt 
+[secret-stack](https://github.com/ssbc/secret-stack) plugin which provides storing of valid secure-scuttlebutt
 messages in an append-only log.
 
 ## Table of contents
@@ -571,19 +571,32 @@ when the database is ready for more writes to be queued. Usually that means it's
 __This method is not exposed over RPC.__
 
 ## db.flush: async 
+
 ```js
 db.flush(cb) //cb()
 ```
 
 Callback when all queued writes are actually definitely written to the disk.
 
+## db.getFeedState: async
+
+```js
+db.getFeedState(feedId, (err, { id, sequence })
+```
+
+Calls back with the most recent message ID and sequence number according to
+SSB-Validate. This may contain messages that have been queued and not yet
+persisted to the database.
+
 ## db.post: Observable
+
 ```js
 db.post(fn({key, value: msg, timestamp})) => Ovb
 ```
 
 [Observable](https://github.com/dominictarr/obv) that calls `fn` whenever a message is appended (with that 
 message). __This method is not exposed over RPC.__
+
 
 ## db.since: Observable
 ```js
@@ -604,10 +617,13 @@ automatically box (encrypt) the message `content` if the appropriate
 `content.recps` is provided.
 
 Where:
-- `boxer (msg.value.content) => ciphertext` which is expected to either:
+- `boxer (msg.value.content, feedState) => ciphertext` which is expected to either:
     - successfully box the content (based on `content.recps`), returning a `ciphertext` String
     - not know how to box this content (because recps are outside it's understanding), and `undefined` (or `null`)
     - break (because it should know how to handle `recps`, but can't), and so throw an `Error`
+    - The `feedState` object contains `id` and `sequence` properties that
+      describe the most recent message ID and sequence number for the feed.
+      This is the same data exposed by `db.getFeedState()`.
 - `initUnboxer (done) => null` (optional)
     - is a functional which allows you set up your unboxer
     - you're expected to call `done()` once all your initialisation is complete
