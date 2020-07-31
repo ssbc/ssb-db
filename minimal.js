@@ -115,6 +115,7 @@ module.exports = function (dirname, keys, opts) {
 
   const queue = (message, cb) => {
     try {
+      // SSB-Validate mutates `state` internally.
       V.append(state, hmacKey, message)
       cb(null, state.queue[state.queue.length - 1])
       if (writing === false) {
