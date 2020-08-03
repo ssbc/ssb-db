@@ -87,9 +87,9 @@ tape('unbox.withCache - source', (t) => {
 // This test ensures that one query doesn't mutate the results of another
 // query. This was written to illustrate a problem where `unboxValue()` would
 // **mutate the results of other queries** and re-box messages that were meant
-// to be private (in the cache)
+// to be private (in the cache).
 tape('unboxWithCache - no shared mutable state (passive)', (t) => {
-  const ssb = createSsb(`shared-mutable-state-${Date.now}`, {}, [require('ssb-private1')])
+  const ssb = createSsb(`shared-mutable-state-${Date.now()}`, {}, [require('ssb-private1')])
 
   ssb.publish({ type: 'boop', recps: [ssb.id] }, (err) => {
     t.error(err)
