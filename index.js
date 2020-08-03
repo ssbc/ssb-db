@@ -83,6 +83,10 @@ module.exports = {
           _close((err) => {
             setImmediate(() => {
               if (typeof cb === 'function') {
+                if (typeof err === 'object' && err !== null && err.code === 'ERR_SERVER_NOT_RUNNING') {
+                  // https://github.com/ssbc/ssb-db/issues/300
+                  err = null
+                }
                 cb(err)
               }
             })
