@@ -13,7 +13,6 @@ function run (opts = {}) {
     var ssb = createSSB('test-ssb-log8')
 
     var feed = createFeed(ssb, generate(), opts)
-    t.plan(5)
 
     feed.add('msg', 'hello there!', function (err, msg) {
       t.error(err)
@@ -23,7 +22,7 @@ function run (opts = {}) {
         pull.collect(function (err, ary) {
           t.error(err)
 
-          Promise.all(ary.map(({ key }) => promisify(ssb.del)(key))).then(() => 
+          Promise.all(ary.map(({ key }) => promisify(ssb.del)(key))).then(() =>
             pull(
               ssb.createFeedStream(),
               pull.drain(() => {
@@ -48,8 +47,6 @@ function run (opts = {}) {
   tape('del (delete feed)', (t) => {
     var ssb = createSSB('test-ssb-log9')
     var feed = createFeed(ssb, generate(), opts)
-
-    t.plan(6)
 
     feed.add('msg', 'hello there!', function (err) {
       t.error(err)
