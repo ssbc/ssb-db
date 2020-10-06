@@ -333,7 +333,7 @@ safer for RPC between untrusted peers.
 supported. `createHistoryStream` does not decrypt private messages.
 
 - `id` *(FeedID)* The id of the feed to fetch.
-- `seq` *(number)* If `seq > 0`, then only stream messages with sequence numbers greater than `seq`. 
+- `seq` *(number)* If `seq > 0`, then only stream messages with sequence numbers greater than or equal to `seq`. 
 Defaults to `0`.
 - `live` *(boolean)*: Keep the stream open and emit new messages as they are received. Defaults to `false`
 - `keys` *(boolean)*: Whether the `data` event should contain keys. If set to `true` and `values` set to 
