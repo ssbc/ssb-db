@@ -11,7 +11,6 @@ messages in an append-only log.
 [API](#api) | 
 [Stability](#stability) | 
 [License](#License) | 
-___
 
 # What does it do?
 
@@ -27,7 +26,7 @@ messages.
 
 # Example
 
-In this example, we create a feed, post a signed message to it, then create a stream that reads from the feed.
+In this example, we create a feed, post a signed message to it, then create a stream that reads from the feed. **Note:** `ssb-server` includes the `ssb-db` dependency already, so the example here uses this as a plugin for `secret-stack`.
 
 ``` js
 /**
