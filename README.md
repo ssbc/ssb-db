@@ -198,6 +198,9 @@ Otherwise the raw message (without key and timestamp) are returned. This is for 
 Given that most other apis (such as createLogStream) by default return `{key, value, timestamp}` it's 
 recommended to use `db.get({id: key, meta: true}, cb)`
 
+Note that the `cb` callback is called with 3 arguments: `cb(err, msg, offset)`, where
+the 3rd argument is the `offset` position of that message in the log (flumelog-offset).
+
 ## db.add: async
 ```js
 db.add(msg, cb) // cb(error, data)
