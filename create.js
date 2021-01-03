@@ -66,7 +66,7 @@ module.exports = function create (path, opts, keys) {
     }
 
     if (ref.isMsg(key)) {
-      return db.keys.get(key, function (err, data) {
+      return db.keys.get(key, function (err, data, offset) {
         if (err) return cb(err)
 
         var value
@@ -81,8 +81,8 @@ module.exports = function create (path, opts, keys) {
 
         if (!value) value = data.value // if db._unbox fails value will be undefined
 
-        if (meta) cb(null, { key, value, timestamp: data.timestamp })
-        else cb(null, value)
+        if (meta) cb(null, { key, value, timestamp: data.timestamp }, offset)
+        else cb(null, value, offset)
       })
     }
     else if (Number.isInteger(key)) _get(key, cb) // seq
