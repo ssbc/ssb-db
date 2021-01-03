@@ -2,6 +2,7 @@
 var tape = require('tape')
 var pull = require('pull-stream')
 var crypto = require('crypto')
+var util = require('util')
 
 var createSSB = require('./util/create-ssb')
 
@@ -45,10 +46,41 @@ function run (opts) {
     })
   })
 
+  tape('get works with offset arg', function (t) {
+    ssb.publish({type: 'okay'}, function (err, msg) {
+      t.error(err)
+      t.equal(msg.value.content.type, 'okay')
+
+      ssb.get(msg.key, function (err2, msg2value, offset) {
+        t.error(err2)
+        t.deepEqual(msg2value, msg.value)
+        t.equal(typeof offset, 'number')
+
+        ssb.get(offset, function (err3, msg3) {
+          t.error(err3)
+          t.deepEqual(msg3.value, msg2value)
+          t.end()
+        })
+      })
+    })
+  })
+
+  tape('get works with promisify', function (t) {
+    ssb.publish({ type: 'okay' }, function (err, msg) {
+      t.error(err)
+      t.equal(msg.value.content.type, 'okay')
+
+      util.promisify(ssb.get)(msg.key).then(msgVal => {
+        t.deepEqual(msgVal, msg.value)
+        t.end()
+      })
+    })
+  })
+
   tape('add, createLogStream (createLogStream)', function (t) {
     pull(ssb.createLogStream({ keys: true, values: true }), pull.collect(function (err, ary) {
       if (err) throw err
-      t.equal(ary.length, 2)
+      t.equal(ary.length, 4)
       t.end()
     }))
   })
