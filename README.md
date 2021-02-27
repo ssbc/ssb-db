@@ -616,7 +616,7 @@ integer that usually increases, except in the exceptional circumstance that the 
 ### db.addBoxer: sync
 
 ```js
-db.addUnboxer({ value: boxer, init: initUnboxer })
+db.addBoxer({ value: boxer, init: initUnboxer })
 ```
 
 Add a `boxer`, which will be added to the list of boxers which will try to
