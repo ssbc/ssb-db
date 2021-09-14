@@ -208,8 +208,13 @@ module.exports = function (dirname, keys, opts) {
 
   const _rebuild = db.rebuild
   db.rebuild = function (cb) {
+    db.rebuild.isActive = true
     unbox.resetCache()
-    _rebuild(cb)
+    _rebuild((err) => {
+      db.rebuild.isActive = false
+      if (typeof cb === 'function') cb(err)
+      else if (err) console.error(err)
+    })
   }
 
   /* initialise some state */

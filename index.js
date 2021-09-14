@@ -72,16 +72,22 @@ module.exports = {
     var ssb = create(opts.path, opts, opts.keys)
     //treat the main feed as remote, because it's likely handled like that by others.
     var feed = ssb.createFeed(opts.keys, {remote: true})
-    var _close = api.close
-    var close = function (arg, cb) {
+
+    var secretStackClose = api.close
+    function close (arg, cb) {
       if('function' === typeof arg) cb = arg
       ssb.flush(function (err) {
         if(err) return cb(err)
         // override to close the SSB database
+        continueClose()
+      })
+      function continueClose () {
+        if (ssb.rebuild.isActive) return setTimeout(continueClose, 100)
+
         ssb.close(function (err) {
           if (err) return cb(err)
           //multiserver doesn't take a callback on close.
-          _close((err) => {
+          secretStackClose((err) => {
             setImmediate(() => {
               if (typeof cb === 'function') {
                 if (typeof err === 'object' && err !== null && err.code === 'ERR_SERVER_NOT_RUNNING') {
@@ -93,7 +99,7 @@ module.exports = {
             })
           })
         })
-      })
+      }
     }
 
     function since () {

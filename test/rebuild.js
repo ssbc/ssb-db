@@ -1,6 +1,7 @@
 const tape = require('tape')
 const FlumeviewLevel = require('flumeview-level')
 const { promisify } = require('util')
+const pull = require('pull-stream')
 
 const createSsb = require('./util/create-ssb')
 
@@ -145,7 +146,7 @@ tape('rebuild (after new unboxer)', async (t) => {
 })
 
 /* Note - this sequence of actions sets the database in a state which could get it in a locked state
- * In particular ssb-private2 requires boxer and unboxer initialistion, and they can depened on one
+ * In particular ssb-tribes requires boxer and unboxer initialistion, and they can depened on one
  * another, so if you're not careful.
  */
 
@@ -175,3 +176,38 @@ tape('rebuild (partial index, complex boxer/unboxer)', async (t) => {
   await promisify(ssb2.close)()
   t.pass('closed again')
 })
+
+tape('rebuild (handles close)', (t) => {
+  t.plan(4)
+  const ssb = createSsb()
+
+  pull(
+    contentSource(400),
+    pull.asyncMap(ssb.publish),
+    pull.collect((err) => {
+      if (err) throw err
+
+      t.pass('rebuild started')
+      ssb.rebuild((err) => t.error(err, 'rebuild done'))
+
+      // for some reason this intermitently causes error:
+      //   segmentation fault (core dumped)
+      setTimeout(() => {
+        t.pass('close started')
+        ssb.close((err) => t.error(err, 'close done'))
+      }, 0)
+    })
+  )
+})
+
+function contentSource (n) {
+  return pull(
+    pull.values(new Array(n).fill(0)),
+    pull.map(() => {
+      return {
+        type: 'test',
+        body: new Array(100).fill('cat')
+      }
+    })
+  )
+}
