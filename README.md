@@ -665,6 +665,13 @@ db.unbox(data, key)
 ```
 Attempt to decrypt data using key. Key is a symmetric key, that is passed to the unboxer objects.
 
+## db.rebuild: async
+```js
+db.rebuild(cb)
+```
+
+Rebuilds the indexes. This takes a while to run and using SSB features before it is completed may lead to confusing experiences as the indexes will be out of sync.
+
 ## db.Deprecated apis
 
 ## db.getLatest: async
