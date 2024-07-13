@@ -27,7 +27,8 @@ module.exports = function db (dir, keys, opts) {
       var c = db.views[name].since.value
       current += (Number.isInteger(c) ? c : -1)
     }
-    prog.current = ~~(current / n)
+    // we use Math.floor to avoid overflow errors
+    prog.current = Math.floor(current / n)
     // if the progress bar is complete, move the starting point
     // up to the current position!
     if (prog.start <= 0) {
